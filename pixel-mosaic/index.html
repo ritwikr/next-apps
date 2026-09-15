@@ -651,6 +651,35 @@
     updateSelUI();
   }
   function render(){ renderBase(); composite(); }   // full path (tiles changed)
+
+  // patch a SINGLE cell straight to screen — the draw/erase hot path.
+  // Instead of re-blitting the whole backing store (which grows with zoom, so a
+  // full composite gets slow the further you zoom in) we blit just this cell's
+  // little region from the cache and redraw only its 4 grid segments. Per-stroke
+  // cost is now independent of zoom level.
+  function compositeCell(i){
+    if(selection || pasteMode){ composite(); return; }   // overlay present -> full path
+    if(baseCache.width!==canvas.width || baseCache.height!==canvas.height){ composite(); return; } // cache stale -> rebuild
+    var u=canvas.width/cols, c=i%cols, r=Math.floor(i/cols);
+    var sx=Math.max(0,Math.floor(c*u)-1), sy=Math.max(0,Math.floor(r*u)-1);
+    var ex=Math.min(canvas.width,  Math.ceil((c+1)*u)+1);
+    var ey=Math.min(canvas.height, Math.ceil((r+1)*u)+1);
+    ctx.globalAlpha=1;
+    ctx.drawImage(baseCache, sx,sy,ex-sx,ey-sy, sx,sy,ex-sx,ey-sy);
+    if(gridLinesOn){
+      ctx.save();
+      ctx.strokeStyle=COL.grid; ctx.lineWidth=1;
+      var lx0=c*u+0.5, lx1=(c+1)*u+0.5, ly0=r*u+0.5, ly1=(r+1)*u+0.5,
+          x0=c*u, x1=(c+1)*u, y0=r*u, y1=(r+1)*u;
+      ctx.beginPath();
+      ctx.moveTo(lx0,y0); ctx.lineTo(lx0,y1);
+      ctx.moveTo(lx1,y0); ctx.lineTo(lx1,y1);
+      ctx.moveTo(x0,ly0); ctx.lineTo(x1,ly0);
+      ctx.moveTo(x0,ly1); ctx.lineTo(x1,ly1);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
   function dashRect(x,y,w,h,color,u){
     ctx.save();
     ctx.strokeStyle=color; ctx.lineWidth=Math.max(2,u*0.14);
@@ -682,7 +711,7 @@
     if(i<0 || i===lastCell) return;
     lastCell=i;
     model[i] = (tool==="eraser") ? null : currentTile;
-    drawCellToBase(i); composite();     // patch one cell only — no full repaint
+    drawCellToBase(i); compositeCell(i);   // patch + blit ONE cell — cost stays flat as you zoom
   }
   function floodFill(i){
     var target=model[i], repl=(tool==="eraser")?null:currentTile;
