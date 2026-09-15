@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Next School — Apps</title>
+<style>
+  :root{
+    --paper:#f4efe6; --card:#fffdf8; --ink:#2c2740; --muted:#7a7386;
+    --line:#e3dccd; --teal:#0f7d74; --shadow:rgba(60,50,30,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#1c1a24; --card:#26232f; --ink:#efe9dc; --muted:#a49bb0;
+      --line:#39343f; --teal:#4fd0c4; --shadow:rgba(0,0,0,.5); }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:48px 20px;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:1.9rem;font-weight:800;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 34px;font-size:1rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);
+    border:1.5px solid var(--line);border-radius:16px;padding:20px 20px 18px;
+    box-shadow:0 6px 18px -12px var(--shadow);transition:transform .08s ease,border-color .15s}
+  a.card:hover{transform:translateY(-2px);border-color:var(--teal)}
+  .card h2{margin:0 0 4px;font-size:1.1rem;font-weight:800}
+  .card p{margin:0;color:var(--muted);font-size:.9rem}
+  footer{margin-top:38px;color:var(--muted);font-size:.82rem}
+  footer a{color:var(--teal)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Next School — Apps</h1>
+    <p class="sub">Small, self-contained learning tools built with learners at Next. Open source.</p>
+    <div class="grid">
+      <a class="card" href="./room-blocks-planner/">
+        <h2>Room Blocks Planner</h2>
+        <p>Lay out a pre-school room and see all four wall elevations.</p>
+      </a>
+      <a class="card" href="./pixel-pad/">
+        <h2>Pixel Pad</h2>
+        <p>An ultra-simple pixel-art drawing pad.</p>
+      </a>
+      <a class="card" href="./pixel-mosaic/">
+        <h2>Pixel Mosaic</h2>
+        <p>Turn a photo into a mosaic of catalogue tiles.</p>
+      </a>
+      <a class="card" href="./annotate/">
+        <h2>Annotate</h2>
+        <p>Mark up a photo — draw, arrow, box, highlight, add text.</p>
+      </a>
+    </div>
+    <footer>Source on <a href="https://github.com/ritwikr/next-apps">GitHub</a>. Made at Next School.</footer>
+  </div>
+</body>
+</html>
