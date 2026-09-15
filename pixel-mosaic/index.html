@@ -920,7 +920,7 @@
   }
   function positionSelMenu(){
     if(!selMenu) return;
-    var show = !!selection && tool==="select" && !pasteMode && !selecting;
+    var show = !!selection && (selection.c1>selection.c0 || selection.r1>selection.r0) && tool==="select" && !pasteMode && !selecting;
     selMenu.classList.toggle("show", show);
     if(!show) return;
     var rect=canvas.getBoundingClientRect(), srect=stage.getBoundingClientRect();
