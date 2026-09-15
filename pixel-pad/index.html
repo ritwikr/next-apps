@@ -38,7 +38,7 @@
 
   .app-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
   .editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-  @media (min-width:860px){ .editor{flex-direction:row} }
+  @media (min-width:700px){ .editor{flex-direction:row} }
 
   .tabbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card);border-bottom:1px solid var(--line)}
   .tabs{display:flex;gap:6px;overflow-x:auto;flex:1 1 auto;min-width:0}
@@ -94,12 +94,12 @@
     padding:11px 12px;display:flex;flex-direction:column;gap:10px;
     max-height:50vh;overflow:auto;
   }
-  @media (min-width:860px){
+  @media (min-width:700px){
     .toolbar{width:168px;border-top:none;border-left:1px solid var(--line);max-height:none;height:100%}
   }
 
   .blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
-  @media (min-width:860px){ .toolbar .blocks{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:700px){ .toolbar .blocks{grid-template-columns:repeat(2,1fr)} }
   .blk{
     font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     min-height:54px;padding:6px 3px;
@@ -124,7 +124,7 @@
   .custom{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:.8rem;color:var(--muted);cursor:pointer}
   .custom input{width:34px;height:34px;border:none;background:none;padding:0;cursor:pointer;border-radius:9px}
   .swatches{display:grid;grid-template-columns:repeat(12,1fr);gap:6px}
-  @media (min-width:860px){ .toolbar .swatches{grid-template-columns:repeat(6,1fr)} }
+  @media (min-width:700px){ .toolbar .swatches{grid-template-columns:repeat(6,1fr)} }
   .sw{aspect-ratio:1;border-radius:8px;border:none;cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);transition:transform .06s ease}
   .sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--card),0 0 0 4px var(--ink);transform:scale(1.06);position:relative;z-index:1}
   .morecolors{width:100%;font-family:inherit;font-weight:800;font-size:.76rem;cursor:pointer;border:2px dashed var(--line);background:transparent;color:var(--muted);border-radius:11px;padding:9px;display:flex;align-items:center;justify-content:center;gap:8px}
