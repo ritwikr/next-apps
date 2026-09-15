@@ -62,6 +62,10 @@
     background:var(--grout);touch-action:none;cursor:crosshair;
     box-shadow:0 8px 30px -10px var(--shadow), 0 0 0 1px rgba(0,0,0,0.06);
   }
+  #selBox{
+    position:absolute;left:0;top:0;z-index:2;pointer-events:none;display:none;
+    box-sizing:border-box;border:2px dashed var(--accent);border-radius:4px;
+  }
   .theme-btn{
     position:absolute;top:12px;right:12px;z-index:3;
     border:2px solid var(--line);background:var(--card);color:var(--ink);
@@ -226,6 +230,7 @@
   <div class="editor">
   <div class="stage" id="stage">
     <canvas id="canvas" width="320" height="320" aria-label="Mosaic canvas"></canvas>
+    <div id="selBox" aria-hidden="true"></div>
     <button class="theme-btn" id="themeBtn" title="Switch light / dark" aria-label="Switch light or dark mode">🌙</button>
     <button class="zoom-reset" id="zoomReset" title="Reset zoom (0)">🔍 <span id="zoomPct">100%</span></button>
     <div class="selmenu" id="selMenu" role="toolbar" aria-label="Selection actions">
@@ -546,7 +551,7 @@
     fitW=Math.floor(w); fitH=Math.floor(h);
     clampView(); rasterize(view.scale);
   }
-  function applyView(){ canvas.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+(view.scale/rasterZoom)+")"; }
+  function applyView(){ canvas.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+(view.scale/rasterZoom)+")"; positionSelBox(); }
   function clampView(){
     if(view.scale<=1){ view.x=0; view.y=0; return; }
     var lx=Math.max(30,(fitW*view.scale - stage.clientWidth)/2 + 40);
@@ -636,12 +641,8 @@
       for(var gy=0;gy<=rows;gy++){ var ly=gy*u+0.5; ctx.beginPath();ctx.moveTo(0,ly);ctx.lineTo(cols*u,ly);ctx.stroke(); }
       ctx.restore();
     }
-    if(selection){
-      var x=selection.c0*u, y=selection.r0*u,
-          w=(selection.c1-selection.c0+1)*u, h=(selection.r1-selection.r0+1)*u;
-      ctx.globalAlpha=0.22; ctx.fillStyle=COL.accent; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
-      dashRect(x,y,w,h,COL.accent,u);
-    }
+    // selection is a positioned #selBox overlay (positionSelBox) — NOT drawn on the
+    // canvas, so a select-drag never re-blits the (oversampled) base backing.
     if(pasteMode && pastePreview && clip){
       ctx.globalAlpha=0.6;
       var gap = gridOn ? u*GAP_FRAC : 0;
@@ -816,7 +817,7 @@
       if(tool==="eyedropper") selectTool("pencil");
       return;
     }
-    if(tool==="select"){ gesture="select"; selecting=true; selAnchor={c:p.c,r:p.r}; selection={c0:p.c,r0:p.r,c1:p.c,r1:p.r}; composite(); refreshEdit(); return; }
+    if(tool==="select"){ gesture="select"; selecting=true; selAnchor={c:p.c,r:p.r}; selection={c0:p.c,r0:p.r,c1:p.c,r1:p.r}; selRects={rect:canvas.getBoundingClientRect(),srect:stage.getBoundingClientRect()}; positionSelBox(); refreshEdit(); return; }
     if(tool==="fill"){ floodFill(p.r*cols+p.c); return; }
     gesture="draw"; pushState(); drawing=true; lastCell=-1; paintCell(p.r*cols+p.c);
   });
@@ -826,7 +827,7 @@
     if(gesture==="pan"){ e.preventDefault(); updatePan(e); return; }
     if(gesture==="paste"){ e.preventDefault(); updatePreview(e); composite(); return; }
     if(gesture==="select"){ e.preventDefault(); var s=cellAt(e), c=clamp(s.c,0,cols-1), r=clamp(s.r,0,rows-1);
-      selection={c0:Math.min(selAnchor.c,c),r0:Math.min(selAnchor.r,r),c1:Math.max(selAnchor.c,c),r1:Math.max(selAnchor.r,r)}; composite(); return; }
+      selection={c0:Math.min(selAnchor.c,c),r0:Math.min(selAnchor.r,r),c1:Math.max(selAnchor.c,c),r1:Math.max(selAnchor.r,r)}; positionSelBox(); return; }
     if(gesture==="draw"){ var d=cellAt(e); if(d.inside){ e.preventDefault(); paintCell(d.r*cols+d.c);} return; }
     if(pasteMode){ e.preventDefault(); updatePreview(e); composite(); }
   });
@@ -835,7 +836,7 @@
     if(gesture==="pinch"){ if(pointers.size<2){ gesture=null; pinch=null; } return; }
     if(gesture==="pan"){ gesture=null; panLast=null; return; }
     if(gesture==="paste"){ if(previewing){ stamp(); previewing=false; } gesture=null; return; }
-    if(gesture==="select"){ selecting=false; gesture=null; refreshEdit(); positionSelMenu(); return; }
+    if(gesture==="select"){ selecting=false; gesture=null; selRects=null; refreshEdit(); positionSelMenu(); return; }
     if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); refreshEdit(); return; }
   }
   canvas.addEventListener("pointerup", onUp);
@@ -895,6 +896,28 @@
 
   // ---- contextual menu that appears over an active selection ----
   var selMenu=document.getElementById("selMenu");
+  var selBox=document.getElementById("selBox");
+  var selRects=null;   // canvas/stage rects cached during a select-drag (avoids forced layout per move)
+  function hexA(h,a){ h=(h||"").replace("#",""); if(h.length===3){ h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2]; }
+    var n=parseInt(h,16); if(isNaN(n)||h.length<6) return "rgba(255,122,69,"+a+")";
+    return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a+")"; }
+  // The selection highlight is a positioned overlay div, not canvas pixels, so dragging a
+  // selection never triggers a full composite()/base re-blit. Mirrors positionSelMenu's math.
+  function positionSelBox(){
+    if(!selBox) return;
+    if(!selection || pasteMode){ selBox.style.display="none"; return; }
+    var rect, srect;
+    if(selecting && selRects){ rect=selRects.rect; srect=selRects.srect; }
+    else { rect=canvas.getBoundingClientRect(); srect=stage.getBoundingClientRect(); }
+    var ud=rect.width/cols;                       // displayed px per tile
+    selBox.style.display="block";
+    selBox.style.left=(rect.left - srect.left + selection.c0*ud)+"px";
+    selBox.style.top =(rect.top  - srect.top  + selection.r0*ud)+"px";
+    selBox.style.width =((selection.c1-selection.c0+1)*ud)+"px";
+    selBox.style.height=((selection.r1-selection.r0+1)*ud)+"px";
+    selBox.style.borderColor=COL.accent;
+    selBox.style.background=hexA(COL.accent,0.22);
+  }
   function positionSelMenu(){
     if(!selMenu) return;
     var show = !!selection && tool==="select" && !pasteMode && !selecting;
@@ -909,7 +932,7 @@
     if(tys - srect.top - 54 < 4){ selMenu.dataset.pos="below"; selMenu.style.top=(bys - srect.top + 11)+"px"; selMenu.style.transform="translate(-50%,0)"; }
     else { selMenu.dataset.pos="above"; selMenu.style.top=(tys - srect.top - 11)+"px"; selMenu.style.transform="translate(-50%,-100%)"; }
   }
-  function updateSelUI(){ positionSelMenu(); }
+  function updateSelUI(){ positionSelMenu(); positionSelBox(); }
   function deleteSelection(){
     if(!selection) return;
     pushState();
