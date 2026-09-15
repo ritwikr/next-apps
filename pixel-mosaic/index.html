@@ -38,7 +38,7 @@
 
   .app-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
   .editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-  @media (min-width:860px){ .editor{flex-direction:row} }
+  @media (min-width:700px){ .editor{flex-direction:row} }
 
   .tabbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card);border-bottom:1px solid var(--line)}
   .tabs{display:flex;gap:6px;overflow-x:auto;flex:1 1 auto;min-width:0}
@@ -106,12 +106,20 @@
     padding:11px 12px;display:flex;flex-direction:column;gap:10px;
     max-height:52vh;overflow:auto;
   }
-  @media (min-width:860px){
+  @media (min-width:700px){
     .toolbar{width:196px;border-top:none;border-left:1px solid var(--line);max-height:none;height:100%}
   }
 
   .blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
-  @media (min-width:860px){ .toolbar .blocks{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:700px){ .toolbar .blocks{grid-template-columns:repeat(2,1fr)} }
+  .blocks.primary{grid-template-columns:repeat(3,1fr)}
+  .more-btn .ic{font-size:1.45rem;line-height:1}
+  .more-wrap{display:flex;flex-direction:column;gap:10px}
+  @media (min-width:700px){
+    #moreToolsBtn{display:none}
+    #moreTools[hidden]{display:flex!important}
+    .toolbar .blocks.primary{grid-template-columns:repeat(2,1fr)}
+  }
   .blk{
     font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     min-height:54px;padding:6px 3px;
@@ -150,7 +158,7 @@
   .tilefam{}
   .famlab{font-size:.55rem;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:0 0 5px 2px}
   .swgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(22px,1fr));gap:5px}
-  @media (min-width:860px){ .toolbar .swgrid{grid-template-columns:repeat(6,1fr)} }
+  @media (min-width:700px){ .toolbar .swgrid{grid-template-columns:repeat(6,1fr)} }
   .tsw{aspect-ratio:1;border-radius:6px;border:none;cursor:pointer;padding:0;background-color:#888;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.22);transition:transform .07s ease}
   .tsw:hover{transform:scale(1.16);position:relative;z-index:2;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.22),0 3px 8px -2px var(--shadow)}
   .tsw[aria-pressed="true"]{box-shadow:inset 0 0 0 1px rgba(0,0,0,0.22),0 0 0 2px var(--card),0 0 0 4px var(--ink);transform:scale(1.08);position:relative;z-index:1}
@@ -229,9 +237,14 @@
   </div>
 
   <div class="toolbar">
-    <div class="blocks" role="group" aria-label="Tools">
+    <div class="blocks primary" role="group" aria-label="Tools">
       <button class="blk tool" data-tool="pencil" aria-pressed="true" title="Draw (D)"><span class="key">D</span><span class="ic">🧱</span><span class="lb">Draw</span></button>
       <button class="blk tool" data-tool="eraser" aria-pressed="false" title="Erase (E)"><span class="key">E</span><span class="ic">🧽</span><span class="lb">Erase</span></button>
+      <button class="blk more-btn" id="moreToolsBtn" type="button" aria-expanded="false" aria-controls="moreTools" title="Show more tools"><span class="ic">⋯</span><span class="lb">More</span></button>
+    </div>
+
+    <div class="more-wrap" id="moreTools" hidden>
+    <div class="blocks" role="group" aria-label="More tools">
       <button class="blk tool" data-tool="fill" aria-pressed="false" title="Fill area (F)"><span class="key">F</span><span class="ic">🪣</span><span class="lb">Fill</span></button>
       <button class="blk tool" data-tool="eyedropper" aria-pressed="false" title="Pick tile (I) — hold Alt/Option while laying to pick"><span class="key">I</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg></span><span class="lb">Pick</span></button>
       <button class="blk tool" data-tool="select" aria-pressed="false" title="Select (S)"><span class="key">S</span><span class="ic">🔲</span><span class="lb">Select</span></button>
@@ -246,6 +259,7 @@
       <button class="blk" id="gridBtn" aria-pressed="true" title="Grout gaps (G)"><span class="key">G</span><span class="ic">▦</span><span class="lb">Grout</span></button>
       <button class="blk" id="linesBtn" aria-pressed="false" title="Grid guide lines (L)"><span class="key">L</span><span class="ic">#</span><span class="lb">Grid</span></button>
       <button class="blk" id="clearBtn" title="Clear all"><span class="ic">🗑️</span><span class="lb">Clear</span></button>
+    </div>
     </div>
 
     <hr class="divider">
@@ -825,6 +839,17 @@
     render(); refreshEdit(); updateCursor();
   }
   toolBtns.forEach(function(b){ b.addEventListener("click", function(){ selectTool(b.dataset.tool); }); });
+
+  var moreToolsBtn=document.getElementById("moreToolsBtn");
+  var moreTools=document.getElementById("moreTools");
+  if(moreToolsBtn && moreTools){
+    moreToolsBtn.addEventListener("click", function(){
+      var willOpen=moreTools.hasAttribute("hidden");
+      moreTools.toggleAttribute("hidden");
+      moreToolsBtn.setAttribute("aria-expanded", willOpen?"true":"false");
+      var lb=moreToolsBtn.querySelector(".lb"); if(lb) lb.textContent=willOpen?"Less":"More";
+    });
+  }
 
   var undoBtn=document.getElementById("undoBtn");
   var redoBtn=document.getElementById("redoBtn");
