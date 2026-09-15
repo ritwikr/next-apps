@@ -1351,8 +1351,8 @@ document.getElementById("roomH").addEventListener("change",onRoom);
 function rotateRoom(){ var p=active(); pushUndo(); var W=p.room.w, H=p.room.h;
   p.furniture.forEach(function(it){ var nx=H-it.y, ny=it.x; it.x=nx; it.y=ny; it.rot=(((it.rot||0)+90)%360); });
   p.openings.forEach(function(o){ var nw,np;
-    if(o.wall==="N"){ nw="E"; np=o.pos; } else if(o.wall==="E"){ nw="S"; np=H-o.pos; }
-    else if(o.wall==="S"){ nw="W"; np=o.pos; } else { nw="N"; np=H-o.pos; }
+    if(o.wall==="N"){ nw="E"; np=o.pos; } else if(o.wall==="E"){ nw="S"; np=H-o.pos; o.flip=!o.flip; }
+    else if(o.wall==="S"){ nw="W"; np=o.pos; } else { nw="N"; np=H-o.pos; o.flip=!o.flip; }
     o.wall=nw; o.pos=np;
   });
   p.room.w=H; p.room.h=W;
