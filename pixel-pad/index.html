@@ -75,13 +75,24 @@
     cursor:pointer;box-shadow:0 4px 12px -6px var(--shadow);align-items:center;gap:6px;
   }
   .zoom-reset.show{display:inline-flex}
-  .sel-del{
-    position:absolute;top:12px;left:12px;z-index:3;display:none;
-    border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink);
-    font-family:inherit;font-weight:800;font-size:.78rem;padding:7px 12px;border-radius:999px;
-    cursor:pointer;box-shadow:0 4px 12px -6px var(--shadow);align-items:center;gap:6px;
+  .selmenu{
+    position:absolute;z-index:6;display:none;left:0;top:0;
+    background:var(--card);border:1.5px solid var(--line);border-radius:12px;
+    padding:4px;gap:2px;box-shadow:0 10px 26px -8px var(--shadow), 0 0 0 1px rgba(0,0,0,.04);
+    white-space:nowrap;
   }
-  .sel-del.show{display:inline-flex}
+  .selmenu.show{display:inline-flex}
+  .selmenu::after{content:"";position:absolute;left:50%;width:10px;height:10px;background:var(--card);border:1.5px solid var(--line);transform:translateX(-50%) rotate(45deg)}
+  .selmenu[data-pos="above"]::after{bottom:-6px;border-top:none;border-left:none}
+  .selmenu[data-pos="below"]::after{top:-6px;border-bottom:none;border-right:none}
+  .selmenu button{
+    font-family:inherit;font-weight:800;font-size:.74rem;cursor:pointer;
+    border:none;background:transparent;color:var(--ink);border-radius:8px;
+    padding:6px 9px;display:inline-flex;align-items:center;gap:5px;position:relative;z-index:1;
+  }
+  .selmenu button:hover{background:var(--paper)}
+  .selmenu button.danger{color:#e2483d}
+  .selmenu .mi{font-size:.95rem;line-height:1}
   .paste-hint{
     position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
     display:none;background:var(--teal);color:var(--teal-ink);
@@ -186,7 +197,12 @@
     <canvas id="canvas" width="320" height="320" aria-label="Pixel drawing canvas"></canvas>
     <button class="theme-btn" id="themeBtn" title="Switch light / dark" aria-label="Switch light or dark mode">🌙</button>
     <button class="zoom-reset" id="zoomReset" title="Reset zoom (0)">🔍 <span id="zoomPct">100%</span></button>
-    <button class="sel-del" id="selDel" title="Delete selection (Delete)">🗑 Delete</button>
+    <div class="selmenu" id="selMenu" role="toolbar" aria-label="Selection actions">
+      <button data-act="copy" title="Copy (Ctrl+C)"><span class="mi">📋</span>Copy</button>
+      <button data-act="mirror" title="Mirror left–right (H)"><span class="mi">⇆</span>Mirror</button>
+      <button data-act="flip" title="Flip top–bottom (V)"><span class="mi">⇅</span>Flip</button>
+      <button data-act="delete" class="danger" title="Delete (Del)"><span class="mi">🗑</span>Delete</button>
+    </div>
     <div class="paste-hint" id="pasteHint">Aim over the canvas, then tap to stamp 📌</div>
   </div>
 
@@ -209,7 +225,6 @@
     <div class="blocks">
       <button class="blk" id="undoBtn" title="Undo (Ctrl+Z)"><span class="ic">↩️</span><span class="lb">Undo</span></button>
       <button class="blk" id="redoBtn" title="Redo (Ctrl+Y)"><span class="ic">↪️</span><span class="lb">Redo</span></button>
-      <button class="blk" id="copyBtn" title="Copy (Ctrl+C)"><span class="ic">📋</span><span class="lb">Copy</span></button>
       <button class="blk" id="pasteBtn" title="Paste (Ctrl+V)"><span class="ic">📌</span><span class="lb">Paste</span></button>
       <button class="blk" id="gridBtn" aria-pressed="true" title="Grid (G)"><span class="ic">▦</span><span class="lb">Grid</span></button>
       <button class="blk" id="clearBtn" title="Clear all"><span class="ic">🗑️</span><span class="lb">Clear</span></button>
@@ -344,7 +359,7 @@
     canvas.style.width=fitW+"px"; canvas.style.height=fitH+"px";
     clampView(); applyView();
   }
-  function applyView(){ canvas.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+view.scale+")"; }
+  function applyView(){ canvas.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+view.scale+")"; positionSelMenu(); }
   function clampView(){
     if(view.scale<=1){ view.x=0; view.y=0; return; }
     var lx=Math.max(30,(fitW*view.scale - stage.clientWidth)/2 + 40);
@@ -554,7 +569,7 @@
     if(gesture==="pinch"){ if(pointers.size<2){ gesture=null; pinch=null; } return; }
     if(gesture==="pan"){ gesture=null; panLast=null; return; }
     if(gesture==="paste"){ if(previewing){ stamp(); previewing=false; } gesture=null; return; }
-    if(gesture==="select"){ selecting=false; gesture=null; refreshEdit(); return; }
+    if(gesture==="select"){ selecting=false; gesture=null; positionSelMenu(); refreshEdit(); return; }
     if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); refreshEdit(); return; }
   }
   canvas.addEventListener("pointerup", onUp);
@@ -598,26 +613,69 @@
 
   var undoBtn=document.getElementById("undoBtn");
   var redoBtn=document.getElementById("redoBtn");
-  var copyBtn=document.getElementById("copyBtn");
   var pasteBtn=document.getElementById("pasteBtn");
   var pasteHint=document.getElementById("pasteHint");
   var gridBtn=document.getElementById("gridBtn");
   var zoomReset=document.getElementById("zoomReset");
   var zoomPct=document.getElementById("zoomPct");
-  var selDel=document.getElementById("selDel");
-  function updateSelUI(){ if(selDel) selDel.classList.toggle("show", !!selection && tool==="select" && !pasteMode); }
+  // ---- contextual menu over an active selection (Copy / Mirror / Flip / Delete) ----
+  var selMenu=document.getElementById("selMenu");
+  function positionSelMenu(){
+    if(!selMenu) return;
+    var show = !!selection && tool==="select" && !pasteMode && !selecting;
+    selMenu.classList.toggle("show", show);
+    if(!show) return;
+    var rect=canvas.getBoundingClientRect(), srect=stage.getBoundingClientRect();
+    var ud=rect.width/cols;                       // displayed px per cell
+    var cxs=rect.left + (selection.c0 + (selection.c1-selection.c0+1)/2)*ud;
+    var tys=rect.top  + selection.r0*ud;
+    var bys=rect.top  + (selection.r1+1)*ud;
+    selMenu.style.left = clamp(cxs - srect.left, 52, Math.max(52, srect.width-52)) + "px";
+    if(tys - srect.top - 54 < 4){ selMenu.dataset.pos="below"; selMenu.style.top=(bys - srect.top + 11)+"px"; selMenu.style.transform="translate(-50%,0)"; }
+    else { selMenu.dataset.pos="above"; selMenu.style.top=(tys - srect.top - 11)+"px"; selMenu.style.transform="translate(-50%,-100%)"; }
+  }
+  function updateSelUI(){ positionSelMenu(); }
   function deleteSelection(){
     if(!selection) return;
     pushState();
     for(var r=selection.r0;r<=selection.r1;r++) for(var c=selection.c0;c<=selection.c1;c++) model[r*cols+c]=null;
     render(); save(); refreshEdit();
   }
-  selDel.addEventListener("click", deleteSelection);
+  // mirror the paste stamp while placing, or a selection in place
+  function mirrorData(data,w,h,horiz){
+    var out=new Array(w*h);
+    for(var r=0;r<h;r++) for(var c=0;c<w;c++){
+      var sr=horiz?r:(h-1-r), sc=horiz?(w-1-c):c;
+      out[r*w+c]=data[sr*w+sc];
+    }
+    return out;
+  }
+  function flip(horiz){
+    if(pasteMode && clip){ clip.data=mirrorData(clip.data,clip.w,clip.h,horiz); render(); return; }
+    if(selection){
+      var w=selection.c1-selection.c0+1, h=selection.r1-selection.r0+1, d=[];
+      for(var r=0;r<h;r++) for(var c=0;c<w;c++) d.push(model[(selection.r0+r)*cols+(selection.c0+c)]);
+      d=mirrorData(d,w,h,horiz);
+      pushState();
+      for(var r2=0;r2<h;r2++) for(var c2=0;c2<w;c2++) model[(selection.r0+r2)*cols+(selection.c0+c2)]=d[r2*w+c2];
+      render(); save(); refreshEdit(); return;
+    }
+    if(clip){ clip.data=mirrorData(clip.data,clip.w,clip.h,horiz); }  // flip stored clip for next paste
+    positionSelMenu();
+  }
+  selMenu.addEventListener("pointerdown", function(e){ e.stopPropagation(); });
+  selMenu.addEventListener("click", function(e){
+    var b=e.target.closest && e.target.closest("button"); if(!b) return;
+    var act=b.dataset.act;
+    if(act==="copy") doCopy();
+    else if(act==="mirror") flip(true);
+    else if(act==="flip") flip(false);
+    else if(act==="delete") deleteSelection();
+  });
   function toggleGrid(){ gridOn=!gridOn; gridBtn.setAttribute("aria-pressed", gridOn?"true":"false"); render(); save(); }
   function clearAll(){ if(model.some(function(v){return v;})){ pushState(); model=new Array(cols*rows).fill(null); selection=null; render(); save(); refreshEdit(); } }
   undoBtn.addEventListener("click", undo);
   redoBtn.addEventListener("click", redo);
-  copyBtn.addEventListener("click", doCopy);
   pasteBtn.addEventListener("click", enterPaste);
   gridBtn.addEventListener("click", toggleGrid);
   document.getElementById("clearBtn").addEventListener("click", clearAll);
@@ -625,7 +683,6 @@
   function refreshEdit(){
     undoBtn.disabled=undoStack.length===0;
     redoBtn.disabled=redoStack.length===0;
-    copyBtn.disabled=!selection;
     pasteBtn.disabled=!clip;
   }
 
@@ -780,7 +837,9 @@
     else if(k==="i") selectTool("eyedropper");
     else if(k==="g") toggleGrid();
     else if(k==="c") doCopy();
-    else if(k==="v") enterPaste();
+    else if(k==="p") enterPaste();
+    else if(k==="h") flip(true);
+    else if(k==="v") flip(false);
     else if(k==="escape"){ if(!scaleOpts.hidden) closeScale(); else if(pasteMode) selectTool(tool); }
     else if(k==="+"||k==="=") zoomCenter(1.15);
     else if(k==="-"||k==="_") zoomCenter(1/1.15);
