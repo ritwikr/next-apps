@@ -438,10 +438,13 @@
   var imagesReady=0;
   TILE_DEFS.forEach(function(d){
     var t={id:d.id, name:d.name, code:d.code, hex:d.hex, fam:d.fam||"", img:new Image(), ready:false};
-    t.img.onload=function(){ t.ready=true; imagesReady++; render(); rebuildTileUI(); };
+    t.img.onload=function(){ t.ready=true; imagesReady++; scheduleReady(); };
     if(IMGDATA[d.id]) t.img.src="data:image/png;base64,"+IMGDATA[d.id];
     TILES[d.id]=t; TILE_LIST.push(t);
   });
+  var readyTimer=null;
+  function scheduleReady(){ clearTimeout(readyTimer); readyTimer=setTimeout(function(){
+    render(); if(typeof rebuildTileUI==='function') rebuildTileUI(); }, 60); }
   function tileOf(id){ return id?TILES[id]:null; }
 
   var MIN=2, MAX=200, PAD=14, MAXZOOM=24;
@@ -518,22 +521,22 @@
   // (instant, briefly soft) and re-rasterise once the gesture settles ("sharpen").
   var DPR=Math.max(1, Math.min(window.devicePixelRatio||1, 2));
   var MAXBACK=4096;                 // cap on backing-store dimension (px)
-  var rasterZoom=1, sharpenTimer=null;
+  var rasterZoom=1, sharpenTimer=null, OVERSAMPLE=2;
   function backingUnit(z){
     var pxPerTile = fitW/cols;      // css px per tile at zoom 1 (aspect preserved => == fitH/rows)
     var maxU = MAXBACK/Math.max(cols,rows);
-    return clamp(pxPerTile*DPR*z, 1, maxU);
+    return clamp(pxPerTile*DPR*OVERSAMPLE, 1, maxU);
   }
   function rasterize(z){
     if(!fitW||!fitH) return;
-    var u=backingUnit(z);
+    var u=backingUnit(1);
     var bw=Math.max(1,Math.round(cols*u)), bh=Math.max(1,Math.round(rows*u));
     canvas.width=bw; canvas.height=bh;           // (also clears; render() repaints)
-    canvas.style.width=(fitW*z)+"px"; canvas.style.height=(fitH*z)+"px";
-    rasterZoom=z;
+    canvas.style.width=fitW+"px"; canvas.style.height=fitH+"px";
+    rasterZoom=1;
     render(); applyView();
   }
-  function scheduleSharpen(){ clearTimeout(sharpenTimer); sharpenTimer=setTimeout(function(){ rasterize(view.scale); }, 130); }
+  function scheduleSharpen(){ /* backing is fixed; nothing to sharpen */ }
   function sizeCanvas(){ /* backing size is derived in rasterize(); kept for call sites */ }
   function fitCanvas(){
     var availW=stage.clientWidth-2*PAD, availH=stage.clientHeight-2*PAD;
