@@ -495,7 +495,7 @@
   function xy(e){ return {x:e.clientX,y:e.clientY}; }
   function two(){ var a=[]; pointers.forEach(function(v){a.push(v);}); return a; }
   function cancelActive(){
-    if(gesture==="draw"){ drawing=false; save(); }
+    if(gesture==="draw"){ drawing=false; save(); refreshEdit(); }
     if(gesture==="select"){ selecting=false; refreshEdit(); }
     lastCell=-1; gesture=null;
   }
@@ -555,7 +555,7 @@
     if(gesture==="pan"){ gesture=null; panLast=null; return; }
     if(gesture==="paste"){ if(previewing){ stamp(); previewing=false; } gesture=null; return; }
     if(gesture==="select"){ selecting=false; gesture=null; refreshEdit(); return; }
-    if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); return; }
+    if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); refreshEdit(); return; }
   }
   canvas.addEventListener("pointerup", onUp);
   canvas.addEventListener("pointercancel", onUp);
