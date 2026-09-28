@@ -13,7 +13,6 @@ with no build step and no dependencies — open it in any browser and it runs.
 | [Room Blocks Planner](./room-blocks-planner/) | Quickly plan a room: add furniture and work out all four wall elevations. |
 | [Pixel Pad](./pixel-pad/) | An ultra-simple pixel-art drawing pad. |
 | [Pixel Mosaic](./pixel-mosaic/) | Design a physical mosaic-tile artwork by laying out real catalogue tiles on a pixel grid. |
-| [Annotate](./annotate/) | Mark up a photo — draw, arrow, box, highlight, add text. |
 
 ## Running locally
 
