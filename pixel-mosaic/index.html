@@ -220,6 +220,29 @@
   .kbd-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;font-size:.8rem;font-weight:700;color:var(--muted)}
   .kbd-grid kbd{display:inline-block;font-family:inherit;font-weight:800;font-size:.7rem;background:var(--ink);color:var(--paper);border-radius:6px;padding:2px 6px;margin-right:2px}
   @media (max-width:560px){ .cheats-body,.kbd-grid{grid-template-columns:1fr} }
+
+  /* phone / narrow: compact bottom panel — slim tool row, one-line current tile,
+     palette as a 3-row horizontal strip; size/save/cheats live behind More */
+  @media (max-width:699px){
+    .toolbar{padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:8px;max-height:62vh}
+    .toolbar .blk{min-height:40px;flex-direction:row;gap:6px;padding:4px 6px;border-radius:12px}
+    .toolbar .blk .ic{font-size:1.1rem}
+    .toolbar .blk .ic svg{width:18px;height:18px}
+    .toolbar .blk .lb{font-size:.7rem}
+    .toolbar .divider{margin:0}
+    .toolbar > *{flex-shrink:0}
+    .palette-head{display:none}
+    .current-tile{padding:0;border:none;border-radius:0;gap:8px;background:none}
+    .current-tile .chip{width:20px;height:20px;border-radius:5px}
+    .current-tile > div{display:flex;align-items:baseline;gap:6px;min-width:0}
+    .current-tile .nm{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tiles{flex-direction:row;gap:12px;overflow-x:auto;overflow-y:hidden;padding:3px 2px 6px;margin:-3px -2px 0;overscroll-behavior-x:contain;scrollbar-width:thin}
+    .tilefam{flex:0 0 auto}
+    .famlab{display:none}
+    .swgrid{grid-template-columns:none;grid-template-rows:repeat(3,30px);grid-auto-flow:column;grid-auto-columns:30px;gap:5px}
+    .tsw:hover{transform:none}
+    .toolbar:not(.more-open) .phone-more{display:none!important}
+  }
 </style>
 
 <div class="app-shell">
@@ -279,17 +302,17 @@
     </div>
     <div class="tiles" id="tiles"></div>
 
-    <hr class="divider">
+    <hr class="divider phone-more">
 
-    <div class="dims">
+    <div class="dims phone-more">
       <div class="dim"><span class="dimlab">Width</span><input type="number" id="dimW" min="2" max="200" value="24" aria-label="Width in tiles" title="Type a number and press Enter to apply"></div>
       <span class="dimx">×</span>
       <div class="dim"><span class="dimlab">Height</span><input type="number" id="dimH" min="2" max="200" value="16" aria-label="Height in tiles" title="Type a number and press Enter to apply"></div>
       <span class="dimhint">↵ apply</span>
     </div>
-    <div class="realsize" id="realSize" title="Actual finished size: 25mm tiles with 1.97mm grout joints">—</div>
+    <div class="realsize phone-more" id="realSize" title="Actual finished size: 25mm tiles with 1.97mm grout joints">—</div>
 
-    <div class="saverow">
+    <div class="saverow phone-more">
       <button class="save" id="saveBtn" title="Save picture"><span class="ic">💾</span>Save picture</button>
       <div class="scale-opts" id="scaleOpts" hidden>
         <button data-x="24" title="Download big (recommended)">Big</button>
@@ -298,8 +321,8 @@
       </div>
     </div>
 
-    <hr class="divider">
-    <button class="cheats-btn" id="cheatsBtn">🕹️ Cheat codes</button>
+    <hr class="divider phone-more">
+    <button class="cheats-btn phone-more" id="cheatsBtn">🕹️ Cheat codes</button>
   </div>
   </div>
 </div>
@@ -880,6 +903,7 @@
     moreToolsBtn.addEventListener("click", function(){
       var willOpen=moreTools.hasAttribute("hidden");
       moreTools.toggleAttribute("hidden");
+      var tb=moreToolsBtn.closest(".toolbar"); if(tb) tb.classList.toggle("more-open", willOpen);
       moreToolsBtn.setAttribute("aria-expanded", willOpen?"true":"false");
       var lb=moreToolsBtn.querySelector(".lb"); if(lb) lb.textContent=willOpen?"Less":"More";
     });

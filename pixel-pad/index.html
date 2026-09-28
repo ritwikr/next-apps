@@ -3,7 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>html,body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>html,body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}
+  /* phone / narrow: slim tool row; size + save live behind More (parity with Pixel Mosaic) */
+  @media (max-width:699px){
+    .toolbar{padding-bottom:calc(11px + env(safe-area-inset-bottom))}
+    .toolbar > *{flex-shrink:0}
+    .toolbar .blk{min-height:40px;flex-direction:row;gap:6px;padding:4px 6px;border-radius:12px}
+    .toolbar .blk .ic{font-size:1.1rem}
+    .toolbar .blk .ic svg{width:18px;height:18px}
+    .toolbar .blk .lb{font-size:.7rem}
+    .toolbar:not(.more-open) .phone-more{display:none!important}
+  }
+</style>
 <title>Pixel Pad</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%23FBF6EE%22%20stroke%3D%22rgba%2844%2C39%2C64%2C0.12%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%224%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FF7A45%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%224%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FFC24B%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%235B8DEF%22%2F%3E%3Crect%20x%3D%2222%22%20y%3D%2210%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%2314B8A6%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2216%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FF6B6B%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%2216%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%233FB27F%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2222%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FFC24B%22%2F%3E%3Crect%20x%3D%2222%22%20y%3D%2222%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FF7A45%22%2F%3E%3C%2Fsvg%3E">
 <style>
@@ -243,15 +254,15 @@
       <div class="ramps" id="ramps" hidden></div>
     </div>
 
-    <hr class="divider">
+    <hr class="divider phone-more">
 
-    <div class="dims">
+    <div class="dims phone-more">
       <div class="dim"><span class="dimlab">Width</span><input type="number" id="dimW" min="2" max="160" value="16" aria-label="Width in pixels"></div>
       <span class="dimx">×</span>
       <div class="dim"><span class="dimlab">Height</span><input type="number" id="dimH" min="2" max="160" value="16" aria-label="Height in pixels"></div>
     </div>
 
-    <div class="saverow">
+    <div class="saverow phone-more">
       <button class="save" id="saveBtn" title="Save (Ctrl+S downloads 16×)"><span class="ic">💾</span>Save</button>
       <div class="scale-opts" id="scaleOpts" hidden>
         <button data-x="1" title="Download 1× (tiny)">1×</button>
@@ -606,6 +617,7 @@
     moreToolsBtn.addEventListener("click", function(){
       var willOpen=moreTools.hasAttribute("hidden");
       moreTools.toggleAttribute("hidden");
+      var tb=moreToolsBtn.closest(".toolbar"); if(tb) tb.classList.toggle("more-open", willOpen);
       moreToolsBtn.setAttribute("aria-expanded", willOpen?"true":"false");
       var lb=moreToolsBtn.querySelector(".lb"); if(lb) lb.textContent=willOpen?"Less":"More";
     });
