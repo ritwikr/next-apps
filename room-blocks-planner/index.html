@@ -57,6 +57,27 @@
   .tab[aria-selected="true"] .tabx{color:var(--accent-ink);border-left-color:rgba(255,255,255,.4);opacity:.9}
   .tabedit{font-family:inherit;font-weight:800;font-size:.78rem;border:none;background:var(--card);color:var(--ink);padding:7px 8px 7px 12px;width:130px;max-width:150px;border-radius:8px;outline:2px solid var(--teal)}
   .newtab{flex:0 0 auto;width:36px;height:36px;border-radius:10px;border:2px dashed var(--line);background:transparent;color:var(--muted);font-size:1.2rem;font-weight:800;cursor:pointer}
+  .filesbtn{flex:0 0 auto;height:36px;padding:0 11px;border-radius:10px;border:2px solid var(--line);background:transparent;color:var(--ink);font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .filesbtn .ic{font-size:1rem;line-height:1}
+  @media (max-width:520px){ .filesbtn .lbl{display:none} .filesbtn{padding:0 9px} }
+  .files{position:fixed;inset:0;z-index:70;background:rgba(20,16,30,.6);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 14px}
+  .files.show{display:flex}
+  .files-inner{background:var(--card);color:var(--ink);border-radius:18px;max-width:640px;width:100%;padding:18px 18px 22px;box-shadow:0 20px 60px -20px #000}
+  .files-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .files-top h2{margin:0;font-size:1.25rem;font-weight:900;flex:1}
+  .files-sub{margin:0 0 14px;color:var(--muted);font-size:.82rem;font-weight:600}
+  .files-btn{font-family:inherit;font-weight:800;font-size:.8rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer}
+  .files-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+  .fcard{border:2px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:var(--card)}
+  .fcard.active{border-color:var(--accent)}
+  .fthumb{display:block;width:100%;aspect-ratio:1/1;border:none;padding:10px;margin:0;background:var(--line);cursor:pointer}
+  .fthumb canvas,.fthumb svg{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+  .fmeta{display:flex;align-items:center;gap:4px;padding:6px 4px 6px 10px}
+  .fname{flex:1;min-width:0}
+  .fname b{display:block;font-size:.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fname small{display:block;font-size:.66rem;font-weight:700;color:var(--muted)}
+  .fdel{flex:0 0 auto;border:none;background:none;cursor:pointer;font-size:1rem;padding:6px 8px;border-radius:8px;line-height:1}
+  .fdel:hover{background:rgba(224,71,76,.16)}
   .theme-btn{flex:0 0 auto;border:2px solid var(--line);background:var(--card);color:var(--ink);width:38px;height:38px;border-radius:11px;font-size:1rem;cursor:pointer;display:grid;place-items:center}
 
   /* ---- mode switch row ---- */
@@ -180,6 +201,7 @@
     <div class="brand"><span class="logo">◱</span><span>Room Planner</span></div>
     <div class="tabs" id="tabs" role="tablist"></div>
     <button class="newtab" id="newTab" title="New room">+</button>
+    <button class="filesbtn" id="filesBtn" title="See all your rooms — open or delete them" aria-label="All rooms"><span class="ic">📂</span><span class="lbl">All rooms</span></button>
     <button class="theme-btn" id="themeBtn" title="Light / dark">◐</button>
   </div>
 
@@ -290,6 +312,13 @@
   </div>
 </div>
 
+<div class="files" id="files" aria-hidden="true" role="dialog" aria-label="All your rooms">
+  <div class="files-inner">
+    <div class="files-top"><h2>All your rooms</h2><button class="files-btn" id="filesNew">＋ New room</button><button class="files-btn" id="filesClose">Done</button></div>
+    <p class="files-sub" id="filesSub">Closing a tab doesn't delete anything — your rooms wait here. Tap one to open it, or 🗑 to delete it for good.</p>
+    <div class="files-list" id="filesList"></div>
+  </div>
+</div>
 <script>
 "use strict";
 var SVGNS="http://www.w3.org/2000/svg";
@@ -529,6 +558,7 @@ function load(){
   } else {
     var p=defaultProject("Sample room"); state.projects=[p]; state.activeId=p.id;
   }
+  var ap=active(); if(!ap){ ap=state.projects[0]; state.activeId=ap.id; } ap.open=true;
 }
 
 /* =========================================================================
@@ -1271,15 +1301,16 @@ function hideHint(){ hintEl.className="hint"; }
    ========================================================================= */
 function renderTabs(){
   var host=document.getElementById("tabs"); host.innerHTML="";
-  state.projects.forEach(function(p){
+  var openP=openProjects();
+  openP.forEach(function(p){
     var tab=document.createElement("div"); tab.className="tab"; tab.setAttribute("role","tab");
     tab.setAttribute("aria-selected", p.id===state.activeId?"true":"false");
     var nm=document.createElement("button"); nm.className="tabname"; nm.textContent=p.name; nm.title="Click to open · double-click to rename";
     nm.addEventListener("click",function(){ if(p.id!==state.activeId){ switchProject(p.id); } });
     nm.addEventListener("dblclick",function(){ startRename(tab,p); });
-    var x=document.createElement("button"); x.className="tabx"; x.textContent="✕"; x.title="Delete room";
-    x.addEventListener("click",function(ev){ ev.stopPropagation(); deleteProject(p.id); });
-    tab.appendChild(nm); tab.appendChild(x); host.appendChild(tab);
+    var x=document.createElement("button"); x.className="tabx"; x.textContent="✕"; x.title="Close tab (it stays in All rooms)"; x.setAttribute("aria-label","Close tab");
+    x.addEventListener("click",function(ev){ ev.stopPropagation(); closeTab(p.id); });
+    tab.appendChild(nm); if(openP.length>1) tab.appendChild(x); host.appendChild(tab);
   });
 }
 function startRename(tab,p){
@@ -1289,11 +1320,81 @@ function startRename(tab,p){
   inp.addEventListener("blur",commit);
 }
 function switchProject(id){ state.activeId=id; selClear(); setPlacingSilently(null); save(); renderTabs(); syncRoomInputs(); render(); fit(); updateUndoUI(); }
-function deleteProject(id){
-  if(state.projects.length===1){ if(!confirm("This is your only room. Clear it and start fresh?")) return; var np=defaultProject("Room 1"); state.projects=[np]; state.activeId=np.id; }
-  else { if(!confirm("Delete this room? This cannot be undone.")) return; var idx=state.projects.findIndex(function(p){return p.id===id;}); state.projects=state.projects.filter(function(p){return p.id!==id;}); if(state.activeId===id) state.activeId=state.projects[Math.max(0,idx-1)].id; }
-  selClear(); save(); renderTabs(); syncRoomInputs(); render(); fit();
+// Tabs are just "what's open". Closing a tab never deletes; deleting lives in the All-rooms panel.
+function isOpenP(p){ return p.open!==false; }
+function openProjects(){ return state.projects.filter(isOpenP); }
+function isBlankP(p){ return !(p.furniture&&p.furniture.length) && !(p.openings&&p.openings.length); }
+function projById(id){ for(var i=0;i<state.projects.length;i++) if(state.projects[i].id===id) return state.projects[i]; return null; }
+function closeTab(id){
+  var open=openProjects(); if(open.length<=1) return;
+  var p=projById(id); if(!p) return;
+  var idx=open.indexOf(p);
+  if(isBlankP(p)) state.projects=state.projects.filter(function(x){return x!==p;}); // empty room → nothing to keep
+  else p.open=false;
+  if(state.activeId===id){ var rest=openProjects(); switchProject(rest[Math.min(idx,rest.length-1)].id); }
+  else { save(); renderTabs(); }
 }
+function deleteProject(id){
+  var p=projById(id); if(!p) return;
+  if(!isBlankP(p) && !confirm('Delete "'+p.name+'" for good? This can\'t be undone.')) return;
+  var oi=openProjects().indexOf(p), wasActive=(state.activeId===id);
+  state.projects=state.projects.filter(function(x){return x!==p;});
+  if(!openProjects().length){ var np=defaultProject(); np.openings=[]; state.projects.push(np); wasActive=true; oi=0; }
+  if(wasActive){ var rest=openProjects(); switchProject(rest[Math.max(0,Math.min(oi,rest.length-1))].id); }
+  else { save(); renderTabs(); }
+  renderFiles();
+}
+
+/* ---- All-rooms panel ---- */
+var filesEl=document.getElementById("files"), filesList=document.getElementById("filesList");
+function filesShown(){ return filesEl.classList.contains("show"); }
+function roomThumb(p){
+  var W=p.room.w, H=p.room.h, pad=Math.max(W,H)*0.06;
+  var s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+(-pad)+' '+(-pad)+' '+(W+2*pad)+' '+(H+2*pad)+'" preserveAspectRatio="xMidYMid meet">';
+  s+='<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="var(--floor)" stroke="var(--wall)" stroke-width="'+(Math.max(W,H)*0.025)+'"/>';
+  (p.furniture||[]).forEach(function(it){
+    if(!CATALOG[it.type] || CATALOG[it.type].ceiling) return;
+    var w=fW(it), d=fD(it);
+    s+='<g transform="translate('+it.x+','+it.y+') rotate('+(it.rot||0)+')"><rect x="'+(-w/2)+'" y="'+(-d/2)+'" width="'+w+'" height="'+d+'" rx="0.15" fill="var(--furn)" stroke="var(--furn-ink)" stroke-width="0.12"/></g>';
+  });
+  return s+'</svg>';
+}
+function renderFiles(){
+  if(!filesShown()) return;
+  filesList.innerHTML="";
+  state.projects.forEach(function(p){
+    var card=document.createElement("div"); card.className="fcard"+(p.id===state.activeId?" active":"");
+    var th=document.createElement("button"); th.className="fthumb"; th.title='Open "'+p.name+'"'; th.setAttribute("aria-label","Open "+p.name);
+    th.innerHTML=roomThumb(p);
+    th.addEventListener("click",function(){ openFromFiles(p.id); });
+    var meta=document.createElement("div"); meta.className="fmeta";
+    var nm=document.createElement("div"); nm.className="fname";
+    var b=document.createElement("b"); b.textContent=p.name;
+    var n=(p.furniture||[]).length;
+    var sm=document.createElement("small"); sm.textContent=p.room.w+"×"+p.room.h+" ft · "+n+(n===1?" item":" items")+(p.id===state.activeId?" · showing now":(isOpenP(p)?" · in a tab":""));
+    nm.appendChild(b); nm.appendChild(sm);
+    var del=document.createElement("button"); del.className="fdel"; del.textContent="🗑"; del.title='Delete "'+p.name+'" for good'; del.setAttribute("aria-label","Delete "+p.name);
+    del.addEventListener("click",function(){ deleteProject(p.id); });
+    meta.appendChild(nm); meta.appendChild(del);
+    card.appendChild(th); card.appendChild(meta); filesList.appendChild(card);
+  });
+}
+function openFiles(){ filesEl.classList.add("show"); filesEl.setAttribute("aria-hidden","false"); renderFiles(); }
+function closeFiles(){ filesEl.classList.remove("show"); filesEl.setAttribute("aria-hidden","true"); }
+function openFromFiles(id){
+  var p=projById(id); if(!p) return;
+  p.open=true; closeFiles();
+  if(id===state.activeId){ save(); renderTabs(); } else switchProject(id);
+}
+document.getElementById("filesBtn").addEventListener("click",openFiles);
+document.getElementById("filesClose").addEventListener("click",closeFiles);
+document.getElementById("filesNew").addEventListener("click",function(){ closeFiles(); document.getElementById("newTab").click(); });
+filesEl.addEventListener("click",function(e){ if(e.target===filesEl) closeFiles(); });
+document.addEventListener("keydown",function(e){
+  if(!filesShown()) return;
+  if(e.key==="Escape"){ e.preventDefault(); closeFiles(); }
+  e.stopImmediatePropagation();
+},true);
 document.getElementById("newTab").addEventListener("click",function(){ var p=defaultProject(); p.openings=[]; state.projects.push(p); switchProject(p.id); });
 
 /* =========================================================================
