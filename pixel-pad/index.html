@@ -46,7 +46,9 @@
     font-family:"Nunito",system-ui,sans-serif; line-height:1.4;
     -webkit-font-smoothing:antialiased; overflow:hidden;
   }
-  body.panning canvas{cursor:grab}
+  /* Space held = hand cursor (grab), dragging = grabbing. Same rule in all Next apps. */
+  body.space-pan .stage, body.space-pan canvas{cursor:grab!important}
+  body.panning .stage, body.panning canvas{cursor:grabbing!important}
 
   .app-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
   .editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
@@ -231,6 +233,7 @@
     <button class="theme-btn" id="themeBtn" title="Switch light / dark" aria-label="Switch light or dark mode">🌙</button>
     <button class="zoom-reset" id="zoomReset" title="Reset zoom (0)">🔍 <span id="zoomPct">100%</span></button>
     <div class="selmenu" id="selMenu" role="toolbar" aria-label="Selection actions">
+      <button data-act="move" title="Move — or just drag the selection (M)"><span class="mi">✋</span>Move</button>
       <button data-act="copy" title="Copy (Ctrl+C)"><span class="mi">📋</span>Copy</button>
       <button data-act="mirror" title="Mirror left–right (H)"><span class="mi">⇆</span>Mirror</button>
       <button data-act="flip" title="Flip top–bottom (V)"><span class="mi">⇅</span>Flip</button>
@@ -354,7 +357,7 @@
   var KEY2="pixelpad-v2";
   function activeProj(){ for(var i=0;i<projects.length;i++) if(projects[i].id===activeId) return projects[i]; return null; }
   function makeProject(name,w,h,m){ seq++; return {id:"p"+seq+"_"+Date.now().toString(36), name:name||("Art "+seq), cols:w, rows:h, model:m||new Array(w*h).fill(null), undo:[], redo:[]}; }
-  function commitActive(){ var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
+  function commitActive(){ if(mv) dropMove(); var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
   function save(){
     commitActive();
     try{ localStorage.setItem(KEY2, JSON.stringify({
@@ -455,6 +458,7 @@
       ctx.globalAlpha=1;
       dashRect(pastePreview.col*u, pastePreview.row*u, clip.w*u, clip.h*u, accent, u);
     }
+    drawMoveFloat(u);
     updateSelUI();
   }
   function dashRect(x,y,w,h,color,u){
@@ -472,8 +476,8 @@
     cols=s.cols; rows=s.rows; model=s.model.slice();
     sizeCanvas(); fitCanvas(); syncDims(); selection=null;
   }
-  function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); save(); refreshEdit(); }
-  function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); save(); refreshEdit(); }
+  function undo(){ if(mv){ cancelMove(); return; } if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); save(); refreshEdit(); }
+  function redo(){ if(mv){ cancelMove(); return; } if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); save(); refreshEdit(); }
 
   // ---- cells ----
   function cellAt(e){
@@ -520,6 +524,7 @@
   }
   function enterPaste(){
     if(!clip) return;
+    if(mv) dropMove();
     pasteMode=true; previewing=false; selection=null;
     toolBtns.forEach(function(x){ x.setAttribute("aria-pressed","false"); });
     pasteBtn.setAttribute("aria-pressed","true");
@@ -546,15 +551,75 @@
     render(); save(); refreshEdit();
   }
 
+
+  // ---- move a selection (cut + drag + drop, one undo step) ----
+  // Two ways in: drag inside the selection with Select, or tap Move (M) in the
+  // selection menu and then drag/tap where it should go. Esc puts it back.
+  var mv=null, hoverSel=false;
+  function inSel(p){ return !!selection && p.c>=selection.c0 && p.c<=selection.c1 && p.r>=selection.r0 && p.r<=selection.r1; }
+  function liftSelection(dc,dr){
+    if(!selection || mv) return false;
+    var s=selection, w=s.c1-s.c0+1, h=s.r1-s.r0+1, data=[];
+    for(var j=0;j<h;j++) for(var k=0;k<w;k++){ var i=(s.r0+j)*cols+(s.c0+k); data.push(model[i]); model[i]=null; }
+    mv={w:w,h:h,data:data,col:s.c0,row:s.r0,c0:s.c0,r0:s.r0,dc:dc,dr:dr,before:null};
+    mv.before={cols:cols,rows:rows,model:model.slice()};
+    for(var j2=0;j2<h;j2++) for(var k2=0;k2<w;k2++){ mv.before.model[(s.r0+j2)*cols+(s.c0+k2)]=data[j2*w+k2]; }
+    selection=null; hoverSel=false;
+    pasteHint.textContent="Drag it to the new spot, or tap where it goes ✋ · Esc puts it back";
+    pasteHint.classList.add("show");
+    render(); updateCursor();
+    return true;
+  }
+  function moveTo(e){
+    var p=cellAt(e);
+    mv.col=clamp(p.c-mv.dc, 0, cols-mv.w);
+    mv.row=clamp(p.r-mv.dr, 0, rows-mv.h);
+  }
+  function endMoveUI(){
+    pasteHint.classList.remove("show");
+    pasteHint.textContent="Aim over the canvas, then tap to stamp 📌";
+  }
+  function dropMove(){
+    if(!mv) return;
+    var m=mv; mv=null;
+    for(var j=0;j<m.h;j++) for(var k=0;k<m.w;k++){ var v=m.data[j*m.w+k]; if(v) model[(m.row+j)*cols+(m.col+k)]=v; }
+    if(m.col!==m.c0 || m.row!==m.r0){ undoStack.push(m.before); if(undoStack.length>50) undoStack.shift(); redoStack.length=0; }
+    else model=m.before.model.slice();        // dropped where it started: nothing changed
+    selection={c0:m.col,r0:m.row,c1:m.col+m.w-1,r1:m.row+m.h-1};
+    endMoveUI(); render(); save(); refreshEdit(); updateCursor();
+  }
+  function cancelMove(){
+    if(!mv) return;
+    var m=mv; mv=null; if(gesture==="move") gesture=null;
+    model=m.before.model.slice();
+    selection={c0:m.c0,r0:m.r0,c1:m.c0+m.w-1,r1:m.r0+m.h-1};
+    endMoveUI(); render(); refreshEdit(); updateCursor();
+  }
+  function startMoveFromMenu(){
+    if(!selection) return;
+    liftSelection(Math.floor((selection.c1-selection.c0)/2), Math.floor((selection.r1-selection.r0)/2));
+  }
+  function drawMoveFloat(u){
+    if(!mv) return;
+    ctx.globalAlpha=0.92;
+    for(var j=0;j<mv.h;j++) for(var k=0;k<mv.w;k++){
+      var v=mv.data[j*mv.w+k];
+      if(v){ ctx.fillStyle=v; ctx.fillRect((mv.col+k)*u,(mv.row+j)*u,u,u); }
+    }
+    ctx.globalAlpha=1;
+    dashRect(mv.col*u, mv.row*u, mv.w*u, mv.h*u, getVar("--accent"), u);
+  }
+
   // ---- gestures (pan / pinch) ----
   function xy(e){ return {x:e.clientX,y:e.clientY}; }
   function two(){ var a=[]; pointers.forEach(function(v){a.push(v);}); return a; }
   function cancelActive(){
+    if(gesture==="move"){ gesture=null; cancelMove(); }
     if(gesture==="draw"){ drawing=false; save(); refreshEdit(); }
     if(gesture==="select"){ selecting=false; refreshEdit(); }
     lastCell=-1; gesture=null;
   }
-  function startPan(e){ gesture="pan"; panLast=xy(e); }
+  function startPan(e){ gesture="pan"; panLast=xy(e); document.body.classList.add("panning"); }
   function updatePan(e){ var p=xy(e); view.x+=p.x-panLast.x; view.y+=p.y-panLast.y; panLast=p; clampView(); applyView(); updateZoomUI(); }
   function startPinch(){
     var p=two(); if(p.length<2) return;
@@ -581,6 +646,8 @@
     if(pointers.size===2){ cancelActive(); startPinch(); return; }
     if(pointers.size>2) return;
     if(spaceHeld || e.button===1){ startPan(e); return; }
+    if(mv){ var mp=cellAt(e); if(!(mp.c>=mv.col&&mp.c<mv.col+mv.w&&mp.r>=mv.row&&mp.r<mv.row+mv.h)){ mv.dc=Math.floor((mv.w-1)/2); mv.dr=Math.floor((mv.h-1)/2); } else { mv.dc=mp.c-mv.col; mv.dr=mp.r-mv.row; }
+      gesture="move"; moveTo(e); render(); updateCursor(); return; }
     if(pasteMode){ gesture="paste"; previewing=true; updatePreview(e); render(); return; }
     var p=cellAt(e); if(!p.inside) return;
     if(tool==="eyedropper" || (e.altKey && tool!=="select")){
@@ -590,6 +657,7 @@
       if(tool==="eyedropper") selectTool("pencil");
       return;
     }
+    if(tool==="select" && inSel(p)){ if(liftSelection(p.c-selection.c0, p.r-selection.r0)){ gesture="move"; updateCursor(); } return; }
     if(tool==="select"){ gesture="select"; selecting=true; selAnchor={c:p.c,r:p.r}; selection={c0:p.c,r0:p.r,c1:p.c,r1:p.r}; render(); refreshEdit(); return; }
     if(tool==="fill"){ floodFill(p.r*cols+p.c); return; }
     gesture="draw"; pushState(); drawing=true; lastCell=-1; paintCell(p.r*cols+p.c);
@@ -598,6 +666,9 @@
     if(pointers.has(e.pointerId)) pointers.set(e.pointerId, xy(e));
     if(gesture==="pinch"){ e.preventDefault(); updatePinch(); return; }
     if(gesture==="pan"){ e.preventDefault(); updatePan(e); return; }
+    if(gesture==="move"){ e.preventDefault(); moveTo(e); render(); return; }
+    if(mv && e.pointerType==="mouse"){ moveTo(e); render(); return; }   // Move button: float follows the mouse
+    if(!gesture && tool==="select"){ var hs=inSel(cellAt(e)); if(hs!==hoverSel){ hoverSel=hs; updateCursor(); } }
     if(gesture==="paste"){ e.preventDefault(); updatePreview(e); render(); return; }
     if(gesture==="select"){ e.preventDefault(); var s=cellAt(e), c=clamp(s.c,0,cols-1), r=clamp(s.r,0,rows-1);
       selection={c0:Math.min(selAnchor.c,c),r0:Math.min(selAnchor.r,r),c1:Math.max(selAnchor.c,c),r1:Math.max(selAnchor.r,r)}; render(); return; }
@@ -607,7 +678,8 @@
   function onUp(e){
     pointers.delete(e.pointerId);
     if(gesture==="pinch"){ if(pointers.size<2){ gesture=null; pinch=null; } return; }
-    if(gesture==="pan"){ gesture=null; panLast=null; return; }
+    if(gesture==="pan"){ gesture=null; panLast=null; document.body.classList.remove("panning"); return; }
+    if(gesture==="move"){ gesture=null; dropMove(); return; }
     if(gesture==="paste"){ if(previewing){ stamp(); previewing=false; } gesture=null; return; }
     if(gesture==="select"){ selecting=false; gesture=null; positionSelMenu(); refreshEdit(); return; }
     if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); refreshEdit(); return; }
@@ -630,9 +702,13 @@
   var toolBtns=document.querySelectorAll(".blk.tool");
   function updateCursor(){
     var eye = (tool==="eyedropper") || (altHeld && tool!=="select" && tool!=="eyedropper");
-    canvas.style.cursor = eye ? EYE_CURSOR : "";
+    var c = eye ? EYE_CURSOR : "";
+    if(mv) c=(gesture==="move")?"grabbing":"move";
+    else if(tool==="select" && hoverSel && !pasteMode) c="move";
+    canvas.style.cursor = c;
   }
   function selectTool(t){
+    if(mv) dropMove();
     tool=t; exitPaste();
     if(t!=="select") selection=null;
     toolBtns.forEach(function(x){ x.setAttribute("aria-pressed", x.dataset.tool===t?"true":"false"); });
@@ -671,7 +747,8 @@
     var cxs=rect.left + (selection.c0 + (selection.c1-selection.c0+1)/2)*ud;
     var tys=rect.top  + selection.r0*ud;
     var bys=rect.top  + (selection.r1+1)*ud;
-    selMenu.style.left = clamp(cxs - srect.left, 52, Math.max(52, srect.width-52)) + "px";
+    var half=(selMenu.offsetWidth||104)/2+6;   // keep the whole menu on screen (it has 5 buttons now)
+    selMenu.style.left = clamp(cxs - srect.left, half, Math.max(half, srect.width-half)) + "px";
     if(tys - srect.top - 54 < 4){ selMenu.dataset.pos="below"; selMenu.style.top=(bys - srect.top + 11)+"px"; selMenu.style.transform="translate(-50%,0)"; }
     else { selMenu.dataset.pos="above"; selMenu.style.top=(tys - srect.top - 11)+"px"; selMenu.style.transform="translate(-50%,-100%)"; }
   }
@@ -708,7 +785,8 @@
   selMenu.addEventListener("click", function(e){
     var b=e.target.closest && e.target.closest("button"); if(!b) return;
     var act=b.dataset.act;
-    if(act==="copy") doCopy();
+    if(act==="move") startMoveFromMenu();
+    else if(act==="copy") doCopy();
     else if(act==="mirror") flip(true);
     else if(act==="flip") flip(false);
     else if(act==="delete") deleteSelection();
@@ -869,8 +947,10 @@
       else if(k==="s"){ e.preventDefault(); downloadScale(16); }
       return;
     }
-    if(e.key===" "){ spaceHeld=true; e.preventDefault(); document.body.classList.add("panning"); return; }
-    if(k==="delete"||k==="backspace"){ if(selection){ e.preventDefault(); deleteSelection(); } return; }
+    if(e.key===" "){ spaceHeld=true; e.preventDefault(); document.body.classList.add("space-pan"); return; }
+    if(k==="delete"||k==="backspace"){ if(mv){ e.preventDefault(); return; } if(selection){ e.preventDefault(); deleteSelection(); } return; }
+    if(k==="m"){ if(mv) dropMove(); else if(selection && tool==="select") startMoveFromMenu(); return; }
+    if(mv && k==="escape"){ cancelMove(); return; }
     if(k==="d") selectTool("pencil");
     else if(k==="e") selectTool("eraser");
     else if(k==="f") selectTool("fill");
@@ -887,10 +967,10 @@
     else if(k==="0") resetView();
   });
   document.addEventListener("keyup", function(e){
-    if(e.key===" "){ spaceHeld=false; document.body.classList.remove("panning"); }
+    if(e.key===" "){ spaceHeld=false; document.body.classList.remove("space-pan"); }
     else if(e.key==="Alt"){ altHeld=false; updateCursor(); }
   });
-  window.addEventListener("blur", function(){ altHeld=false; spaceHeld=false; document.body.classList.remove("panning"); updateCursor(); });
+  window.addEventListener("blur", function(){ altHeld=false; spaceHeld=false; document.body.classList.remove("space-pan","panning"); updateCursor(); });
 
   // ---- theme (dark by default) ----
   var themeBtn=document.getElementById("themeBtn");

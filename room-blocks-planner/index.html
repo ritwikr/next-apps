@@ -106,7 +106,9 @@
   .pane{position:relative;flex:1 1 0;min-width:0;height:100%;overflow:hidden;touch-action:none}
   .panes.split .pane + .pane{border-left:2px solid var(--line)}
   svg.surface{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:default}
-  body.panning svg.surface{cursor:grabbing}
+  /* Space held = hand cursor (grab), dragging = grabbing. Same rule in all Next apps. */
+  body.space-pan svg.surface, body.space-pan svg.surface *{cursor:grab!important}
+  body.panning svg.surface, body.panning svg.surface *{cursor:grabbing!important}
   body.placing svg.surface{cursor:copy}
   .pane-tag{position:absolute;top:8px;left:10px;z-index:4;font-weight:900;font-size:.7rem;color:var(--muted);background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:3px 9px;pointer-events:none;display:none}
   .panes.split .pane-tag{display:block}
@@ -293,6 +295,7 @@
           <span><kbd>↑↓←→</kbd> nudge</span><span><kbd>Shift</kbd>+drag box</span>
           <span><kbd>Del</kbd> remove</span><span><kbd>Esc</kbd> stop</span>
           <span><kbd>Ctrl/⌘</kbd>+<kbd>A</kbd> all</span><span><kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd> undo</span>
+          <span><kbd>Space</kbd>+drag pan</span>
         </div>
       </div>
     </div>
@@ -1015,6 +1018,7 @@ function growWindow(o,p,dir){
 /* =========================================================================
    POINTER INTERACTION (select / move / place / pan / opening create)
    ========================================================================= */
+var spaceHeld=false;
 var pointers=new Map(), gesture=null, panLast=null, dragItem=null, dragOff=null, pinch=null, moved=false, marquee=null;
 
 function hitTest(wx,wy){
@@ -1055,6 +1059,8 @@ function onDown(e){
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){ startPinch(); gesture="pinch"; dragItem=null; return; }
   moved=false;
+  // Space held (or middle mouse) pans from anywhere, even over furniture
+  if(spaceHeld || e.button===1){ e.preventDefault(); gesture="pan"; panLast={x:e.clientX,y:e.clientY}; document.body.classList.add("panning"); return; }
   var w=screenToWorld(e.clientX,e.clientY); var p=active();
 
   // placing furniture (stamp)
@@ -1122,6 +1128,8 @@ function onMove(e){
     render();
   }
 }
+window.addEventListener("keyup",function(e){ if(e.key===" "){ spaceHeld=false; document.body.classList.remove("space-pan"); } });
+window.addEventListener("blur",function(){ spaceHeld=false; document.body.classList.remove("space-pan","panning"); });
 function onUp(e){
   pointers.delete(e.pointerId);
   if(gesture==="marquee"){ commitMarquee(); marquee=null; gesture=null; dragItem=null; panLast=null; render(); return; }
@@ -1483,6 +1491,7 @@ document.getElementById("themeBtn").addEventListener("click",function(){
 /* keyboard */
 window.addEventListener("keydown",function(e){
   if(e.target.tagName==="INPUT") return;
+  if(e.key===" "){ e.preventDefault(); if(!spaceHeld){ spaceHeld=true; document.body.classList.add("space-pan"); } return; }
   var meta=e.ctrlKey||e.metaKey;
   if(meta && (e.key==="z"||e.key==="Z")){ e.preventDefault(); if(e.shiftKey) redo(); else undo(); return; }
   if(meta && (e.key==="y"||e.key==="Y")){ e.preventDefault(); redo(); return; }

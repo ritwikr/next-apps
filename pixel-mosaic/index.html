@@ -35,7 +35,9 @@
     font-family:"Nunito",system-ui,sans-serif; line-height:1.4;
     -webkit-font-smoothing:antialiased; overflow:hidden;
   }
-  body.panning canvas{cursor:grab}
+  /* Space held = hand cursor (grab), dragging = grabbing. Same rule in all Next apps. */
+  body.space-pan .stage, body.space-pan canvas{cursor:grab!important}
+  body.panning .stage, body.panning canvas{cursor:grabbing!important}
 
   .app-shell{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
   .editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
@@ -200,6 +202,11 @@
   .dimhint{font-size:.56rem;font-weight:800;color:var(--muted);opacity:.7;padding-bottom:9px;text-transform:uppercase;letter-spacing:.4px}
   .realsize{margin-top:6px;font-size:.66rem;font-weight:800;color:var(--muted);letter-spacing:.2px}
   .realsize b{color:var(--ink);font-weight:800}
+  .groutrow{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .groutrow .dimlab{padding-left:3px}
+  .groutsw{display:flex;gap:6px}
+  .gsw{width:28px;height:28px;border-radius:8px;border:2px solid var(--line);cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+  .gsw[aria-pressed="true"]{box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),0 0 0 2px var(--card),0 0 0 4px var(--ink)}
 
   .saverow{display:flex;flex-direction:column}
   button.save{
@@ -279,6 +286,7 @@
     <button class="theme-btn" id="themeBtn" title="Switch light / dark" aria-label="Switch light or dark mode">🌙</button>
     <button class="zoom-reset" id="zoomReset" title="Reset zoom (0)">🔍 <span id="zoomPct">100%</span></button>
     <div class="selmenu" id="selMenu" role="toolbar" aria-label="Selection actions">
+      <button data-act="move" title="Move — or just drag the selection (M)"><span class="mi">✋</span>Move</button>
       <button data-act="copy" title="Copy (⌘/Ctrl+C)"><span class="mi">📋</span>Copy</button>
       <button data-act="mirror" title="Mirror left–right (H)"><span class="mi">⇆</span>Mirror</button>
       <button data-act="flip" title="Flip top–bottom (V)"><span class="mi">⇅</span>Flip</button>
@@ -333,6 +341,10 @@
       <span class="dimhint">↵ apply</span>
     </div>
     <div class="realsize phone-more" id="realSize" title="Actual finished size: 25mm tiles with 1.97mm grout joints">—</div>
+    <div class="groutrow phone-more">
+      <span class="dimlab">Grout colour</span>
+      <div class="groutsw" id="groutSw" role="group" aria-label="Grout colour"></div>
+    </div>
 
     <div class="saverow phone-more">
       <button class="save" id="saveBtn" title="Save picture"><span class="ic">💾</span>Save picture</button>
@@ -359,8 +371,8 @@
       <div class="cheat-card"><h3>🧱 Draw tiles</h3><p>Pick a tile from the catalogue, then <b>Draw</b> on the canvas — click, or drag to lay a run. <b>Erase</b> takes tiles away. <b>Hover</b> a swatch to see its name and code.</p></div>
       <div class="cheat-card"><h3>🪣 Fill an area</h3><p>The <b>Fill</b> tool floods a whole connected patch of the same tile at once. Great for backgrounds.</p></div>
       <div class="cheat-card"><h3>💧 Match a tile</h3><p>Use <b>Pick</b> (or hold <b>Alt/Option</b> while drawing) to grab the tile that's already under your cursor.</p></div>
-      <div class="cheat-card"><h3>▦ Grout &amp; # Grid</h3><p><b>Grout</b> is the real joint between tiles (25&nbsp;mm tiles, 1.97&nbsp;mm joints — see the size under the width/height). It follows day/night: light grout by day, dark by night. <b>Grid</b> is a faint guide overlay, <i>not</i> in the saved image.</p></div>
-      <div class="cheat-card"><h3>✂️ Select &amp; copy</h3><p>Drag a box with <b>Select</b> and a little menu pops up — <b>Copy</b>, <b>Mirror</b>, <b>Flip</b>, <b>Delete</b>. Copy, then <b>Paste</b> and tap over the canvas to stamp it anywhere.</p></div>
+      <div class="cheat-card"><h3>▦ Grout &amp; # Grid</h3><p><b>Grout</b> is the real joint between tiles (25&nbsp;mm tiles, 1.97&nbsp;mm joints — see the size under the width/height). Pick its colour under the size — White, Light grey, Dark grey or Black. Each mosaic keeps its own grout colour, and the saved picture uses it. <b>Grid</b> is a faint guide overlay, <i>not</i> in the saved image.</p></div>
+      <div class="cheat-card"><h3>✂️ Select &amp; copy</h3><p>Drag a box with <b>Select</b> and a little menu pops up — <b>Move</b>, <b>Copy</b>, <b>Mirror</b>, <b>Flip</b>, <b>Delete</b>. To <b>move</b> tiles, just drag the selection to a new spot (or tap Move, then tap where it goes). To <b>duplicate</b>, Copy, then <b>Paste</b> and tap to stamp it anywhere.</p></div>
       <div class="cheat-card"><h3>🪞 Mirror &amp; reflect</h3><p>In the selection menu, <b>Mirror&nbsp;⇆</b> / <b>Flip&nbsp;⇅</b> reflect those tiles in place. While placing a paste they reflect the stamp — perfect for symmetry: copy → paste → mirror → stamp beside the original. (Keys <b>H</b> / <b>V</b>.)</p></div>
       <div class="cheat-card"><h3>🔍 Move around</h3><p><b>Scroll</b> to zoom, <b>Space</b>+drag (or two fingers) to pan. Tap <b>🔍</b> or press <b>0</b> to snap back to 100%.</p></div>
       <div class="cheat-card kbd-card"><h3>⌨️ Secret keys</h3>
@@ -369,7 +381,7 @@
           <span><kbd>F</kbd> fill</span><span><kbd>I</kbd> pick</span>
           <span><kbd>S</kbd> select</span><span><kbd>G</kbd> grout</span>
           <span><kbd>L</kbd> grid lines</span><span><kbd>1</kbd>–<kbd>9</kbd> first tiles</span>
-          <span><kbd>H</kbd> mirror ⇆</span><span><kbd>V</kbd> flip ⇅</span>
+          <span><kbd>M</kbd> move selection</span><span><kbd>H</kbd> mirror ⇆</span><span><kbd>V</kbd> flip ⇅</span>
           <span><kbd>Alt</kbd> quick pick</span><span><kbd>Space</kbd>+drag pan</span>
           <span><kbd>Del</kbd> clear selection</span><span><kbd>Esc</kbd> back out</span>
           <span><kbd>+</kbd>/<kbd>-</kbd>/<kbd>0</kbd> zoom</span><span><kbd>⌘/Ctrl</kbd>+<kbd>S</kbd> save</span>
@@ -544,22 +556,35 @@
 
   // ---- persistence (multiple mosaics) ----
   function activeProj(){ for(var i=0;i<projects.length;i++) if(projects[i].id===activeId) return projects[i]; return null; }
-  function makeProject(name,w,h,m){ seq++; return {id:"m"+seq+"_"+Date.now().toString(36), name:name||("Mosaic "+seq), cols:w, rows:h, model:m||new Array(w*h).fill(null), undo:[], redo:[]}; }
-  function commitActive(){ var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
+  // grout colour is chosen per mosaic (not tied to day/night); light grey is the default
+  var GROUTS=[{id:"white",name:"White",hex:"#F7F7F5"},{id:"lightgrey",name:"Light grey",hex:"#BFBFBF"},{id:"darkgrey",name:"Dark grey",hex:"#5A5A5A"},{id:"black",name:"Black",hex:"#161616"}];
+  var DEFAULT_GROUT="lightgrey", grout=DEFAULT_GROUT;
+  function groutOk(g){ return GROUTS.some(function(x){return x.id===g;}) ? g : DEFAULT_GROUT; }
+  function groutHex(g){ g=groutOk(g); for(var i=0;i<GROUTS.length;i++) if(GROUTS[i].id===g) return GROUTS[i].hex; }
+  function makeProject(name,w,h,m){ seq++; return {id:"m"+seq+"_"+Date.now().toString(36), name:name||("Mosaic "+seq), cols:w, rows:h, model:m||new Array(w*h).fill(null), grout:DEFAULT_GROUT, undo:[], redo:[]}; }
+  function commitActive(){ if(mv) dropMove(); var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; p.grout=grout; } }
   function save(){
     commitActive();
     try{ localStorage.setItem(KEY, JSON.stringify({
       seq:seq, activeId:activeId, tile:currentTile, grid:gridOn, lines:gridLinesOn,
-      projects: projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:p.model}; })
+      projects: projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:p.model,grout:groutOk(p.grout)}; })
     })); }catch(e){}
   }
-  function useProject(p){ cols=p.cols; rows=p.rows; model=p.model; undoStack=p.undo; redoStack=p.redo; }
+  function useProject(p){ cols=p.cols; rows=p.rows; model=p.model; undoStack=p.undo; redoStack=p.redo; applyGrout(p.grout); }
+  // the grout colour drives the --grout CSS var (stage backdrop) and the canvas fill
+  function applyGrout(g){
+    grout=groutOk(g); var hex=groutHex(grout);
+    document.documentElement.style.setProperty("--grout", hex);
+    COL.grout=hex;
+    var sw=document.getElementById("groutSw");
+    if(sw) Array.prototype.forEach.call(sw.children, function(b){ b.setAttribute("aria-pressed", b.dataset.g===grout?"true":"false"); });
+  }
   function load(){
     var v=null; try{ v=JSON.parse(localStorage.getItem(KEY)); }catch(e){}
     if(v && v.projects && v.projects.length){
       seq=v.seq||0;
       function mig(id){ return id ? (MIGRATE[id]||id) : id; }
-      projects=v.projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:(p.model||[]).map(mig),undo:[],redo:[]}; });
+      projects=v.projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:(p.model||[]).map(mig),grout:groutOk(p.grout),undo:[],redo:[]}; });
       activeId=v.activeId; if(!activeProj()) activeId=projects[0].id; activeProj().open=true;
       var mt=mig(v.tile);
       if(typeof mt==="string" && TILES[mt]) currentTile=mt;
@@ -705,6 +730,7 @@
       ctx.globalAlpha=1;
       dashRect(pastePreview.col*u, pastePreview.row*u, clip.w*u, clip.h*u, COL.accent, u);
     }
+    drawMoveFloat(u);
     updateSelUI();
   }
   function render(){ renderBase(); composite(); }   // full path (tiles changed)
@@ -715,7 +741,7 @@
   // little region from the cache and redraw only its 4 grid segments. Per-stroke
   // cost is now independent of zoom level.
   function compositeCell(i){
-    if(selection || pasteMode){ composite(); return; }   // overlay present -> full path
+    if(selection || pasteMode || mv){ composite(); return; }   // overlay present -> full path
     if(baseCache.width!==canvas.width || baseCache.height!==canvas.height){ composite(); return; } // cache stale -> rebuild
     var u=canvas.width/cols, c=i%cols, r=Math.floor(i/cols);
     var sx=Math.max(0,Math.floor(c*u)-1), sy=Math.max(0,Math.floor(r*u)-1);
@@ -752,8 +778,8 @@
     cols=s.cols; rows=s.rows; model=s.model.slice();
     sizeCanvas(); fitCanvas(); syncDims(); selection=null;
   }
-  function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); save(); refreshEdit(); }
-  function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); save(); refreshEdit(); }
+  function undo(){ if(mv){ cancelMove(); return; } if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); save(); refreshEdit(); }
+  function redo(){ if(mv){ cancelMove(); return; } if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); save(); refreshEdit(); }
 
   // ---- cells ----
   function cellAt(e){
@@ -800,6 +826,7 @@
   }
   function enterPaste(){
     if(!clip) return;
+    if(mv) dropMove();
     pasteMode=true; previewing=false; selection=null;
     toolBtns.forEach(function(x){ x.setAttribute("aria-pressed","false"); });
     pasteBtn.setAttribute("aria-pressed","true");
@@ -826,15 +853,76 @@
     render(); save(); refreshEdit();
   }
 
+
+  // ---- move a selection (cut + drag + drop, one undo step) ----
+  // Two ways in: drag inside the selection with Select, or tap Move (M) in the
+  // selection menu and then drag/tap where it should go. Esc puts it back.
+  var mv=null, hoverSel=false;
+  function inSel(p){ return !!selection && p.c>=selection.c0 && p.c<=selection.c1 && p.r>=selection.r0 && p.r<=selection.r1; }
+  function liftSelection(dc,dr){
+    if(!selection || mv) return false;
+    var s=selection, w=s.c1-s.c0+1, h=s.r1-s.r0+1, data=[];
+    for(var j=0;j<h;j++) for(var k=0;k<w;k++){ var i=(s.r0+j)*cols+(s.c0+k); data.push(model[i]); model[i]=null; }
+    mv={w:w,h:h,data:data,col:s.c0,row:s.r0,c0:s.c0,r0:s.r0,dc:dc,dr:dr,before:null};
+    mv.before={cols:cols,rows:rows,model:model.slice()};
+    for(var j2=0;j2<h;j2++) for(var k2=0;k2<w;k2++){ mv.before.model[(s.r0+j2)*cols+(s.c0+k2)]=data[j2*w+k2]; }
+    selection=null; hoverSel=false;
+    pasteHint.textContent="Drag it to the new spot, or tap where it goes ✋ · Esc puts it back";
+    pasteHint.classList.add("show");
+    render(); updateCursor();
+    return true;
+  }
+  function moveTo(e){
+    var p=cellAt(e);
+    mv.col=clamp(p.c-mv.dc, 0, cols-mv.w);
+    mv.row=clamp(p.r-mv.dr, 0, rows-mv.h);
+  }
+  function endMoveUI(){
+    pasteHint.classList.remove("show");
+    pasteHint.textContent="Aim over the canvas, then tap to stamp 📌";
+  }
+  function dropMove(){
+    if(!mv) return;
+    var m=mv; mv=null;
+    for(var j=0;j<m.h;j++) for(var k=0;k<m.w;k++){ var v=m.data[j*m.w+k]; if(v) model[(m.row+j)*cols+(m.col+k)]=v; }
+    if(m.col!==m.c0 || m.row!==m.r0){ undoStack.push(m.before); if(undoStack.length>50) undoStack.shift(); redoStack.length=0; }
+    else model=m.before.model.slice();        // dropped where it started: nothing changed
+    selection={c0:m.col,r0:m.row,c1:m.col+m.w-1,r1:m.row+m.h-1};
+    endMoveUI(); render(); save(); refreshEdit(); updateCursor();
+  }
+  function cancelMove(){
+    if(!mv) return;
+    var m=mv; mv=null; if(gesture==="move") gesture=null;
+    model=m.before.model.slice();
+    selection={c0:m.c0,r0:m.r0,c1:m.c0+m.w-1,r1:m.r0+m.h-1};
+    endMoveUI(); render(); refreshEdit(); updateCursor();
+  }
+  function startMoveFromMenu(){
+    if(!selection) return;
+    liftSelection(Math.floor((selection.c1-selection.c0)/2), Math.floor((selection.r1-selection.r0)/2));
+  }
+  function drawMoveFloat(u){
+    if(!mv) return;
+    var gap = gridOn ? u*GAP_FRAC : 0;
+    ctx.globalAlpha=0.92;
+    for(var j=0;j<mv.h;j++) for(var k=0;k<mv.w;k++){
+      var v=mv.data[j*mv.w+k];
+      if(v && TILES[v]) drawTile(ctx, TILES[v], (mv.col+k)*u, (mv.row+j)*u, u, gap, variant((mv.row+j)*cols+(mv.col+k)));
+    }
+    ctx.globalAlpha=1;
+    dashRect(mv.col*u, mv.row*u, mv.w*u, mv.h*u, COL.accent, u);
+  }
+
   // ---- gestures (pan / pinch) ----
   function xy(e){ return {x:e.clientX,y:e.clientY}; }
   function two(){ var a=[]; pointers.forEach(function(v){a.push(v);}); return a; }
   function cancelActive(){
+    if(gesture==="move"){ gesture=null; cancelMove(); }
     if(gesture==="draw"){ drawing=false; save(); refreshEdit(); }
     if(gesture==="select"){ selecting=false; refreshEdit(); }
     lastCell=-1; gesture=null;
   }
-  function startPan(e){ gesture="pan"; panLast=xy(e); }
+  function startPan(e){ gesture="pan"; panLast=xy(e); document.body.classList.add("panning"); }
   function updatePan(e){ var p=xy(e); view.x+=p.x-panLast.x; view.y+=p.y-panLast.y; panLast=p; clampView(); applyView(); updateZoomUI(); positionSelMenu(); }
   function startPinch(){
     var p=two(); if(p.length<2) return;
@@ -861,6 +949,8 @@
     if(pointers.size===2){ cancelActive(); startPinch(); return; }
     if(pointers.size>2) return;
     if(spaceHeld || e.button===1){ startPan(e); return; }
+    if(mv){ var mp=cellAt(e); if(!(mp.c>=mv.col&&mp.c<mv.col+mv.w&&mp.r>=mv.row&&mp.r<mv.row+mv.h)){ mv.dc=Math.floor((mv.w-1)/2); mv.dr=Math.floor((mv.h-1)/2); } else { mv.dc=mp.c-mv.col; mv.dr=mp.r-mv.row; }
+      gesture="move"; moveTo(e); composite(); updateCursor(); return; }
     if(pasteMode){ gesture="paste"; previewing=true; updatePreview(e); composite(); return; }
     var p=cellAt(e); if(!p.inside) return;
     if(tool==="eyedropper" || (e.altKey && tool!=="select")){
@@ -869,6 +959,7 @@
       if(tool==="eyedropper") selectTool("pencil");
       return;
     }
+    if(tool==="select" && inSel(p)){ if(liftSelection(p.c-selection.c0, p.r-selection.r0)){ gesture="move"; updateCursor(); } return; }
     if(tool==="select"){ gesture="select"; selecting=true; selAnchor={c:p.c,r:p.r}; selection={c0:p.c,r0:p.r,c1:p.c,r1:p.r}; selRects={rect:canvas.getBoundingClientRect(),srect:stage.getBoundingClientRect()}; positionSelBox(); refreshEdit(); return; }
     if(tool==="fill"){ floodFill(p.r*cols+p.c); return; }
     gesture="draw"; pushState(); drawing=true; lastCell=-1; paintCell(p.r*cols+p.c);
@@ -877,6 +968,9 @@
     if(pointers.has(e.pointerId)) pointers.set(e.pointerId, xy(e));
     if(gesture==="pinch"){ e.preventDefault(); updatePinch(); return; }
     if(gesture==="pan"){ e.preventDefault(); updatePan(e); return; }
+    if(gesture==="move"){ e.preventDefault(); moveTo(e); composite(); return; }
+    if(mv && e.pointerType==="mouse"){ moveTo(e); composite(); return; }   // Move button: float follows the mouse
+    if(!gesture && tool==="select"){ var hs=inSel(cellAt(e)); if(hs!==hoverSel){ hoverSel=hs; updateCursor(); } }
     if(gesture==="paste"){ e.preventDefault(); updatePreview(e); composite(); return; }
     if(gesture==="select"){ e.preventDefault(); var s=cellAt(e), c=clamp(s.c,0,cols-1), r=clamp(s.r,0,rows-1);
       selection={c0:Math.min(selAnchor.c,c),r0:Math.min(selAnchor.r,r),c1:Math.max(selAnchor.c,c),r1:Math.max(selAnchor.r,r)}; positionSelBox(); return; }
@@ -886,7 +980,8 @@
   function onUp(e){
     pointers.delete(e.pointerId);
     if(gesture==="pinch"){ if(pointers.size<2){ gesture=null; pinch=null; } return; }
-    if(gesture==="pan"){ gesture=null; panLast=null; return; }
+    if(gesture==="pan"){ gesture=null; panLast=null; document.body.classList.remove("panning"); return; }
+    if(gesture==="move"){ gesture=null; dropMove(); return; }
     if(gesture==="paste"){ if(previewing){ stamp(); previewing=false; } gesture=null; return; }
     if(gesture==="select"){ selecting=false; gesture=null; selRects=null; refreshEdit(); positionSelMenu(); return; }
     if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); refreshEdit(); return; }
@@ -916,9 +1011,12 @@
     else if(tool==="eraser") c=ERASE_CURSOR;
     else if(tool==="fill") c=FILL_CURSOR;
     else if(tool==="select") c=SELECT_CURSOR;
+    if(mv) c=(gesture==="move")?"grabbing":"move";
+    else if(tool==="select" && hoverSel && !pasteMode) c="move";
     canvas.style.cursor=c;
   }
   function selectTool(t){
+    if(mv) dropMove();
     tool=t; exitPaste();
     if(t!=="select") selection=null;
     toolBtns.forEach(function(x){ x.setAttribute("aria-pressed", x.dataset.tool===t?"true":"false"); });
@@ -981,7 +1079,8 @@
     var cxs=rect.left + (selection.c0 + (selection.c1-selection.c0+1)/2)*ud;
     var tys=rect.top  + selection.r0*ud;
     var bys=rect.top  + (selection.r1+1)*ud;
-    selMenu.style.left = clamp(cxs - srect.left, 52, Math.max(52, srect.width-52)) + "px";
+    var half=(selMenu.offsetWidth||104)/2+6;   // keep the whole menu on screen (it has 5 buttons now)
+    selMenu.style.left = clamp(cxs - srect.left, half, Math.max(half, srect.width-half)) + "px";
     if(tys - srect.top - 54 < 4){ selMenu.dataset.pos="below"; selMenu.style.top=(bys - srect.top + 11)+"px"; selMenu.style.transform="translate(-50%,0)"; }
     else { selMenu.dataset.pos="above"; selMenu.style.top=(tys - srect.top - 11)+"px"; selMenu.style.transform="translate(-50%,-100%)"; }
   }
@@ -996,7 +1095,8 @@
   selMenu.addEventListener("click", function(e){
     var b=e.target.closest && e.target.closest("button"); if(!b) return;
     var act=b.dataset.act;
-    if(act==="copy") doCopy();
+    if(act==="move") startMoveFromMenu();
+    else if(act==="copy") doCopy();
     else if(act==="mirror") flip(true);
     else if(act==="flip") flip(false);
     else if(act==="delete") deleteSelection();
@@ -1008,6 +1108,16 @@
   redoBtn.addEventListener("click", redo);
   pasteBtn.addEventListener("click", enterPaste);
   gridBtn.addEventListener("click", toggleGrid);
+  (function buildGroutUI(){
+    var sw=document.getElementById("groutSw");
+    GROUTS.forEach(function(g){
+      var b=document.createElement("button"); b.className="gsw"; b.dataset.g=g.id;
+      b.style.background=g.hex; b.title=g.name+" grout"; b.setAttribute("aria-label",g.name+" grout");
+      b.setAttribute("aria-pressed", g.id===grout?"true":"false");
+      b.addEventListener("click", function(){ if(grout===g.id) return; applyGrout(g.id); render(); save(); });
+      sw.appendChild(b);
+    });
+  })();
   linesBtn.addEventListener("click", toggleLines);
   document.getElementById("clearBtn").addEventListener("click", clearAll);
   zoomReset.addEventListener("click", resetView);
@@ -1202,8 +1312,10 @@
       else if(k==="s"){ e.preventDefault(); downloadScale(24); }
       return;
     }
-    if(e.key===" "){ spaceHeld=true; e.preventDefault(); document.body.classList.add("panning"); return; }
-    if(k==="delete"||k==="backspace"){ if(selection){ e.preventDefault(); deleteSelection(); } return; }
+    if(e.key===" "){ spaceHeld=true; e.preventDefault(); document.body.classList.add("space-pan"); return; }
+    if(k==="delete"||k==="backspace"){ if(mv){ e.preventDefault(); return; } if(selection){ e.preventDefault(); deleteSelection(); } return; }
+    if(k==="m"){ if(mv) dropMove(); else if(selection && tool==="select") startMoveFromMenu(); return; }
+    if(mv && k==="escape"){ cancelMove(); return; }
     if(k==="d") selectTool("pencil");
     else if(k==="e") selectTool("eraser");
     else if(k==="f") selectTool("fill");
@@ -1222,10 +1334,10 @@
     else if(k>="1" && k<="9"){ var idx=+k-1; if(TILE_LIST[idx]) pickTile(TILE_LIST[idx].id); }
   });
   document.addEventListener("keyup", function(e){
-    if(e.key===" "){ spaceHeld=false; document.body.classList.remove("panning"); }
+    if(e.key===" "){ spaceHeld=false; document.body.classList.remove("space-pan"); }
     else if(e.key==="Alt"){ altHeld=false; updateCursor(); }
   });
-  window.addEventListener("blur", function(){ altHeld=false; spaceHeld=false; document.body.classList.remove("panning"); updateCursor(); });
+  window.addEventListener("blur", function(){ altHeld=false; spaceHeld=false; document.body.classList.remove("space-pan","panning"); updateCursor(); });
 
   // ---- theme (dark by default) ----
   var themeBtn=document.getElementById("themeBtn");
@@ -1333,7 +1445,7 @@
   function filesShown(){ return filesEl.classList.contains("show"); }
   function thumbOf(p){
     var c=document.createElement("canvas"); c.width=p.cols; c.height=p.rows;
-    c.style.background="var(--grout)";
+    c.style.background=groutHex(p.grout);
     var g=c.getContext("2d");
     for(var i=0;i<p.model.length;i++){
       var v=p.model[i]; if(!v) continue;
