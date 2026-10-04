@@ -169,6 +169,8 @@
   .blk .key{position:absolute;top:3px;right:4px;font-size:.5rem;font-weight:800;line-height:1;color:var(--muted);opacity:.65;pointer-events:none;letter-spacing:.2px}
   .blk[aria-pressed="true"] .key{color:var(--accent-ink);opacity:.85}
   #gridBtn[aria-pressed="true"] .key{color:var(--teal-ink)}
+  /* no keyboard on phones / iPads (touch-first) — hide the shortcut hints there */
+  @media (hover:none){ .blk .key{display:none} }
   .blk .ic{font-size:1.35rem;line-height:1;display:flex;align-items:center;justify-content:center}
   .blk .ic svg{width:22px;height:22px;display:block}
   .blk .lb{font-size:.62rem;font-weight:800;letter-spacing:.2px}
@@ -337,7 +339,7 @@
     "#7C4DE0","#B06BFF","#F06CC0","#A05A2C","#E8B894","#6B4226",
     "#FFFFFF","#C7C7D2","#8A8598","#55505E","#231F2C","#000000"
   ];
-  var MIN=2, MAX=160, PAD=14, MAXZOOM=24;
+  var MIN=2, MAX=160, PAD=14, MAXZOOM=24, MINZOOM=0.25;   // can zoom out to 25% to see the art smaller
 
   var stage=document.getElementById("stage");
   var canvas=document.getElementById("canvas");
@@ -432,13 +434,13 @@
   function updateZoomUI(){
     var z=Math.round(view.scale*100);
     zoomPct.textContent=z+"%";
-    zoomReset.classList.toggle("show", view.scale>1.01);
+    zoomReset.classList.toggle("show", Math.abs(view.scale-1)>0.01);
   }
   function zoomAt(cx,cy,factor){
     var rect=canvas.getBoundingClientRect();
     var scx=rect.left+rect.width/2, scy=rect.top+rect.height/2;
     var dx=cx-scx, dy=cy-scy;
-    var ns=clamp(view.scale*factor,1,MAXZOOM);
+    var ns=clamp(view.scale*factor,MINZOOM,MAXZOOM);
     if(ns===view.scale) return;
     view.x=view.x-(dx/view.scale)*(ns-view.scale);
     view.y=view.y-(dy/view.scale)*(ns-view.scale);
@@ -651,7 +653,7 @@
   function updatePinch(){
     var p=two(); if(p.length<2||!pinch) return;
     var a=p[0],b=p[1], cd=Math.hypot(a.x-b.x,a.y-b.y)||1, mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-    var ns=clamp(pinch.ss*(cd/pinch.sd),1,MAXZOOM);
+    var ns=clamp(pinch.ss*(cd/pinch.sd),MINZOOM,MAXZOOM);
     view.scale=ns;
     view.x=mid.x-pinch.lc.x-pinch.p0.x*ns;
     view.y=mid.y-pinch.lc.y-pinch.p0.y*ns;
@@ -1080,9 +1082,11 @@
   }
   function loadProject(p){
     editingId=null;
+    var keepPaste=pasteMode && clip;   // carry the hover-paste into the other artwork
     useProject(p); selection=null; exitPaste();
     sizeCanvas(); fitCanvas(); resetView(); syncDims();
     renderTabs(); render(); refreshEdit(); save();
+    if(keepPaste) enterPaste();
   }
   function switchTo(id){
     if(id===activeId) return;
