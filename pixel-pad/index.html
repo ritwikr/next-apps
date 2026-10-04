@@ -163,8 +163,12 @@
     min-height:54px;padding:6px 3px;
     border:2px solid var(--line);background:var(--card);color:var(--ink);
     border-radius:14px;cursor:pointer;
-    transition:transform .06s ease,background .15s,border-color .15s;
+    transition:transform .06s ease,background .15s,border-color .15s;position:relative;
   }
+  /* keyboard shortcut hint in the corner of each button (same as Pixel Mosaic) */
+  .blk .key{position:absolute;top:3px;right:4px;font-size:.5rem;font-weight:800;line-height:1;color:var(--muted);opacity:.65;pointer-events:none;letter-spacing:.2px}
+  .blk[aria-pressed="true"] .key{color:var(--accent-ink);opacity:.85}
+  #gridBtn[aria-pressed="true"] .key{color:var(--teal-ink)}
   .blk .ic{font-size:1.35rem;line-height:1;display:flex;align-items:center;justify-content:center}
   .blk .ic svg{width:22px;height:22px;display:block}
   .blk .lb{font-size:.62rem;font-weight:800;letter-spacing:.2px}
@@ -249,25 +253,25 @@
 
   <div class="toolbar">
     <div class="blocks primary" role="group" aria-label="Drawing tools">
-      <button class="blk tool" data-tool="pencil" aria-pressed="true" title="Draw (D)"><span class="ic">✏️</span><span class="lb">Draw</span></button>
-      <button class="blk tool" data-tool="eraser" aria-pressed="false" title="Erase (E)"><span class="ic">🧽</span><span class="lb">Erase</span></button>
+      <button class="blk tool" data-tool="pencil" aria-pressed="true" title="Draw (D)"><span class="key">D</span><span class="ic">✏️</span><span class="lb">Draw</span></button>
+      <button class="blk tool" data-tool="eraser" aria-pressed="false" title="Erase (E)"><span class="key">E</span><span class="ic">🧽</span><span class="lb">Erase</span></button>
       <button class="blk more-btn" id="moreToolsBtn" type="button" aria-expanded="false" aria-controls="moreTools" title="Show more tools"><span class="ic">⋯</span><span class="lb">More</span></button>
     </div>
 
     <div class="more-wrap" id="moreTools" hidden>
     <div class="blocks" role="group" aria-label="More tools">
-      <button class="blk tool" data-tool="fill" aria-pressed="false" title="Fill (F)"><span class="ic">🪣</span><span class="lb">Fill</span></button>
-      <button class="blk tool" data-tool="eyedropper" aria-pressed="false" title="Pick colour (I) — hold Alt/Option while drawing to pick"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg></span><span class="lb">Pick</span></button>
-      <button class="blk tool" data-tool="select" aria-pressed="false" title="Select (S)"><span class="ic">🔲</span><span class="lb">Select</span></button>
+      <button class="blk tool" data-tool="fill" aria-pressed="false" title="Fill (F)"><span class="key">F</span><span class="ic">🪣</span><span class="lb">Fill</span></button>
+      <button class="blk tool" data-tool="eyedropper" aria-pressed="false" title="Pick colour (I) — hold Alt/Option while drawing to pick"><span class="key">I</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg></span><span class="lb">Pick</span></button>
+      <button class="blk tool" data-tool="select" aria-pressed="false" title="Select (S)"><span class="key">S</span><span class="ic">🔲</span><span class="lb">Select</span></button>
     </div>
 
     <hr class="divider">
 
     <div class="blocks">
-      <button class="blk" id="undoBtn" title="Undo (Ctrl+Z)"><span class="ic">↩️</span><span class="lb">Undo</span></button>
-      <button class="blk" id="redoBtn" title="Redo (Ctrl+Y)"><span class="ic">↪️</span><span class="lb">Redo</span></button>
-      <button class="blk" id="pasteBtn" title="Paste (Ctrl+V)"><span class="ic">📌</span><span class="lb">Paste</span></button>
-      <button class="blk" id="gridBtn" aria-pressed="true" title="Grid (G)"><span class="ic">▦</span><span class="lb">Grid</span></button>
+      <button class="blk" id="undoBtn" title="Undo (Ctrl/⌘+Z)"><span class="key">⌘Z</span><span class="ic">↩️</span><span class="lb">Undo</span></button>
+      <button class="blk" id="redoBtn" title="Redo (Ctrl/⌘+Y)"><span class="key">⌘Y</span><span class="ic">↪️</span><span class="lb">Redo</span></button>
+      <button class="blk" id="pasteBtn" title="Paste (Ctrl/⌘+V or P)"><span class="key">⌘V</span><span class="ic">📌</span><span class="lb">Paste</span></button>
+      <button class="blk" id="gridBtn" aria-pressed="true" title="Grid (G)"><span class="key">G</span><span class="ic">▦</span><span class="lb">Grid</span></button>
       <button class="blk" id="clearBtn" title="Clear all"><span class="ic">🗑️</span><span class="lb">Clear</span></button>
     </div>
     </div>
