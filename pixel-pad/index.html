@@ -111,22 +111,26 @@
   .zoom-reset.show{display:inline-flex}
   .selmenu{
     position:absolute;z-index:6;display:none;left:0;top:0;
+    flex-direction:column;align-items:stretch;
     background:var(--card);border:1.5px solid var(--line);border-radius:12px;
-    padding:4px;gap:2px;box-shadow:0 10px 26px -8px var(--shadow), 0 0 0 1px rgba(0,0,0,.04);
+    padding:4px;gap:1px;box-shadow:0 10px 26px -8px var(--shadow), 0 0 0 1px rgba(0,0,0,.04);
     white-space:nowrap;
   }
   .selmenu.show{display:inline-flex}
-  .selmenu::after{content:"";position:absolute;left:50%;width:10px;height:10px;background:var(--card);border:1.5px solid var(--line);transform:translateX(-50%) rotate(45deg)}
-  .selmenu[data-pos="above"]::after{bottom:-6px;border-top:none;border-left:none}
-  .selmenu[data-pos="below"]::after{top:-6px;border-bottom:none;border-right:none}
+  /* vertical menu sits beside the selection; the little arrow points at it */
+  .selmenu::after{content:"";position:absolute;top:var(--ay,20px);width:10px;height:10px;background:var(--card);border:1.5px solid var(--line);transform:translateY(-50%) rotate(45deg)}
+  .selmenu[data-pos="right"]::after{left:-6px;border-top:none;border-right:none}
+  .selmenu[data-pos="left"]::after{right:-6px;border-bottom:none;border-left:none}
+  .selmenu[data-pos="inside"]::after{display:none}
   .selmenu button{
-    font-family:inherit;font-weight:800;font-size:.74rem;cursor:pointer;
+    font-family:inherit;font-weight:800;font-size:.76rem;cursor:pointer;
     border:none;background:transparent;color:var(--ink);border-radius:8px;
-    padding:6px 9px;display:inline-flex;align-items:center;gap:5px;position:relative;z-index:1;
+    padding:7px 12px 7px 8px;min-height:36px;display:flex;align-items:center;justify-content:flex-start;gap:8px;position:relative;z-index:1;
   }
   .selmenu button:hover{background:var(--paper)}
   .selmenu button.danger{color:#e2483d}
-  .selmenu .mi{font-size:.95rem;line-height:1}
+  .selmenu .mi{font-size:.95rem;line-height:1;width:18px;text-align:center;flex:0 0 auto}
+  .selmenu .fillsw{display:inline-block;width:16px;height:16px;border-radius:5px;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.28)}
   .paste-hint{
     position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
     display:none;background:var(--teal);color:var(--teal-ink);
@@ -234,7 +238,8 @@
     <button class="zoom-reset" id="zoomReset" title="Reset zoom (0)">🔍 <span id="zoomPct">100%</span></button>
     <div class="selmenu" id="selMenu" role="toolbar" aria-label="Selection actions">
       <button data-act="move" title="Move — or just drag the selection (M)"><span class="mi">✋</span>Move</button>
-      <button data-act="copy" title="Copy (Ctrl+C)"><span class="mi">📋</span>Copy</button>
+      <button data-act="copy" title="Copy, then tap to place it (⌘/Ctrl+C)"><span class="mi">📋</span>Copy</button>
+      <button data-act="fill" title="Fill the selection with the current colour"><span class="mi"><span class="fillsw" id="selFillSw"></span></span>Fill</button>
       <button data-act="mirror" title="Mirror left–right (H)"><span class="mi">⇆</span>Mirror</button>
       <button data-act="flip" title="Flip top–bottom (V)"><span class="mi">⇅</span>Flip</button>
       <button data-act="delete" class="danger" title="Delete (Del)"><span class="mi">🗑</span>Delete</button>
@@ -345,10 +350,21 @@
   var pointers=new Map(), gesture=null, panLast=null, pinch=null, spaceHeld=false, drawing=false, selecting=false;
   var projects=[], activeId=null, seq=0;
   var altHeld=false;
-  var EYE_CURSOR=(function(){
-    var s="<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><path d='m2 22 1-1h3l9-9'/><path d='M3 21v-3l9-9'/><path d='m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z'/><g stroke='#222' stroke-width='2'><path d='m2 22 1-1h3l9-9'/><path d='M3 21v-3l9-9'/><path d='m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z'/></g></svg>";
-    return "url(\"data:image/svg+xml;utf8,"+encodeURIComponent(s)+"\") 2 22, crosshair";
-  })();
+  function mkCursor(inner, hx, hy){
+    var s="<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'>"+inner+"</svg>";
+    return "url(\"data:image/svg+xml;utf8,"+encodeURIComponent(s)+"\") "+hx+" "+hy+", crosshair";
+  }
+  // tool cursors — white shape + dark outline so they read on any colour (same set as Pixel Mosaic)
+  var EYE_CURSOR=mkCursor("<g fill='none' stroke='#111' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><path d='m4 26 1.2-1.2h3.4l10.4-10.4'/><path d='M5 25v-3.4l10.4-10.4'/><path d='m17 8 3.8-3.8a2.4 2.4 0 1 1 3.4 3.4L20.4 11l.5.5a2.4 2.4 0 1 1-3.4 3.4l-4.3-4.3a2.4 2.4 0 1 1 3.4-3.4l.4.4Z'/></g><g fill='none' stroke='#fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m4 26 1.2-1.2h3.4l10.4-10.4'/><path d='M5 25v-3.4l10.4-10.4'/><path d='m17 8 3.8-3.8a2.4 2.4 0 1 1 3.4 3.4L20.4 11l.5.5a2.4 2.4 0 1 1-3.4 3.4l-4.3-4.3a2.4 2.4 0 1 1 3.4-3.4l.4.4Z'/></g>",3,27);
+  var ERASE_CURSOR=mkCursor("<g transform='rotate(-40 15 15)'><rect x='7' y='11' width='17' height='9' rx='2' fill='rgba(255,255,255,.75)' stroke='#111' stroke-width='3'/><line x1='14' y1='11' x2='14' y2='20' stroke='#111' stroke-width='2.4'/><rect x='7' y='11' width='17' height='9' rx='2' fill='none' stroke='#fff' stroke-width='1.2'/></g>",15,15);
+  var SELECT_CURSOR=mkCursor("<rect x='7' y='7' width='16' height='16' rx='1' fill='none' stroke='#111' stroke-width='3' stroke-dasharray='3 2.4'/><rect x='7' y='7' width='16' height='16' rx='1' fill='none' stroke='#fff' stroke-width='1.3' stroke-dasharray='3 2.4'/>",15,15);
+
+  // Draw + Fill cursors are tinted with the current colour, so you can see what you'll paint
+  var _curCache={};
+  function hexOf(){ return currentColor||"#ffffff"; }
+  function drawCursor(){ var h=hexOf(), k="d"+h; if(!_curCache[k]) _curCache[k]=mkCursor("<rect x='8' y='8' width='15' height='15' rx='2.5' fill='"+h+"' stroke='#111' stroke-width='3'/><rect x='8' y='8' width='15' height='15' rx='2.5' fill='none' stroke='#fff' stroke-width='1.4'/>",15,15); return _curCache[k]; }
+  function fillCursor(){ var h=hexOf(), k="f"+h; if(!_curCache[k]) _curCache[k]=mkCursor("<g transform='rotate(-32 14 13)'><path d='M9 5 L21 5 L21 15 A6 3 0 0 1 9 15 Z' fill='rgba(255,255,255,.85)' stroke='#111' stroke-width='3'/><path d='M9 5 A6 3 0 0 0 21 5' fill='none' stroke='#111' stroke-width='3'/><path d='M15 2 v4' stroke='#111' stroke-width='3'/></g><path d='M8 18 q-3.5 5 0 7.5 q3.5 -2.5 0 -7.5 Z' fill='"+h+"' stroke='#111' stroke-width='1.6'/>",8,25); return _curCache[k]; }
+  function markFillSwatch(){ var sw=document.getElementById("selFillSw"); if(!sw) return; sw.style.background=currentColor; }
 
   function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
   function getVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#ffffff"; }
@@ -702,7 +718,13 @@
   var toolBtns=document.querySelectorAll(".blk.tool");
   function updateCursor(){
     var eye = (tool==="eyedropper") || (altHeld && tool!=="select" && tool!=="eyedropper");
-    var c = eye ? EYE_CURSOR : "";
+    var c = "";
+    if(pasteMode) c="";
+    else if(eye) c=EYE_CURSOR;
+    else if(tool==="pencil") c=drawCursor();
+    else if(tool==="eraser") c=ERASE_CURSOR;
+    else if(tool==="fill") c=fillCursor();
+    else if(tool==="select") c=SELECT_CURSOR;
     if(mv) c=(gesture==="move")?"grabbing":"move";
     else if(tool==="select" && hoverSel && !pasteMode) c="move";
     canvas.style.cursor = c;
@@ -742,15 +764,22 @@
     var show = !!selection && (selection.c1>selection.c0 || selection.r1>selection.r0) && tool==="select" && !pasteMode && !selecting;
     selMenu.classList.toggle("show", show);
     if(!show) return;
+    markFillSwatch();
+    // vertical menu: beside the selection (right, else left, else tucked inside), centred on it, kept on-screen
     var rect=canvas.getBoundingClientRect(), srect=stage.getBoundingClientRect();
     var ud=rect.width/cols;                       // displayed px per cell
-    var cxs=rect.left + (selection.c0 + (selection.c1-selection.c0+1)/2)*ud;
-    var tys=rect.top  + selection.r0*ud;
-    var bys=rect.top  + (selection.r1+1)*ud;
-    var half=(selMenu.offsetWidth||104)/2+6;   // keep the whole menu on screen (it has 5 buttons now)
-    selMenu.style.left = clamp(cxs - srect.left, half, Math.max(half, srect.width-half)) + "px";
-    if(tys - srect.top - 54 < 4){ selMenu.dataset.pos="below"; selMenu.style.top=(bys - srect.top + 11)+"px"; selMenu.style.transform="translate(-50%,0)"; }
-    else { selMenu.dataset.pos="above"; selMenu.style.top=(tys - srect.top - 11)+"px"; selMenu.style.transform="translate(-50%,-100%)"; }
+    var L=rect.left-srect.left+selection.c0*ud, R=rect.left-srect.left+(selection.c1+1)*ud;
+    var T=rect.top -srect.top +selection.r0*ud, B=rect.top -srect.top +(selection.r1+1)*ud;
+    var mw=selMenu.offsetWidth||110, mh=selMenu.offsetHeight||240, gap=12, pad=6, x, pos;
+    if(R+gap+mw <= srect.width-pad){ x=R+gap; pos="right"; }
+    else if(L-gap-mw >= pad){ x=L-gap-mw; pos="left"; }
+    else { x=clamp(Math.min(R,srect.width)-mw-pad, pad, Math.max(pad,srect.width-mw-pad)); pos="inside"; }
+    var midY=(clamp(T,0,srect.height)+clamp(B,0,srect.height))/2;
+    var y=clamp(midY-mh/2, pad, Math.max(pad, srect.height-mh-pad));
+    selMenu.dataset.pos=pos;
+    selMenu.style.transform="none";
+    selMenu.style.left=x+"px"; selMenu.style.top=y+"px";
+    selMenu.style.setProperty("--ay", clamp(midY-y, 14, mh-14)+"px");
   }
   function updateSelUI(){ positionSelMenu(); }
   function deleteSelection(){
@@ -759,6 +788,19 @@
     for(var r=selection.r0;r<=selection.r1;r++) for(var c=selection.c0;c<=selection.c1;c++) model[r*cols+c]=null;
     render(); save(); refreshEdit();
   }
+  // fill the whole selection with the current colour (one undo step)
+  function fillSelection(){
+    if(!selection) return;
+    var changed=false, r, c;
+    for(r=selection.r0;r<=selection.r1;r++) for(c=selection.c0;c<=selection.c1;c++) if(model[r*cols+c]!==currentColor) changed=true;
+    if(!changed) return;
+    pushState();
+    for(r=selection.r0;r<=selection.r1;r++) for(c=selection.c0;c<=selection.c1;c++) model[r*cols+c]=currentColor;
+    render(); save(); refreshEdit();
+  }
+  // Copy jumps straight into paste mode — the copy follows the cursor / your finger, tap to stamp
+  function copyAndPaste(){ if(!selection) return; doCopy(); enterPaste(); }
+  function cutAndPaste(){ if(!selection) return; doCopy(); deleteSelection(); enterPaste(); }
   // mirror the paste stamp while placing, or a selection in place
   function mirrorData(data,w,h,horiz){
     var out=new Array(w*h);
@@ -786,7 +828,8 @@
     var b=e.target.closest && e.target.closest("button"); if(!b) return;
     var act=b.dataset.act;
     if(act==="move") startMoveFromMenu();
-    else if(act==="copy") doCopy();
+    else if(act==="copy") copyAndPaste();
+    else if(act==="fill") fillSelection();
     else if(act==="mirror") flip(true);
     else if(act==="flip") flip(false);
     else if(act==="delete") deleteSelection();
@@ -835,10 +878,11 @@
     currentChip.style.background=currentColor;
     var cur=currentColor.toLowerCase();
     swBtns.forEach(function(s){ s.setAttribute("aria-pressed", s.dataset.c.toLowerCase()===cur?"true":"false"); });
+    markFillSwatch(); updateCursor();
   }
   function pickColor(col){
     currentColor=col; exitPaste();
-    if(tool!=="pencil"){ selectTool("pencil"); }
+    if(tool!=="pencil" && tool!=="fill" && !(tool==="select" && selection)){ selectTool("pencil"); }   // keep a live selection so Fill can use the new colour
     markColor(); save();
   }
   function makeSwatch(col, parent){
@@ -941,9 +985,9 @@
     if(e.ctrlKey||e.metaKey){
       if(k==="z"){ e.preventDefault(); e.shiftKey?redo():undo(); }
       else if(k==="y"){ e.preventDefault(); redo(); }
-      else if(k==="c"){ e.preventDefault(); doCopy(); }
+      else if(k==="c"){ e.preventDefault(); copyAndPaste(); }
       else if(k==="v"){ e.preventDefault(); enterPaste(); }
-      else if(k==="x"){ e.preventDefault(); if(selection){ doCopy(); deleteSelection(); } }
+      else if(k==="x"){ e.preventDefault(); cutAndPaste(); }
       else if(k==="s"){ e.preventDefault(); downloadScale(16); }
       return;
     }
@@ -957,7 +1001,7 @@
     else if(k==="s") selectTool("select");
     else if(k==="i") selectTool("eyedropper");
     else if(k==="g") toggleGrid();
-    else if(k==="c") doCopy();
+    else if(k==="c") copyAndPaste();
     else if(k==="p") enterPaste();
     else if(k==="h") flip(true);
     else if(k==="v") flip(false);
