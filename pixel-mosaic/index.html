@@ -277,6 +277,15 @@
     .tsw:hover{transform:none}
     .toolbar:not(.more-open) .phone-more{display:none!important}
   }
+  /* see-through chrome: the top bar and tool bar are translucent and sit above the canvas, so
+     when you zoom or pan, the artwork shows through underneath them (same in Pixel Pad + Mosaic) */
+  .editor,.stage{overflow:visible}
+  .tabbar,.toolbar{
+    position:relative;z-index:10;
+    background:var(--card);
+    background:color-mix(in srgb, var(--card) 68%, transparent);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
 </style>
 
 <div class="app-shell">

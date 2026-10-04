@@ -229,6 +229,15 @@
   .modal p{margin:0 0 14px;color:var(--muted);font-size:.9rem;font-weight:600}
   .modal img{width:100%;max-width:320px;border-radius:12px;image-rendering:pixelated;box-shadow:0 6px 16px -6px var(--shadow);margin:0 auto 16px;background:#fff}
   .modal button{font-family:inherit;font-weight:800;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px 18px;cursor:pointer;min-height:44px}
+  /* see-through chrome: the top bar and tool bar are translucent and sit above the canvas, so
+     when you zoom or pan, the artwork shows through underneath them (same in Pixel Pad + Mosaic) */
+  .editor,.stage{overflow:visible}
+  .tabbar,.toolbar{
+    position:relative;z-index:10;
+    background:var(--card);
+    background:color-mix(in srgb, var(--card) 68%, transparent);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
 </style>
 
 <div class="app-shell">
