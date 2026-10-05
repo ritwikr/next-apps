@@ -13,7 +13,7 @@
 "use strict";
 
 // ---- settings -------------------------------------------------------------
-var CLIENT_ID = "";   // ← Google Cloud OAuth client ID (Web). Empty = sign-in shows "not set up yet".
+var CLIENT_ID = "76047242910-4p1uc2c3ismdv2jo3ahom8j4auipacvr.apps.googleusercontent.com";   // ← Google Cloud OAuth client ID (Web). Empty = sign-in shows "not set up yet".
 var CFG = window.NEXT_ACCOUNT_CONFIG || {};
 if (CFG.clientId) CLIENT_ID = CFG.clientId;
 var PREFIX   = CFG.storagePrefix || "";                    // "test:" on the test copy
