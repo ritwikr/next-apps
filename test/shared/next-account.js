@@ -482,15 +482,18 @@ function downloadBackup(){
 function restoreBackup(){
   closeMenu();
   var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,application/json";
+  inp.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+  document.body.appendChild(inp);
   inp.onchange = function(){
-    var f = inp.files && inp.files[0]; if (!f) return;
+    var f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
     var rd = new FileReader();
     rd.onload = function(){
-      var d; try { d = JSON.parse(rd.result); } catch(e) { toast("That file isn't a backup."); return; }
+      function tell(t, b){ showModal({ title: t, body: b, buttons: [{ label: "OK", primary: true }] }); }
+      var d; try { d = JSON.parse(rd.result); } catch(e) { tell("That file isn't a backup", "Choose a file made with \u201cDownload all my work\u201d."); return; }
       var found = [];
       if (d && d.spaces) Object.keys(d.spaces).forEach(function(k){ var b = d.spaces[k]; if (b && b.projects) found = found.concat(b.projects); });
       else if (d && d.projects) found = d.projects;
-      if (d && d.app && d.app !== app.app) { toast("That backup is from another app."); return; }
+      if (d && d.app && d.app !== app.app) { tell("That backup is from another app", "It was made in a different Next app. Open that app to restore it."); return; }
       try { app.flush(); } catch(e) {}
       var b = readBundle(); if (b === undefined) return;
       if (!b) { b = JSON.parse(JSON.stringify(readGuestBundle() || {})); b.projects = []; }
@@ -502,11 +505,12 @@ function restoreBackup(){
         var c = JSON.parse(JSON.stringify(p)); if (ids[c.id]) c.id = newId(); c.open = false;
         b.projects.push(c); have[sig(c)] = 1; ids[c.id] = 1; added++;
       });
-      if (!added) { toast("Everything in that backup is already here."); return; }
+      var total = found.filter(function(p){ return p && !blank(p); }).length;
+      if (!added) { tell("Nothing new to add", total ? "All " + total + (total === 1 ? " artwork" : " artworks") + " in this backup " + (total === 1 ? "is" : "are") + " already here, unchanged." : "This backup has no artworks in it."); return; }
       if (!b.projects.some(function(p){ return p.id === b.activeId; })) { b.projects[0].open = true; b.activeId = b.projects[0].id; }
       writeBundle(b); reloadApp();
       if (user) scheduleSync();
-      toast("Added " + added + (added === 1 ? " artwork" : " artworks") + " — find them in All artworks.");
+      tell("Restored " + added + (added === 1 ? " artwork" : " artworks"), "Find " + (added === 1 ? "it" : "them") + " in All artworks." + (total > added ? " " + (total - added) + " other" + (total - added === 1 ? " was" : "s were") + " already here." : ""));
     };
     rd.readAsText(f);
   };
