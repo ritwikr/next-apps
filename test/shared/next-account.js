@@ -506,7 +506,7 @@ function restoreBackup(){
         b.projects.push(c); have[sig(c)] = 1; ids[c.id] = 1; added++;
       });
       var total = found.filter(function(p){ return p && !blank(p); }).length;
-      if (!added) { tell("Nothing new to add", total ? "All " + total + (total === 1 ? " artwork" : " artworks") + " in this backup " + (total === 1 ? "is" : "are") + " already here, unchanged." : "This backup has no artworks in it."); return; }
+      if (!added) { tell("Nothing new to add", total === 1 ? "The artwork in this backup is already here, unchanged." : total ? "All " + total + " artworks in this backup are already here, unchanged." : "This backup has no artworks in it."); return; }
       if (!b.projects.some(function(p){ return p.id === b.activeId; })) { b.projects[0].open = true; b.activeId = b.projects[0].id; }
       writeBundle(b); reloadApp();
       if (user) scheduleSync();
