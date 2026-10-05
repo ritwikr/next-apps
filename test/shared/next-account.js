@@ -510,6 +510,8 @@ function restoreBackup(){
       if (!b.projects.some(function(p){ return p.id === b.activeId; })) { b.projects[0].open = true; b.activeId = b.projects[0].id; }
       writeBundle(b); reloadApp();
       if (user) scheduleSync();
+      var msg = "Restored " + added + (added === 1 ? " artwork" : " artworks") + (total > added ? " (" + (total - added) + " already here)" : "") + ".";
+      if (app.showAll) { try { app.showAll(); toast(msg); return; } catch(e) {} }   // open the app's "All artworks" view so they're right there
       tell("Restored " + added + (added === 1 ? " artwork" : " artworks"), "Find " + (added === 1 ? "it" : "them") + " in All artworks." + (total > added ? " " + (total - added) + " other" + (total - added === 1 ? " was" : "s were") + " already here." : ""));
     };
     rd.readAsText(f);

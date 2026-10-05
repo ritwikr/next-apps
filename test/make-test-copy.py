@@ -56,7 +56,8 @@ sub("  // ---- init ----\n  load();",
     flush:function(){ commitActive(); save(); },
     reload:function(){ closeFiles(); exitPaste(); projects=[]; activeId=null; seq=0; load(); loadProject(activeProj()); },
     isBlank:function(p){ return !(p.model||[]).some(function(v){ return v; }); },
-    thumb:function(p){ return thumbOf({cols:p.cols, rows:p.rows, model:p.model||[]}); }
+    thumb:function(p){ return thumbOf({cols:p.cols, rows:p.rows, model:p.model||[]}); },
+    showAll:function(){ openFiles(); }
   });
 
   // ---- init ----
