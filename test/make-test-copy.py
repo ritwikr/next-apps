@@ -9,6 +9,10 @@ root = sys.argv[1] if len(sys.argv) > 1 else "."
 src = open(os.path.join(root, "pixel-pad", "index.html"), encoding="utf-8").read()
 s = src
 
+import hashlib
+# cache-buster: changes whenever the shared module changes, so browsers never use a stale copy
+VER = hashlib.md5(open(os.path.join(root, "test", "shared", "next-account.js"), "rb").read()).hexdigest()[:8]
+
 def sub(old, new, count=1):
     global s
     n = s.count(old)
@@ -31,7 +35,7 @@ s = re.sub(r'<link rel="icon" href="[^"]*">', lambda m: '<link rel="icon" href="
 # 2. load the shared sign-in module before the app script
 sub("<script>\n(function(){\n  \"use strict\";\n  var KEY=\"pixelpad-v1\";",
     "<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:\"test:\", seedFromLive:[\"pixelpad-v2\",\"pixelpad-v1\"]};</script>\n"
-    "<script src=\"../shared/next-account.js\"></script>\n"
+    "<script src=\"../shared/next-account.js?v=" + VER + "\"></script>\n"
     "<script>\n(function(){\n  \"use strict\";\n  var KEY=\"pixelpad-v1\";")
 
 # 3. artwork bundle goes through NextAccount (guest space = same data as before)
