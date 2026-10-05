@@ -16,8 +16,17 @@ def sub(old, new, count=1):
         sys.exit("expected %d of %r, found %d" % (count, old[:60], n))
     s = s.replace(old, new)
 
-# 1. title marks the test copy
-sub("<title>Pixel Pad</title>", "<title>Pixel Pad (test)</title>")
+# 1. title + favicon mark the test copy (yellow tile, dark pixels — easy to tell apart in tabs)
+sub("<title>Pixel Pad</title>", "<title>TEST · Pixel Pad</title>")
+import re, urllib.parse
+TEST_ICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+  '<rect x="1" y="1" width="30" height="30" rx="7" fill="#FFD43B" stroke="#2C2740" stroke-width="2"/>'
+  + "".join('<rect x="%d" y="%d" width="5" height="5" rx="1" fill="#2C2740"/>' % xy
+            for xy in [(5,5),(16,5),(10,11),(21,11),(5,16),(16,16),(10,21),(21,21)])
+  + '</svg>')
+n_before = len(re.findall(r'<link rel="icon" href="[^"]*">', s))
+if n_before != 1: sys.exit("expected 1 favicon link, found %d" % n_before)
+s = re.sub(r'<link rel="icon" href="[^"]*">', lambda m: '<link rel="icon" href="data:image/svg+xml,' + urllib.parse.quote(TEST_ICON, safe="") + '">', s)
 
 # 2. load the shared sign-in module before the app script
 sub("<script>\n(function(){\n  \"use strict\";\n  var KEY=\"pixelpad-v1\";",

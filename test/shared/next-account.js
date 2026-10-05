@@ -528,7 +528,7 @@ var CSS = "" +
 ".na-av img{width:100%;height:100%;object-fit:cover;display:block}" +
 "@media (max-width:699px){.na-status .na-txt{display:none}.na-status{padding:0 9px}}" +
 "@media (max-width:520px){.na-acct .na-txt{display:none}.na-acct{padding:0 4px}.na-acct.out{padding:0 9px}}" +
-".na-menu{position:fixed;z-index:1000;min-width:250px;max-width:calc(100vw - 24px);background:var(--card,#fff);color:var(--ink,#222);border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 12px 34px var(--shadow,rgba(0,0,0,.2));padding:8px;font-family:inherit}" +
+".na-menu{position:fixed;z-index:1000;width:250px;max-width:calc(100vw - 24px);background:var(--card,#fff);color:var(--ink,#222);border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 12px 34px var(--shadow,rgba(0,0,0,.2));padding:8px;font-family:inherit}" +
 ".na-menu .na-who{padding:8px 10px 10px;border-bottom:1px solid var(--line,#ddd);margin-bottom:6px}" +
 ".na-menu .na-who b{display:block;font-size:.95rem}.na-menu .na-who small{color:var(--muted,#777);font-size:.78rem}" +
 ".na-menu .na-note{padding:6px 10px 8px;color:var(--muted,#777);font-size:.78rem;line-height:1.35}" +
