@@ -20,7 +20,9 @@ var PREFIX   = CFG.storagePrefix || "";                    // "test:" on the tes
 var DOMAINS  = CFG.domains || ["nextschool.org", "sunset.in"];
 var IDLE_MS  = CFG.idleHours ? CFG.idleHours * 3600 * 1000 : 0;   // 0 = never sign out by itself (each learner has their own iPad)
 var API      = CFG.apiBase || "https://www.googleapis.com";
-var GSI_SRC  = CFG.gsiSrc || "https://accounts.google.com/gsi/client";
+var HELPER   = (CFG.helperUrl || "").replace(/\/+$/, "");    // the sign-in helper (Cloudflare Worker). Empty = sign-in shows "not set up yet".
+var AUTH_URL = CFG.authUrl || "https://accounts.google.com/o/oauth2/v2/auth";
+var REDIRECT = CFG.redirectUri || new URL("../signin/", location.href).href;   // Google sends learners back here
 var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 var SCOPES   = "openid email profile " + DRIVE_SCOPE;
 var SYNC_DELAY = CFG.syncDelayMs || 4000;
@@ -35,7 +37,9 @@ function setJ(k, v){ return setRaw(k, JSON.stringify(v)); }
 
 var app = null;          // the registered app (one per page)
 var user = getJ("nextacct.user");      // {email, name, given, picture}
-var token = getJ("nextacct.token");    // {t, exp}
+var token = getJ("nextacct.token");    // {t, exp}  — a 1-hour pass, renewed quietly by the helper
+var sealed = getJ("nextacct.sealed");  // the locked renewal key (only the helper can open it)
+var needSignIn = false;                // the helper said the renewal key no longer works
 var status = "guest";
 var syncTimer = null, syncing = null, ui = {};
 
@@ -84,57 +88,66 @@ function unsyncedCount(){
   return n;
 }
 
-// ---- Google sign-in (Google Identity Services, token model) ---------------------------
-var tokenClient = null, pending = null, gsiLoading = false;
-function gsiReady(){ return !!(window.google && google.accounts && google.accounts.oauth2); }
-function loadGsi(){
-  if (gsiReady() || gsiLoading || !CLIENT_ID) return;
-  gsiLoading = true;
-  var s = document.createElement("script"); s.src = GSI_SRC; s.async = true; s.defer = true;
-  s.onload = function(){ gsiLoading = false; initClient(); };
-  s.onerror = function(){ gsiLoading = false; };
-  document.head.appendChild(s);
-}
-function initClient(){
-  if (tokenClient || !gsiReady() || !CLIENT_ID) return;
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID, scope: SCOPES,
-    callback: function(r){ var p = pending; pending = null; if (!p) return; if (r && r.error) p.reject(r); else p.resolve(r); },
-    error_callback: function(e){ var p = pending; pending = null; if (p) p.reject(e || { type: "unknown" }); }
-  });
-}
-// Must be called straight from a tap (browsers only allow Google's window after a tap).
-function requestToken(mode){
-  initClient();
-  if (!tokenClient) return Promise.reject({ type: "not_ready" });
-  if (pending) { try { pending.reject({ type: "superseded" }); } catch(e) {} }
-  return new Promise(function(resolve, reject){
-    pending = { resolve: resolve, reject: reject };
-    var o = mode === "signin" ? { prompt: "select_account" } : { prompt: "", login_hint: user && user.email };
-    tokenClient.requestAccessToken(o);
-  }).then(function(r){
-    if (!google.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE)) throw { type: "no_drive" };
-    token = { t: r.access_token, exp: Date.now() + ((+r.expires_in || 3600) - 120) * 1000 };
-    setJ("nextacct.token", token);
-    return token;
-  });
-}
-function whoAmI(){
-  return api("GET", "/oauth2/v3/userinfo").then(function(r){ return r.json(); });
-}
+// ---- Google sign-in (full-page visit to Google, then quiet renewals via the helper) ----
+// No pop-ups: tapping Sign in takes this page to Google and Google brings the learner
+// straight back. After that the helper renews the 1-hour pass in the background.
 function domainOk(email){
   var d = String(email || "").split("@")[1] || "";
   return DOMAINS.indexOf(d.toLowerCase()) >= 0;
 }
+function helper(path, body){
+  return fetch(HELPER + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ j._status = r.status; return j; }); });
+}
+// mode: "signin" (choose an account) or "again" (same learner, their renewal key stopped working)
+function goToGoogle(mode, email){
+  try { app.flush(); } catch(e) {}
+  var a = new Uint8Array(16); crypto.getRandomValues(a);
+  var state = Array.prototype.map.call(a, function(b){ return ("0" + b.toString(16)).slice(-2); }).join("");
+  try { store().setItem("nextacct.return." + state, JSON.stringify({ url: location.href.split("#")[0], at: Date.now() })); } catch(e) {}
+  setJ("nextacct.pending", { state: state, mode: mode, email: email || "", at: Date.now() });
+  var p = { client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: "code", scope: SCOPES,
+            access_type: "offline", include_granted_scopes: "true", state: state,
+            // "consent" makes Google hand over a renewal key every time; "select_account" lets them pick
+            prompt: mode === "again" ? "consent" : "select_account consent" };
+  if (email) p.login_hint = email;
+  location.assign(AUTH_URL + "?" + new URLSearchParams(p).toString());
+}
+// A fresh 1-hour pass, renewed quietly when needed.
+var renewing = null;
+function ensureToken(){
+  if (tokenOk()) return Promise.resolve(token);
+  if (!user) return Promise.reject({ auth: true });
+  if (!sealed) { needSignIn = true; return Promise.reject({ auth: true }); }
+  if (renewing) return renewing;
+  renewing = helper("/refresh", { sealed: sealed }).then(function(j){
+    if (j.error === "signin_needed") { needSignIn = true; throw { auth: true }; }
+    if (!j.access_token) throw { http: j._status || 0 };
+    if (j.email && user && j.email !== user.email) { needSignIn = true; throw { auth: true }; }
+    needSignIn = false;
+    token = { t: j.access_token, exp: Date.now() + ((+j.expires_in || 3600) - 120) * 1000 };
+    setJ("nextacct.token", token);
+    return token;
+  }, function(){ throw { net: true }; });
+  var r = renewing;
+  renewing.then(function(){ renewing = null; }, function(){ renewing = null; });
+  return r;
+}
 
 // ---- Drive API ------------------------------------------------------------------
-function api(method, path, body, headers){
-  if (!tokenOk()) return Promise.reject({ auth: true });
-  var h = { Authorization: "Bearer " + token.t };
-  for (var k in headers || {}) h[k] = headers[k];
-  if (body && typeof body === "object" && !(headers && headers["Content-Type"])) { h["Content-Type"] = "application/json"; body = JSON.stringify(body); }
-  return fetch(API + path, { method: method, headers: h, body: body }).then(function(r){
-    if (r.status === 401) { token = null; del("nextacct.token"); throw { auth: true }; }
+function api(method, path, body, headers, retried){
+  return ensureToken().then(function(){
+    var h = { Authorization: "Bearer " + token.t };
+    for (var k in headers || {}) h[k] = headers[k];
+    var b = body;
+    if (b && typeof b === "object" && !(headers && headers["Content-Type"])) { h["Content-Type"] = "application/json"; b = JSON.stringify(b); }
+    return fetch(API + path, { method: method, headers: h, body: b });
+  }).then(function(r){
+    if (r.status === 401) {
+      token = null; del("nextacct.token");
+      if (!retried) return api(method, path, body, headers, true);   // pass ran out early — renew once and retry
+      throw { auth: true };
+    }
     if (!r.ok) throw { http: r.status };
     return r;
   });
@@ -195,16 +208,16 @@ function trash(id){ return api("PATCH", "/drive/v3/files/" + id + "?fields=id", 
 // ---- syncing ----------------------------------------------------------------------
 function scheduleSync(){
   if (!user) return;
-  setStatus(tokenOk() ? "pending" : "paused");
+  if (needSignIn) { setStatus("paused"); return; }
+  setStatus("pending");
   clearTimeout(syncTimer);
-  if (tokenOk()) syncTimer = setTimeout(function(){ sync().catch(function(){}); }, SYNC_DELAY);
+  syncTimer = setTimeout(function(){ sync().catch(function(){}); }, SYNC_DELAY);
 }
 
 // Full two-way sync of the signed-in space for this app.
 function sync(){
   if (!user) return Promise.resolve();
   if (syncing) return syncing.then(function(){ return sync(); });
-  if (!tokenOk()) { setStatus("paused"); return Promise.reject({ auth: true }); }
   if (navigator.onLine === false) { setStatus("offline"); return Promise.reject({ offline: true }); }
   clearTimeout(syncTimer);
   flushQuietly();
@@ -220,7 +233,7 @@ function sync(){
   var adds = [], replaces = {}, startSig = {};
   local.forEach(function(p){ startSig[p.id] = sig(p); });
 
-  syncing = ensureFolder(rec).then(function(folder){
+  syncing = ensureToken().then(function(){ return ensureFolder(rec); }).then(function(folder){
     return listFiles().then(function(files){
       var onDrive = {};
       var chain = Promise.resolve();
@@ -330,27 +343,54 @@ function inDriveOrder(b, rec){
 // ---- signing in ---------------------------------------------------------------------
 function signIn(){
   closeMenu();
-  if (!CLIENT_ID) { showModal({ title: "Sign-in isn't set up yet", body: "You can keep using " + app.label + " as normal. Everything saves on " + here() + ".", buttons: [{ label: "OK", primary: true }] }); return; }
-  if (!gsiReady()) { loadGsi(); toast("Getting Google sign-in ready… tap Sign in again in a moment."); return; }
-  // (requestToken must run right here, inside the tap.)
-  requestToken("signin").then(function(){ return whoAmI(); }).then(function(me){
-    if (!me || !me.email || me.email_verified === false || !domainOk(me.email)) {
-      try { google.accounts.oauth2.revoke(token.t, function(){}); } catch(e) {}
-      token = null; del("nextacct.token");
+  if (!CLIENT_ID || !HELPER) { showModal({ title: "Sign-in isn't set up yet", body: "You can keep using " + app.label + " as normal. Everything saves on " + here() + ".", buttons: [{ label: "OK", primary: true }] }); return; }
+  goToGoogle("signin");
+}
+function signInAgain(){
+  closeMenu();
+  if (!user) return;
+  goToGoogle("again", user.email);
+}
+
+// Google has sent the learner back with "#na_auth=…" on the address.
+function handleReturn(){
+  var m = /[#&]na_auth=([^&]*)/.exec(location.hash);
+  if (!m) return;
+  try { history.replaceState(null, "", location.href.split("#")[0]); } catch(e) {}
+  var res = null; try { res = JSON.parse(decodeURIComponent(m[1])); } catch(e) {}
+  var pend = getJ("nextacct.pending"); del("nextacct.pending");
+  if (!res || !pend || res.state !== pend.state) return;
+  if (res.error) { if (res.error !== "access_denied") toast("Couldn't sign in. Please try again.", true); return; }
+  var again = pend.mode === "again";
+  var wait = showModal({ title: "Signing you in…", body: "Just a moment.", buttons: [] });
+  helper("/exchange", { code: res.code, redirect_uri: REDIRECT }).then(function(j){
+    closeModal(wait);
+    if (j.error === "domain" || (j.user && !domainOk(j.user.email))) {
       showModal({ title: "Not available for this account yet", body: "Signing in is only open to " + DOMAINS.map(function(d){ return "@" + d; }).join(" and ") + " accounts for now. You can keep using " + app.label + " without signing in — your work saves on " + here() + ".", buttons: [{ label: "OK", primary: true }] });
       return;
     }
-    try { app.flush(); } catch(e) {}
-    user = { email: me.email.toLowerCase(), name: me.name || me.email, given: me.given_name || (me.name || me.email).split(" ")[0], picture: me.picture || "" };
+    if (j.error === "no_drive") {
+      showModal({ title: "Drive permission needed", body: "To save your work to your account, please tick the box that lets Next Apps save to your Google Drive. Nothing else in your Drive is visible to the app.", buttons: [
+        { label: "Not now" }, { label: "Try again", primary: true, onClick: function(){ again ? signInAgain() : signIn(); } } ] });
+      return;
+    }
+    if (!j.access_token || !j.sealed || !j.user) { toast("Couldn't sign in. Please try again.", true); return; }
+    if (again && user && j.user.email !== user.email) {
+      toast("That's a different Google account. Please choose " + user.email + ".", true);
+      return;
+    }
+    token = { t: j.access_token, exp: Date.now() + ((+j.expires_in || 3600) - 120) * 1000 };
+    setJ("nextacct.token", token);
+    sealed = j.sealed; setJ("nextacct.sealed", sealed);
+    needSignIn = false;
+    if (again && user) { render(); sync().then(function(){ toast("All set — saving to your Google Drive again."); }, function(){}); return; }
+    user = { email: j.user.email.toLowerCase(), name: j.user.name, given: j.user.given, picture: j.user.picture || "" };
     setJ("nextacct.user", user);
     touch(true);
     return enterSpace();
-  }).catch(function(e){
-    if (e && e.type === "no_drive") showModal({ title: "Drive permission needed", body: "To save your work to your account, please tick the box that lets Next Apps save to your Google Drive. Nothing else in your Drive is visible to the app.", buttons: [{ label: "OK", primary: true }] });
-    else if (e && (e.type === "popup_closed" || e.type === "superseded")) {}
-    else if (e && e.type === "popup_failed_to_open") toast("Google's sign-in window was blocked. Please allow pop-ups and try again.", true);
-    else toast("Couldn't sign in. Please try again.", true);
-    render();
+  }, function(){
+    closeModal(wait);
+    toast(navigator.onLine === false ? "No internet right now. Please try signing in again when you're online." : "Couldn't sign in. Please try again.", true);
   });
 }
 
@@ -417,9 +457,8 @@ function signOut(){
   closeMenu();
   if (!user) return;
   try { app.flush(); } catch(e) {}
-  var renew = tokenOk() ? Promise.resolve() : requestToken("renew").then(checkSameUser);   // inside the tap
   var m = showModal({ title: "Signing out…", body: "Saving your work to Google Drive first.", buttons: [] });
-  renew.then(function(){ return sync(); }).then(function(){
+  sync().then(function(){
     closeModal(m);
     if (unsyncedCount() === 0) finishSignOut(true);
     else askUnsynced();
@@ -430,7 +469,7 @@ function askUnsynced(){
   if (n === 0) { finishSignOut(true); return; }
   showModal({
     title: n === 1 ? "1 artwork hasn't reached your Drive yet" : n + " artworks haven't reached your Drive yet",
-    body: "This usually means there's no internet right now. If you sign out anyway, they stay on " + here() + ", hidden and set aside for you. Next time you sign in here, they'll go to your Drive.",
+    body: (needSignIn ? "Saving to Drive needs you to sign in again first." : "This usually means there's no internet right now.") + " If you sign out anyway, they stay on " + here() + ", hidden and set aside for you. Next time you sign in here, they'll go to your Drive.",
     buttons: [
       { label: "Download a backup", onClick: function(){ downloadBackup(); askUnsynced(); } },
       { label: "Sign out anyway", onClick: function(){ finishSignOut(false); } },
@@ -439,35 +478,27 @@ function askUnsynced(){
   });
 }
 // everythingSafe: all work is in Drive, so this device's copy can go.
+// (We only forget the renewal key on this device. We don't cancel it with Google,
+//  because that would also sign the learner out on their other devices.)
 function finishSignOut(everythingSafe, auto){
   var name = user && user.given;
   clearToasts();   // old "signed in as…" notices no longer apply
   if (everythingSafe && user) { del(app.key + "@@" + user.email); del(recKey()); }
-  user = null; token = null; clearTimeout(syncTimer);
-  del("nextacct.user"); del("nextacct.token");
+  user = null; token = null; sealed = null; needSignIn = false; clearTimeout(syncTimer);
+  del("nextacct.user"); del("nextacct.token"); del("nextacct.sealed");
   reloadApp(); setStatus("guest"); render();
   if (auto) toast(name + " was signed out after " + (IDLE_MS / 3600000) + " hours away." + (everythingSafe ? "" : " Their unsaved work is set aside for them."), true);
   else toast(everythingSafe ? "Signed out. Your work is safe in your Google Drive." : "Signed out. Your unsaved work is set aside on " + here() + " for next time.", true);
 }
-function checkSameUser(){
-  return whoAmI().then(function(me){
-    if (!me || String(me.email).toLowerCase() !== user.email) {
-      token = null; del("nextacct.token");
-      toast("That's a different Google account. Please choose " + user.email + ".", true);
-      throw { type: "wrong_account" };
-    }
-  });
-}
-// Tap on the status: renew Drive access if needed, then sync.
+// Tap on the status: sign in again if the renewal key stopped working, otherwise sync now.
 function syncNow(){
   closeMenu();
   if (!user) return;
-  var renew = tokenOk() ? Promise.resolve() : requestToken("renew").then(checkSameUser);   // inside the tap
-  renew.then(function(){ return sync(); }).catch(function(e){
-    if (e && e.type === "wrong_account") return;
-    if (e && (e.type === "popup_closed" || e.type === "superseded")) return;
+  if (needSignIn) { signInAgain(); return; }
+  sync().catch(function(e){
+    if (e && e.auth) return;   // the status now says "Sign in again"
     if (navigator.onLine === false) toast("No internet right now. Your work is safe on " + here() + ".");
-    else if (!(e && e.auth)) toast("Couldn't reach Google Drive. Your work is safe on " + here() + ".");
+    else toast("Couldn't reach Google Drive. Your work is safe on " + here() + ".");
   });
 }
 
@@ -588,7 +619,7 @@ var STATUS = {
   synced:  { icon: "ok",   text: "Saved to Drive", tip: function(){ return "Everything is saved to your Google Drive."; } },
   pending: { icon: "busy", text: "Saving…",        tip: function(){ return "Saving your latest changes to Google Drive."; } },
   syncing: { icon: "busy", text: "Saving…",        tip: function(){ return "Saving your latest changes to Google Drive."; } },
-  paused:  { icon: "off",  warn: true, text: "Tap to sync",  tip: function(){ return "Saved on " + here() + ". Tap to save to Google Drive too."; } },
+  paused:  { icon: "off",  warn: true, text: "Sign in again", tip: function(){ return "Your work is saved on " + here() + ". Sign in again to keep saving to Google Drive."; } },
   offline: { icon: "off",  warn: true, text: "Offline",      tip: function(){ return "No internet. Your work is saved on " + here() + " and goes to Drive when you're back online."; } },
   error:   { icon: "off",  warn: true, text: "Tap to retry", tip: function(){ return "Couldn't reach Google Drive. Your work is saved on " + here() + ". Tap to try again."; } }
 };
@@ -719,28 +750,29 @@ function register(o){
   document.addEventListener("visibilitychange", function(){
     if (document.visibilityState !== "visible") return;
     checkIdle();
-    if (user && tokenOk()) sync().catch(function(){});
+    if (user && !needSignIn) sync().catch(function(){});
   });
-  window.addEventListener("online", function(){ if (user && tokenOk()) sync().catch(function(){}); else renderStatus(); });
+  window.addEventListener("online", function(){ if (user && !needSignIn) sync().catch(function(){}); else renderStatus(); });
   window.addEventListener("offline", function(){ if (user) setStatus("offline"); });
 
   if (user && IDLE_MS && getJ("nextacct.lastActive") && Date.now() - getJ("nextacct.lastActive") > IDLE_MS) {
     // Signed out after a long time away. (The app hasn't drawn anything yet, so it simply loads the guest space.)
     var name = user.given, safe = unsyncedCount() === 0;
     if (safe) { del(app.key + "@@" + user.email); del(recKey()); }
-    user = null; token = null; del("nextacct.user"); del("nextacct.token");
+    user = null; token = null; sealed = null; del("nextacct.user"); del("nextacct.token"); del("nextacct.sealed");
     setTimeout(function(){ toast(name + " was signed out after " + (IDLE_MS / 3600000) + " hours away." + (safe ? "" : " Their unsaved work is set aside for them."), true); }, 600);
   }
   if (user) touch(true);
-  status = user ? (tokenOk() ? "pending" : "paused") : "guest";
+  if (user && !sealed && !tokenOk()) needSignIn = true;   // signed in with the older pop-up version
+  status = user ? (needSignIn ? "paused" : "pending") : "guest";
   render();
-  if (CLIENT_ID) loadGsi();
-  if (user && tokenOk()) setTimeout(function(){ sync().catch(function(){}); }, 800);
+  if (location.hash.indexOf("na_auth=") >= 0) handleReturn();
+  else if (user && !needSignIn) setTimeout(function(){ sync().catch(function(){}); }, 800);
 }
 
 window.NextAccount = {
   register: register, getItem: getItem, setItem: setItem,
   // for testing / debugging
-  _debug: { sync: function(){ return sync(); }, unsynced: unsyncedCount, state: function(){ return { user: user, token: token, status: status }; } }
+  _debug: { sync: function(){ return sync(); }, unsynced: unsyncedCount, state: function(){ return { user: user, token: token, sealed: sealed, needSignIn: needSignIn, status: status }; } }
 };
 })();

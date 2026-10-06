@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Signing in…</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font:600 16px/1.5 system-ui,-apple-system,sans-serif;background:#16141c;color:#eee;text-align:center;padding:16px}
+  a{color:#ffd43b}
+</style>
+</head>
+<body>
+<p id="msg">Signing you in…</p>
+<script>
+/* Google sends the learner back here after sign-in. This page only hands the
+   result back to the app they came from, then gets out of the way. */
+(function(){
+  var q = new URLSearchParams(location.search);
+  var state = q.get("state") || "";
+  var back = null;
+  try {
+    var k = "nextacct.return." + state;
+    back = JSON.parse(localStorage.getItem(k) || "null");
+    localStorage.removeItem(k);
+  } catch (e) {}
+  if (!state || !back || !back.url || new URL(back.url).origin !== location.origin) {
+    document.getElementById("msg").innerHTML = 'That sign-in link has expired. <a href="../">Go back to the apps</a> and tap Sign in again.';
+    return;
+  }
+  var result = { state: state, code: q.get("code") || "", error: q.get("error") || "" };
+  location.replace(back.url + "#na_auth=" + encodeURIComponent(JSON.stringify(result)));
+})();
+</script>
+</body>
+</html>

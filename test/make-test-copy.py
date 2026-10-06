@@ -10,6 +10,8 @@ src = open(os.path.join(root, "pixel-pad", "index.html"), encoding="utf-8").read
 s = src
 
 import hashlib
+# the sign-in helper (Cloudflare Worker) — see helper/README.md. Empty = sign-in shows "not set up yet".
+HELPER_URL = ""
 # cache-buster: changes whenever the shared module changes, so browsers never use a stale copy
 VER = hashlib.md5(open(os.path.join(root, "test", "shared", "next-account.js"), "rb").read()).hexdigest()[:8]
 
@@ -34,7 +36,7 @@ s = re.sub(r'<link rel="icon" href="[^"]*">', lambda m: '<link rel="icon" href="
 
 # 2. load the shared sign-in module before the app script
 sub("<script>\n(function(){\n  \"use strict\";\n  var KEY=\"pixelpad-v1\";",
-    "<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:\"test:\", seedFromLive:[\"pixelpad-v2\",\"pixelpad-v1\"]};</script>\n"
+    "<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:\"test:\", seedFromLive:[\"pixelpad-v2\",\"pixelpad-v1\"], helperUrl:\"" + HELPER_URL + "\"};</script>\n"
     "<script src=\"../shared/next-account.js?v=" + VER + "\"></script>\n"
     "<script>\n(function(){\n  \"use strict\";\n  var KEY=\"pixelpad-v1\";")
 

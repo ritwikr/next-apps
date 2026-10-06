@@ -1,0 +1,14 @@
+name = "next-apps-signin"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+GOOGLE_CLIENT_ID = "76047242910-4p1uc2c3ismdv2jo3ahom8j4auipacvr.apps.googleusercontent.com"
+ALLOWED_ORIGINS = "https://ritwikr.github.io"
+ALLOWED_REDIRECTS = "https://ritwikr.github.io/next-apps/test/signin/,https://ritwikr.github.io/next-apps/signin/"
+ALLOWED_DOMAINS = "nextschool.org,sunset.in"
+
+# Secrets (set in the Cloudflare dashboard, never in this file):
+#   GOOGLE_CLIENT_SECRET  — from the Google Cloud OAuth client
+#   SEAL_KEY              — 32 random bytes, base64 (locks the renewal keys)
