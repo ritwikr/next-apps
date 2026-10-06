@@ -11,7 +11,7 @@ s = src
 
 import hashlib
 # the sign-in helper (Cloudflare Worker) — see helper/README.md. Empty = sign-in shows "not set up yet".
-HELPER_URL = ""
+HELPER_URL = "https://next-apps-signin.roy-ritwik.workers.dev"
 # cache-buster: changes whenever the shared module changes, so browsers never use a stale copy
 VER = hashlib.md5(open(os.path.join(root, "test", "shared", "next-account.js"), "rb").read()).hexdigest()[:8]
 

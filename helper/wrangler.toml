@@ -2,6 +2,7 @@ name = "next-apps-signin"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 workers_dev = true
+preview_urls = false
 
 [vars]
 GOOGLE_CLIENT_ID = "76047242910-4p1uc2c3ismdv2jo3ahom8j4auipacvr.apps.googleusercontent.com"
