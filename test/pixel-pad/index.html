@@ -347,8 +347,10 @@
     <div class="files-list" id="filesList"></div>
   </div>
 </div>
-<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:"test:", seedFromLive:["pixelpad-v2","pixelpad-v1"], helperUrl:"https://next-apps-signin.roy-ritwik.workers.dev"};</script>
-<script src="../shared/next-account.js?v=c169e981"></script>
+<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:"test:", seedFromLive:["pixelpad-v2","pixelpad-v1"]};</script>
+<script src="../../shared/next-account.js?v=d1d74e44"></script>
+<script>/* If the sign-in code can't load (offline, or this file opened on its own), the app still works as before. */
+window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k){try{return localStorage.getItem(k);}catch(e){return null;}},setItem:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}};</script>
 <script>
 (function(){
   "use strict";
@@ -1208,7 +1210,7 @@
   window.addEventListener("resize", fitCanvas);
   window.addEventListener("orientationchange", function(){ setTimeout(fitCanvas,120); });
 
-  // ---- account: optional sign-in, saving to the learner's Google Drive ----
+  // ---- account: optional sign-in, saving to the learner's own Google Drive (shared/next-account.js) ----
   NextAccount.register({
     app:"pixel-pad", label:"Pixel Pad", key:KEY2, legacyKeys:[KEY],
     mount:document.getElementById("naMount"),

@@ -60,6 +60,8 @@
   .filesbtn{flex:0 0 auto;height:36px;padding:0 11px;border-radius:10px;border:2px solid var(--line);background:transparent;color:var(--ink);font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
   .filesbtn .ic{font-size:1rem;line-height:1}
   @media (max-width:520px){ .filesbtn .lbl{display:none} .filesbtn{padding:0 9px} }
+  /* make room for the Sign in / Saved to Drive buttons on iPad portrait */
+  @media (max-width:1000px){ .brand span:not(.logo){display:none} }
   .files{position:fixed;inset:0;z-index:70;background:rgba(20,16,30,.6);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 14px}
   .files.show{display:flex}
   .files-inner{background:var(--card);color:var(--ink);border-radius:18px;max-width:640px;width:100%;padding:18px 18px 22px;box-shadow:0 20px 60px -20px #000}
@@ -204,6 +206,7 @@
     <div class="tabs" id="tabs" role="tablist"></div>
     <button class="newtab" id="newTab" title="New room">+</button>
     <button class="filesbtn" id="filesBtn" title="See all your rooms — open or delete them" aria-label="All rooms"><span class="ic">📂</span><span class="lbl">All rooms</span></button>
+    <div id="naMount" style="display:contents"></div>
     <button class="theme-btn" id="themeBtn" title="Light / dark">◐</button>
   </div>
 
@@ -322,6 +325,9 @@
     <div class="files-list" id="filesList"></div>
   </div>
 </div>
+<script src="../shared/next-account.js?v=d1d74e44"></script>
+<script>/* If the sign-in code can't load (offline, or this file opened on its own), the app still works as before. */
+window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k){try{return localStorage.getItem(k);}catch(e){return null;}},setItem:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}};</script>
 <script>
 "use strict";
 var SVGNS="http://www.w3.org/2000/svg";
@@ -539,10 +545,10 @@ function defaultProject(name){
 
 /* ---- persistence ---- */
 function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify({ projects:state.projects, activeId:state.activeId, seq:state.seq })); }catch(e){}
+  try{ NextAccount.setItem(KEY, JSON.stringify({ projects:state.projects, activeId:state.activeId, seq:state.seq })); }catch(e){}
 }
 function load(){
-  var d=null; try{ d=JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+  var d=null; try{ d=JSON.parse(NextAccount.getItem(KEY)); }catch(e){}
   if(d && d.projects && d.projects.length){
     state.projects=d.projects; state.activeId=d.activeId||d.projects[0].id; state.seq=d.seq||0;
     // migrate: ensure fields + fold any old wall-only items into unified furniture
@@ -1559,6 +1565,17 @@ function openSheet(){
    BOOT
    ========================================================================= */
 function boot(){
+  // ---- account: optional sign-in, saving to the learner's own Google Drive (shared/next-account.js) ----
+  NextAccount.register({
+    app:"room-blocks-planner", label:"Room Blocks Planner", key:KEY, noun:["room","rooms"],
+    mount:document.getElementById("naMount"),
+    flush:function(){ save(); },
+    reload:function(){ closeFiles(); selClear(); setPlacingSilently(null); histories={}; state.projects=[]; state.activeId=null; state.seq=0; load(); renderTabs(); syncRoomInputs(); render(); fit(); updateUndoUI(); },
+    // a room counts as empty until it has furniture or a changed size (every new room starts with two doors)
+    isBlank:function(p){ return !(p.furniture&&p.furniture.length) && (!p.room || (p.room.w===19 && p.room.h===26)); },
+    thumb:function(p){ if(!p.room) return null; var d=document.createElement("div"); d.innerHTML=roomThumb(p); return d.firstChild; },
+    showAll:function(){ openFiles(); }
+  });
   load(); buildBlocks(); renderTabs(); syncRoomInputs();
   setMode("plan"); updateUndoUI();
   var rt=null;

@@ -253,6 +253,7 @@
     <div class="tabs" id="tabs"></div>
     <button class="newtab" id="newTab" title="New artwork" aria-label="New artwork">＋</button>
     <button class="filesbtn" id="filesBtn" title="See all your artworks — open or delete them" aria-label="All artworks"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><span class="lbl">All artworks</span></button>
+    <div id="naMount" style="display:contents"></div>
   </div>
   <div class="editor">
   <div class="stage" id="stage">
@@ -346,6 +347,9 @@
     <div class="files-list" id="filesList"></div>
   </div>
 </div>
+<script src="../shared/next-account.js?v=d1d74e44"></script>
+<script>/* If the sign-in code can't load (offline, or this file opened on its own), the app still works as before. */
+window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k){try{return localStorage.getItem(k);}catch(e){return null;}},setItem:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}};</script>
 <script>
 (function(){
   "use strict";
@@ -400,14 +404,14 @@
   function commitActive(){ if(mv) dropMove(); var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
   function save(){
     commitActive();
-    try{ localStorage.setItem(KEY2, JSON.stringify({
+    try{ NextAccount.setItem(KEY2, JSON.stringify({
       seq:seq, activeId:activeId, color:currentColor, grid:gridOn,
       projects: projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:p.model}; })
     })); }catch(e){}
   }
   function useProject(p){ cols=p.cols; rows=p.rows; model=p.model; undoStack=p.undo; redoStack=p.redo; }
   function load(){
-    var v2=null; try{ v2=JSON.parse(localStorage.getItem(KEY2)); }catch(e){}
+    var v2=null; try{ v2=JSON.parse(NextAccount.getItem(KEY2)); }catch(e){}
     if(v2 && v2.projects && v2.projects.length){
       seq=v2.seq||0;
       projects=v2.projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:(p.model||[]).slice(),undo:[],redo:[]}; });
@@ -415,7 +419,7 @@
       if(typeof v2.color==="string") currentColor=v2.color;
       if(typeof v2.grid==="boolean") gridOn=v2.grid;
     } else {
-      var d=null; try{ d=JSON.parse(localStorage.getItem(KEY)); }catch(e){} // migrate old single drawing
+      var d=null; try{ d=JSON.parse(NextAccount.getItem(KEY)); }catch(e){} // migrate old single drawing
       if(d){
         var w=d.cols||d.size, h=d.rows||d.size;
         if(w && h && Array.isArray(d.model) && d.model.length===w*h){
@@ -1204,6 +1208,17 @@
   if(window.ResizeObserver){ new ResizeObserver(fitCanvas).observe(stage); }
   window.addEventListener("resize", fitCanvas);
   window.addEventListener("orientationchange", function(){ setTimeout(fitCanvas,120); });
+
+  // ---- account: optional sign-in, saving to the learner's own Google Drive (shared/next-account.js) ----
+  NextAccount.register({
+    app:"pixel-pad", label:"Pixel Pad", key:KEY2, legacyKeys:[KEY],
+    mount:document.getElementById("naMount"),
+    flush:function(){ commitActive(); save(); },
+    reload:function(){ closeFiles(); exitPaste(); projects=[]; activeId=null; seq=0; load(); loadProject(activeProj()); },
+    isBlank:function(p){ return !(p.model||[]).some(function(v){ return v; }); },
+    thumb:function(p){ return thumbOf({cols:p.cols, rows:p.rows, model:p.model||[]}); },
+    showAll:function(){ openFiles(); }
+  });
 
   // ---- init ----
   load();

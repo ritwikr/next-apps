@@ -20,12 +20,14 @@ var PREFIX   = CFG.storagePrefix || "";                    // "test:" on the tes
 var DOMAINS  = CFG.domains || ["nextschool.org", "sunset.in"];
 var IDLE_MS  = CFG.idleHours ? CFG.idleHours * 3600 * 1000 : 0;   // 0 = never sign out by itself (each learner has their own iPad)
 var API      = CFG.apiBase || "https://www.googleapis.com";
-var HELPER   = (CFG.helperUrl || "").replace(/\/+$/, "");    // the sign-in helper (Cloudflare Worker). Empty = sign-in shows "not set up yet".
+var HELPER   = (CFG.helperUrl || "https://next-apps-signin.roy-ritwik.workers.dev").replace(/\/+$/, "");    // the sign-in helper (Cloudflare Worker). Empty = sign-in shows "not set up yet".
 var AUTH_URL = CFG.authUrl || "https://accounts.google.com/o/oauth2/v2/auth";
 var REDIRECT = CFG.redirectUri || new URL("../signin/", location.href).href;   // Google sends learners back here
 var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 var SCOPES   = "openid email profile " + DRIVE_SCOPE;
 var SYNC_DELAY = CFG.syncDelayMs || 4000;
+// what the app calls one piece of work, e.g. ["room","rooms"] (default: artwork/artworks)
+function W(n){ var w = (app && app.noun) || ["artwork", "artworks"]; return n === 1 ? w[0] : w[1]; }
 
 // ---- storage helpers --------------------------------------------------------
 function store(){ try { return window.localStorage; } catch(e) { return null; } }
@@ -394,8 +396,9 @@ function handleReturn(){
   });
 }
 
-// After sign-in: offer guest work once, then show this person's space and sync.
-function enterSpace(){
+// After sign-in (or the first time a signed-in learner opens another app on this device):
+// offer guest work once, then show this person's space and sync.
+function enterSpace(firstOpen){
   var hasSpace = getRaw(spaceKey(app.key)) != null;
   var offeredKey = "nextacct.offered." + app.app + "@@" + user.email;
   var start = (!hasSpace && !getJ(offeredKey)) ? offerGuestWork() : Promise.resolve();
@@ -404,14 +407,16 @@ function enterSpace(){
     setJ(offeredKey, true);
     reloadApp();
     render();
+    if (needSignIn) { setStatus("paused"); return; }
     // Grey out the app while their work comes in from Drive, so it never looks like it's gone.
     var busy = showBusy("Getting your work from Google Drive…", "This takes a few seconds.");
     setStatus("loading");
     var done = false;
     var slow = setTimeout(function(){ if (!done) { done = true; closeModal(busy); toast("Still fetching your work from Google Drive — it'll appear here in a moment."); } }, 25000);
     function finish(){ clearTimeout(slow); if (!done) { done = true; closeModal(busy); } }
-    return sync().then(function(){ finish(); toast("Signed in as " + user.given + ". Your work now saves to your Google Drive.", true); },
-                       function(){ finish(); toast("Signed in as " + user.given + ". Saving to Drive will start shortly.", true); });
+    var hi = firstOpen ? "Your " + app.label + " work now saves to your Google Drive." : "Signed in as " + user.given + ". Your work now saves to your Google Drive.";
+    return sync().then(function(){ finish(); toast(hi, !firstOpen); },
+                       function(){ finish(); toast(firstOpen ? "Saving to Drive will start shortly." : "Signed in as " + user.given + ". Saving to Drive will start shortly.", !firstOpen); });
   });
 }
 
@@ -419,7 +424,7 @@ function enterSpace(){
 function offerGuestWork(force){
   var g = readGuestBundle();
   var items = (g && g.projects || []).filter(function(p){ return !blank(p); });
-  if (!items.length) { if (force) toast("There are no guest artworks on " + here() + "."); return Promise.resolve(); }
+  if (!items.length) { if (force) toast("There are no guest " + W(2) + " on " + here() + "."); return Promise.resolve(); }
   return new Promise(function(resolve){
     var list = document.createElement("div"); list.className = "na-pick";
     var boxes = [];
@@ -433,7 +438,7 @@ function offerGuestWork(force){
     });
     showModal({
       title: "Bring these into your account?",
-      body: "These artworks are on " + here() + " but not in anyone's account. Tick the ones that are yours — they'll be copied into your account and your Drive. Anything you leave unticked stays here for guests.",
+      body: "These " + W(2) + " are on " + here() + " but not in anyone's account. Tick the ones that are yours — they'll be copied into your account and your Drive. Anything you leave unticked stays here for guests.",
       content: list,
       buttons: [
         { label: "Not now", onClick: function(){ resolve(); } },
@@ -474,7 +479,7 @@ function askUnsynced(){
   var n = unsyncedCount();
   if (n === 0) { finishSignOut(true); return; }
   showModal({
-    title: n === 1 ? "1 artwork hasn't reached your Drive yet" : n + " artworks haven't reached your Drive yet",
+    title: n === 1 ? "1 " + W(1) + " hasn't reached your Drive yet" : n + " " + W(2) + " haven't reached your Drive yet",
     body: (needSignIn ? "Saving to Drive needs you to sign in again first." : "This usually means there's no internet right now.") + " If you sign out anyway, they stay on " + here() + ", hidden and set aside for you. Next time you sign in here, they'll go to your Drive.",
     buttons: [
       { label: "Download a backup", onClick: function(){ downloadBackup(); askUnsynced(); } },
@@ -562,13 +567,13 @@ function restoreBackup(){
         b.projects.push(c); have[sig(c)] = 1; ids[c.id] = 1; added++;
       });
       var total = found.filter(function(p){ return p && !blank(p); }).length;
-      if (!added) { tell("Nothing new to add", total === 1 ? "The artwork in this backup is already here, unchanged." : total ? "All " + total + " artworks in this backup are already here, unchanged." : "This backup has no artworks in it."); return; }
+      if (!added) { tell("Nothing new to add", total === 1 ? "The " + W(1) + " in this backup is already here, unchanged." : total ? "All " + total + " " + W(2) + " in this backup are already here, unchanged." : "This backup has no " + W(2) + " in it."); return; }
       if (!b.projects.some(function(p){ return p.id === b.activeId; })) { b.projects[0].open = true; b.activeId = b.projects[0].id; }
       writeBundle(b); reloadApp();
       if (user) scheduleSync();
-      var msg = "Restored " + added + (added === 1 ? " artwork" : " artworks") + (total > added ? " (" + (total - added) + " already here)" : "") + ".";
+      var msg = "Restored " + added + " " + W(added) + (total > added ? " (" + (total - added) + " already here)" : "") + ".";
       if (app.showAll) { try { app.showAll(); toast(msg, true); return; } catch(e) {} }   // open the app's "All artworks" view so they're right there
-      tell("Restored " + added + (added === 1 ? " artwork" : " artworks"), "Find " + (added === 1 ? "it" : "them") + " in All artworks." + (total > added ? " " + (total - added) + " other" + (total - added === 1 ? " was" : "s were") + " already here." : ""));
+      tell("Restored " + added + " " + W(added), "Find " + (added === 1 ? "it" : "them") + " in All " + W(2) + "." + (total > added ? " " + (total - added) + " other" + (total - added === 1 ? " was" : "s were") + " already here." : ""));
     };
     rd.readAsText(f);
   };
@@ -679,7 +684,7 @@ function openMenu(){
     who.innerHTML = "<b></b><small></small>"; who.querySelector("b").textContent = user.name; who.querySelector("small").textContent = user.email;
     m.appendChild(who);
     item("Sync to Drive now", syncNow);
-    item("Bring in guest artworks…", function(){ closeMenu(); try { app.flush(); } catch(e) {} offerGuestWork(true).then(function(){ reloadApp(); scheduleSync(); }); });
+    item("Bring in guest " + W(2) + "…", function(){ closeMenu(); try { app.flush(); } catch(e) {} offerGuestWork(true).then(function(){ reloadApp(); scheduleSync(); }); });
     m.appendChild(document.createElement("hr"));
     item("Download all my work", downloadBackup);
     item("Restore from a backup…", restoreBackup);
@@ -787,6 +792,11 @@ function register(o){
   status = user ? (needSignIn ? "paused" : "pending") : "guest";
   render();
   if (location.hash.indexOf("na_auth=") >= 0) handleReturn();
+  else if (user && getRaw(spaceKey(app.key)) == null && !getJ("nextacct.offered." + app.app + "@@" + user.email)) {
+    // Signed in from another app, opening this one here for the first time: offer this app's guest work
+    // and fetch their work from Drive (after the app has finished starting up).
+    setTimeout(function(){ enterSpace(true); }, 0);
+  }
   else if (user && !needSignIn) setTimeout(function(){ sync().catch(function(){}); }, 800);
 }
 
