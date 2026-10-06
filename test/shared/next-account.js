@@ -18,7 +18,7 @@ var CFG = window.NEXT_ACCOUNT_CONFIG || {};
 if (CFG.clientId) CLIENT_ID = CFG.clientId;
 var PREFIX   = CFG.storagePrefix || "";                    // "test:" on the test copy
 var DOMAINS  = CFG.domains || ["nextschool.org", "sunset.in"];
-var IDLE_MS  = (CFG.idleHours || 3) * 3600 * 1000;
+var IDLE_MS  = CFG.idleHours ? CFG.idleHours * 3600 * 1000 : 0;   // 0 = never sign out by itself (each learner has their own iPad)
 var API      = CFG.apiBase || "https://www.googleapis.com";
 var GSI_SRC  = CFG.gsiSrc || "https://accounts.google.com/gsi/client";
 var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
@@ -479,7 +479,7 @@ function touch(force){
   lastTouchSaved = now; setJ("nextacct.lastActive", now);
 }
 function checkIdle(){
-  if (!user) return;
+  if (!user || !IDLE_MS) return;
   var last = getJ("nextacct.lastActive") || 0;
   if (last && Date.now() - last > IDLE_MS) finishSignOut(unsyncedCount() === 0, true);
 }
@@ -724,7 +724,7 @@ function register(o){
   window.addEventListener("online", function(){ if (user && tokenOk()) sync().catch(function(){}); else renderStatus(); });
   window.addEventListener("offline", function(){ if (user) setStatus("offline"); });
 
-  if (user && getJ("nextacct.lastActive") && Date.now() - getJ("nextacct.lastActive") > IDLE_MS) {
+  if (user && IDLE_MS && getJ("nextacct.lastActive") && Date.now() - getJ("nextacct.lastActive") > IDLE_MS) {
     // Signed out after a long time away. (The app hasn't drawn anything yet, so it simply loads the guest space.)
     var name = user.given, safe = unsyncedCount() === 0;
     if (safe) { del(app.key + "@@" + user.email); del(recKey()); }
