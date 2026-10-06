@@ -362,7 +362,7 @@ function handleReturn(){
   if (!res || !pend || res.state !== pend.state) return;
   if (res.error) { if (res.error !== "access_denied") toast("Couldn't sign in. Please try again.", true); return; }
   var again = pend.mode === "again";
-  var wait = showModal({ title: "Signing you in…", body: "Just a moment.", buttons: [] });
+  var wait = showBusy("Signing you in…", "Just a moment.");
   helper("/exchange", { code: res.code, redirect_uri: REDIRECT }).then(function(j){
     closeModal(wait);
     if (j.error === "domain" || (j.user && !domainOk(j.user.email))) {
@@ -404,8 +404,14 @@ function enterSpace(){
     setJ(offeredKey, true);
     reloadApp();
     render();
-    return sync().then(function(){ toast("Signed in as " + user.given + ". Your work now saves to your Google Drive.", true); },
-                       function(){ toast("Signed in as " + user.given + ". Saving to Drive will start shortly.", true); });
+    // Grey out the app while their work comes in from Drive, so it never looks like it's gone.
+    var busy = showBusy("Getting your work from Google Drive…", "This takes a few seconds.");
+    setStatus("loading");
+    var done = false;
+    var slow = setTimeout(function(){ if (!done) { done = true; closeModal(busy); toast("Still fetching your work from Google Drive — it'll appear here in a moment."); } }, 25000);
+    function finish(){ clearTimeout(slow); if (!done) { done = true; closeModal(busy); } }
+    return sync().then(function(){ finish(); toast("Signed in as " + user.given + ". Your work now saves to your Google Drive.", true); },
+                       function(){ finish(); toast("Signed in as " + user.given + ". Saving to Drive will start shortly.", true); });
   });
 }
 
@@ -598,6 +604,11 @@ var CSS = "" +
 ".na-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}" +
 ".na-btns button{height:40px;padding:0 14px;border-radius:10px;border:2px solid var(--line,#ddd);background:transparent;color:var(--ink,#222);font:inherit;font-weight:800;font-size:.86rem;cursor:pointer}" +
 ".na-btns button.pri{background:var(--accent,#222);border-color:var(--accent,#222);color:var(--accent-ink,#fff)}" +
+".na-busy{text-align:center;max-width:340px;display:flex;flex-direction:column;align-items:center}" +
+".na-busy h3{order:2;margin:14px 0 4px}.na-busy p{order:3;margin:0}" +
+".na-spin{order:1;width:34px;height:34px;border-radius:50%;border:3px solid var(--line,#ddd);border-top-color:var(--ink,#222);animation:na-spin .8s linear infinite}" +
+"@keyframes na-spin{to{transform:rotate(360deg)}}" +
+"@media (prefers-reduced-motion:reduce){.na-spin{animation-duration:2.4s}}" +
 ".na-pick{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow:auto}" +
 ".na-pickrow{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--line,#ddd);border-radius:10px;cursor:pointer}" +
 ".na-pickrow input{width:20px;height:20px;flex:0 0 auto}" +
@@ -618,6 +629,7 @@ var ICON = {
 var STATUS = {
   synced:  { icon: "ok",   text: "Saved to Drive", tip: function(){ return "Everything is saved to your Google Drive."; } },
   pending: { icon: "busy", text: "Saving…",        tip: function(){ return "Saving your latest changes to Google Drive."; } },
+  loading: { icon: "busy", text: "Loading…",       tip: function(){ return "Getting your work from Google Drive."; } },
   syncing: { icon: "busy", text: "Saving…",        tip: function(){ return "Saving your latest changes to Google Drive."; } },
   paused:  { icon: "off",  warn: true, text: "Sign in again", tip: function(){ return "Your work is saved on " + here() + ". Sign in again to keep saving to Google Drive."; } },
   offline: { icon: "off",  warn: true, text: "Offline",      tip: function(){ return "No internet. Your work is saved on " + here() + " and goes to Drive when you're back online."; } },
@@ -710,6 +722,14 @@ function showModal(o){
   back.addEventListener("keydown", function(e){ e.stopPropagation(); });
   document.body.appendChild(back); modalStack.push(back);
   return back;
+}
+// A greyed-out screen with a spinner, for short waits. Close it with closeModal().
+function showBusy(title, body){
+  var spin = document.createElement("div"); spin.className = "na-spin"; spin.setAttribute("aria-hidden", "true");
+  var m = showModal({ title: title, body: body, content: spin, buttons: [] });
+  m.querySelector(".na-modal").className += " na-busy";
+  m.querySelector(".na-modal").setAttribute("aria-busy", "true");
+  return m;
 }
 function closeModal(el){ if (el && el.parentNode) el.remove(); modalStack = modalStack.filter(function(x){ return x !== el; }); }
 // toast(msg) disappears by itself; toast(msg, true) stays until it's closed.
