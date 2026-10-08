@@ -85,6 +85,14 @@
   .fname small{display:block;font-size:.66rem;font-weight:700;color:var(--muted)}
   .fdel{flex:0 0 auto;border:none;background:none;cursor:pointer;font-size:1rem;padding:6px 8px;border-radius:8px;line-height:1}
   .fdel:hover{background:rgba(224,71,76,.16)}
+  .bin{margin-top:22px;padding-top:14px;border-top:2px dashed var(--line)}
+  .bin[hidden]{display:none}
+  .bin-h{margin:0 0 2px;font-size:1rem;font-weight:900}
+  .fcard.binned .fthumb{opacity:.45;cursor:default}
+  .fbin-acts{display:flex;gap:6px;padding:0 8px 8px}
+  .fbin-acts button{flex:1;font-family:inherit;font-weight:800;font-size:.74rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:6px 4px;min-height:34px;cursor:pointer}
+  .fbin-acts .restore{border-color:var(--accent)}
+  .fbin-acts .gone:hover{background:rgba(224,71,76,.16)}
 
   .stage{
     position:relative;flex:1 1 auto;min-height:0;min-width:0;
@@ -343,12 +351,13 @@
 <div class="files" id="files" aria-hidden="true" role="dialog" aria-label="All your artworks">
   <div class="files-inner">
     <div class="files-top"><h2>All your artworks</h2><button class="files-btn" id="filesNew">＋ New artwork</button><button class="files-btn" id="filesClose">Done</button></div>
-    <p class="files-sub" id="filesSub">Closing a tab doesn't delete anything — your artworks wait here. Tap one to open it, or the bin to delete it for good.</p>
+    <p class="files-sub" id="filesSub">Closing a tab doesn't delete anything — your artworks wait here. Tap one to open it, or the bin icon to delete it — it waits in the Bin below for 15 days.</p>
     <div class="files-list" id="filesList"></div>
+    <div class="bin" id="binBox" hidden><h3 class="bin-h">Bin</h3><p class="files-sub">Deleted artworks wait here for 15 days, then they're gone for good.</p><div class="files-list" id="binList"></div></div>
   </div>
 </div>
 <script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:"test:", seedFromLive:["pixelpad-v2","pixelpad-v1"]};</script>
-<script src="../../shared/next-account.js?v=d1d74e44"></script>
+<script src="../../shared/next-account.js?v=2af45467"></script>
 <script>/* If the sign-in code can't load (offline, or this file opened on its own), the app still works as before. */
 window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k){try{return localStorage.getItem(k);}catch(e){return null;}},setItem:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}};</script>
 <script>
@@ -403,11 +412,17 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function activeProj(){ for(var i=0;i<projects.length;i++) if(projects[i].id===activeId) return projects[i]; return null; }
   function makeProject(name,w,h,m){ seq++; return {id:"p"+seq+"_"+Date.now().toString(36), name:name||("Art "+seq), cols:w, rows:h, model:m||new Array(w*h).fill(null), undo:[], redo:[]}; }
   function commitActive(){ if(mv) dropMove(); var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
+  // ---- Bin: deleted work waits here for 15 days before it's gone for good ----
+  function binDays(){ return 15; }
+  function inBin(p){ return !!(p && p.binnedAt); }
+  function liveList(){ return projects.filter(function(p){ return !inBin(p); }); }
+  function binDaysLeft(p){ return Math.max(1, Math.ceil((p.binnedAt + binDays()*864e5 - Date.now())/864e5)); }
+  function emptyOldBin(){ var n=projects.length, now=Date.now(); projects=projects.filter(function(p){ return !(inBin(p) && now-p.binnedAt >= binDays()*864e5); }); return projects.length!==n; }
   function save(){
     commitActive();
     try{ NextAccount.setItem(KEY2, JSON.stringify({
       seq:seq, activeId:activeId, color:currentColor, grid:gridOn,
-      projects: projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:p.model}; })
+      projects: projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:p.model,binnedAt:p.binnedAt}; })
     })); }catch(e){}
   }
   function useProject(p){ cols=p.cols; rows=p.rows; model=p.model; undoStack=p.undo; redoStack=p.redo; }
@@ -415,8 +430,9 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     var v2=null; try{ v2=JSON.parse(NextAccount.getItem(KEY2)); }catch(e){}
     if(v2 && v2.projects && v2.projects.length){
       seq=v2.seq||0;
-      projects=v2.projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:(p.model||[]).slice(),undo:[],redo:[]}; });
-      activeId=v2.activeId; if(!activeProj()) activeId=projects[0].id; activeProj().open=true;
+      projects=v2.projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:(p.model||[]).slice(),binnedAt:p.binnedAt,undo:[],redo:[]}; });
+      emptyOldBin(); if(!liveList().length) projects.push(makeProject(null,16,16,null));
+      activeId=v2.activeId; if(!activeProj()||inBin(activeProj())) activeId=(openList()[0]||liveList()[0]).id; activeProj().open=true;
       if(typeof v2.color==="string") currentColor=v2.color;
       if(typeof v2.grid==="boolean") gridOn=v2.grid;
     } else {
@@ -1127,7 +1143,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     loadProject(p);
   }
   // Tabs are just "what's open". Closing a tab never deletes; deleting lives in the All-artworks panel.
-  function isOpen(p){ return p.open!==false; }
+  function isOpen(p){ return p.open!==false && !inBin(p); }
   function openList(){ return projects.filter(isOpen); }
   function isBlank(p){ return !p.model.some(function(v){return v;}); }
   function projById(id){ for(var i=0;i<projects.length;i++) if(projects[i].id===id) return projects[i]; return null; }
@@ -1144,13 +1160,23 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function deleteProject(id){
     commitActive();
     var p=projById(id); if(!p) return;
-    if(!isBlank(p) && !window.confirm('Delete "'+p.name+'" for good? This can\'t be undone.')) return;
     var oi=openList().indexOf(p), wasActive=(id===activeId);
-    projects.splice(projects.indexOf(p),1);
+    if(isBlank(p)) projects.splice(projects.indexOf(p),1); // nothing drawn → nothing to keep
+    else { p.binnedAt=Date.now(); p.open=false; }        // into the Bin for 15 days
     if(!openList().length){ projects.push(makeProject(null,16,16,null)); wasActive=true; oi=0; }
     if(wasActive){ var rest=openList(); activeId=rest[Math.max(0,Math.min(oi,rest.length-1))].id; loadProject(activeProj()); }
     else { renderTabs(); save(); }
     renderFiles();
+  }
+
+  function restoreFromBin(id){
+    var p=projById(id); if(!p) return;
+    delete p.binnedAt; save(); renderFiles();
+  }
+  function deleteForGood(id){
+    var p=projById(id); if(!p) return;
+    if(!window.confirm('Delete "'+p.name+'" for good? This can\'t be undone.')) return;
+    projects.splice(projects.indexOf(p),1); save(); renderFiles();
   }
 
   // ---- All-artworks panel ----
@@ -1170,7 +1196,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function renderFiles(){
     if(!filesShown()) return;
     filesList.innerHTML="";
-    projects.forEach(function(p){
+    liveList().forEach(function(p){
       var card=document.createElement("div"); card.className="fcard"+(p.id===activeId?" active":"");
       var th=document.createElement("button"); th.className="fthumb"; th.title='Open "'+p.name+'"'; th.setAttribute("aria-label",'Open '+p.name);
       th.appendChild(thumbOf(p));
@@ -1180,13 +1206,35 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
       var b=document.createElement("b"); b.textContent=p.name;
       var sm=document.createElement("small"); sm.textContent=p.cols+"×"+p.rows+(p.id===activeId?" · showing now":(isOpen(p)?" · in a tab":""));
       nm.appendChild(b); nm.appendChild(sm);
-      var del=document.createElement("button"); del.className="fdel"; del.innerHTML=ICON_TRASH; del.title='Delete "'+p.name+'" for good'; del.setAttribute("aria-label",'Delete '+p.name);
+      var del=document.createElement("button"); del.className="fdel"; del.innerHTML=ICON_TRASH; del.title='Delete "'+p.name+'" (it waits in the Bin for 15 days)'; del.setAttribute("aria-label",'Delete '+p.name);
       del.addEventListener("click", function(){ deleteProject(p.id); });
       meta.appendChild(nm); meta.appendChild(del);
       card.appendChild(th); card.appendChild(meta); filesList.appendChild(card);
     });
+    renderBin();
   }
-  function openFiles(){ commitActive(); filesEl.classList.add("show"); filesEl.setAttribute("aria-hidden","false"); renderFiles(); }
+  var binBox=document.getElementById("binBox"), binList=document.getElementById("binList");
+  function renderBin(){
+    var binned=projects.filter(inBin).sort(function(a,b){ return b.binnedAt-a.binnedAt; });
+    binBox.hidden=!binned.length; binList.innerHTML="";
+    binned.forEach(function(p){
+      var card=document.createElement("div"); card.className="fcard binned";
+      var th=document.createElement("div"); th.className="fthumb"; th.appendChild(thumbOf(p));
+      var meta=document.createElement("div"); meta.className="fmeta";
+      var nm=document.createElement("div"); nm.className="fname";
+      var b=document.createElement("b"); b.textContent=p.name;
+      var d=binDaysLeft(p), sm=document.createElement("small"); sm.textContent=d<=1?"Last day in the Bin":("Gone for good in "+d+" days");
+      nm.appendChild(b); nm.appendChild(sm); meta.appendChild(nm);
+      var acts=document.createElement("div"); acts.className="fbin-acts";
+      var r=document.createElement("button"); r.className="restore"; r.textContent="Restore"; r.title='Bring "'+p.name+'" back';
+      r.addEventListener("click", function(){ restoreFromBin(p.id); });
+      var g=document.createElement("button"); g.className="gone"; g.textContent="Delete now"; g.title='Delete "'+p.name+'" for good';
+      g.addEventListener("click", function(){ deleteForGood(p.id); });
+      acts.appendChild(r); acts.appendChild(g);
+      card.appendChild(th); card.appendChild(meta); card.appendChild(acts); binList.appendChild(card);
+    });
+  }
+  function openFiles(){ commitActive(); if(emptyOldBin()) save(); filesEl.classList.add("show"); filesEl.setAttribute("aria-hidden","false"); renderFiles(); }
   function closeFiles(){ filesEl.classList.remove("show"); filesEl.setAttribute("aria-hidden","true"); }
   function openFromFiles(id){
     var p=projById(id); if(!p) return;

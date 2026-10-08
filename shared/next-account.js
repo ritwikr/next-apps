@@ -232,7 +232,7 @@ function sync(){
   local.forEach(function(p){ localById[p.id] = p; });
   var rec = readRec();
   var spaceWasBlank = local.every(blank);
-  var adds = [], replaces = {}, startSig = {};
+  var adds = [], replaces = {}, startSig = {}, gone = [];
   local.forEach(function(p){ startSig[p.id] = sig(p); });
 
   syncing = ensureToken().then(function(){ return ensureFolder(rec); }).then(function(folder){
@@ -281,6 +281,7 @@ function sync(){
         chain = chain.then(function(){
           if (onDrive[p.id]) return;
           if (blank(p) && !rec.files[p.id]) return;
+          if (p.binnedAt && rec.files[p.id]) { gone.push(p.id); delete rec.files[p.id]; return; }   // in the Bin here, deleted for good on another device
           return upload(p, null, folder).then(function(j){ rec.files[p.id] = { driveId: j.id, sig: sig(p), mod: j.modifiedTime, created: j.createdTime }; });
         });
       });
@@ -291,7 +292,7 @@ function sync(){
     });
   }).then(function(){
     if (!user || user.email !== who) return;     // signed out meanwhile — don't touch anything
-    var changed = adds.length || Object.keys(replaces).length || !inDriveOrder(readBundle(), rec);
+    var changed = adds.length || gone.length || Object.keys(replaces).length || !inDriveOrder(readBundle(), rec);
     if (changed) {
       // Apply onto the freshest bundle, so edits made during the sync aren't lost.
       flushQuietly();
@@ -305,6 +306,7 @@ function sync(){
           adds.push(c); delete rec.files[pid];
         } else b.projects[i] = replaces[pid];
       });
+      if (gone.length) b.projects = b.projects.filter(function(p){ return !(gone.indexOf(p.id) >= 0 && p.binnedAt); });
       if (adds.length && spaceWasBlank) b.projects = b.projects.filter(function(p){ return !(blank(p) && !rec.files[p.id]); });
       b.projects = sortByDrive(b.projects.concat(adds), rec);
       if (!b.projects.some(function(p){ return p.id === b.activeId && p.open !== false; })) {
@@ -423,7 +425,7 @@ function enterSpace(firstOpen){
 // "Move any of these into your account?" — copies; the guest space is left untouched.
 function offerGuestWork(force){
   var g = readGuestBundle();
-  var items = (g && g.projects || []).filter(function(p){ return !blank(p); });
+  var items = (g && g.projects || []).filter(function(p){ return !blank(p) && !p.binnedAt; });   // not things in the Bin
   if (!items.length) { if (force) toast("There are no guest " + W(2) + " on " + here() + "."); return Promise.resolve(); }
   return new Promise(function(resolve){
     var list = document.createElement("div"); list.className = "na-pick";
@@ -563,7 +565,7 @@ function restoreBackup(){
       var added = 0;
       found.forEach(function(p){
         if (!p || blank(p) || have[sig(p)]) return;
-        var c = JSON.parse(JSON.stringify(p)); if (ids[c.id]) c.id = newId(); c.open = false;
+        var c = JSON.parse(JSON.stringify(p)); if (ids[c.id]) c.id = newId(); c.open = false; delete c.binnedAt;   // restoring brings things out of the Bin
         b.projects.push(c); have[sig(c)] = 1; ids[c.id] = 1; added++;
       });
       var total = found.filter(function(p){ return p && !blank(p); }).length;
