@@ -5,12 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>html,body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Room Blocks Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Mulish:wght@500;600;700;800;900&display=swap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%23FBF6EE%22%20stroke%3D%22rgba%2844%2C39%2C64%2C0.12%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%226%22%20width%3D%2222%22%20height%3D%2220%22%20rx%3D%222.5%22%20fill%3D%22%23F3EEE4%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%222.4%22%2F%3E%3Crect%20x%3D%2213%22%20y%3D%2224.2%22%20width%3D%226%22%20height%3D%223%22%20fill%3D%22%23FBF6EE%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2216.5%22%20width%3D%2210%22%20height%3D%226.5%22%20rx%3D%221%22%20fill%3D%22%23AFC2D6%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%2219.5%22%20y%3D%229%22%20width%3D%225.5%22%20height%3D%228%22%20rx%3D%221%22%20fill%3D%22%238FA9C4%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E">
 <style>
   :root{
+    /* Next type: Gotham Rounded (titles) + Proxima Nova (text); Nunito + Mulish stand in */
+    --font-display:"Gotham Rounded","Nunito",system-ui,sans-serif; --font-sans:"Proxima Nova","Mulish",system-ui,sans-serif;
     --paper:#FBF6EE; --card:#FFFFFF; --ink:#2C2740; --muted:#7A7488;
-    --line:#EAE3D8; --accent:#FF7A45; --accent-ink:#FFFFFF; --teal:#14B8A6;
-    --teal-ink:#06312B; --sheet:#FFFFFF; --grid:rgba(24,20,34,0.08);
+    --line:#EAE3D8; --accent:#1C1A22; --accent-ink:#FFFFFF; --teal:#E2DFDA;
+    --teal-ink:#1C1A22; --sel:#18161E; --sel-ink:#FFFFFF; --sel-soft:rgba(24,22,30,0.08); --sheet:#FFFFFF; --grid:rgba(24,20,34,0.08);
     --grid5:rgba(24,20,34,0.18); --wall:#2C2740; --floor:#F3EEE4;
     --furn:#D9E2EC; --furn-ink:#425268; --furn-soft:#EDF1F6;
     --shadow:rgba(44,39,64,0.14); --ruler:#B7AE9E; --halo:var(--paper);
@@ -18,8 +22,8 @@
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --paper:#141319; --card:#22212B; --ink:#F3EFE9; --muted:#ABA4B7;
-      --line:#34313C; --accent:#FF8A5C; --accent-ink:#2A1206; --teal:#2DD4BF;
-      --teal-ink:#06312B; --sheet:#FCFAF6; --grid:rgba(24,20,34,0.08);
+      --line:#34313C; --accent:#F3EFE9; --accent-ink:#141319; --teal:#45424D;
+      --teal-ink:#F3EFE9; --sheet:#FCFAF6; --grid:rgba(24,20,34,0.08);
       --grid5:rgba(24,20,34,0.18); --wall:#2C2740; --floor:#F3EEE4;
       --furn:#D9E2EC; --furn-ink:#425268; --furn-soft:#EDF1F6;
       --shadow:rgba(0,0,0,0.5); --ruler:#B7AE9E;
@@ -27,8 +31,8 @@
   }
   :root[data-theme="dark"]{
     --paper:#141319; --card:#22212B; --ink:#F3EFE9; --muted:#ABA4B7;
-    --line:#34313C; --accent:#FF8A5C; --accent-ink:#2A1206; --teal:#2DD4BF;
-    --teal-ink:#06312B; --sheet:#FCFAF6; --grid:rgba(24,20,34,0.08);
+    --line:#34313C; --accent:#F3EFE9; --accent-ink:#141319; --teal:#45424D;
+    --teal-ink:#F3EFE9; --sheet:#FCFAF6; --grid:rgba(24,20,34,0.08);
     --grid5:rgba(24,20,34,0.18); --wall:#2C2740; --floor:#F3EEE4;
     --furn:#D9E2EC; --furn-ink:#425268; --furn-soft:#EDF1F6;
     --shadow:rgba(0,0,0,0.5); --ruler:#B7AE9E;
@@ -38,7 +42,7 @@
   html,body{height:100%}
   body{
     background:var(--paper); color:var(--ink);
-    font-family:"Nunito","Segoe UI",system-ui,sans-serif; line-height:1.4;
+    font-family:var(--font-sans); line-height:1.4;
     -webkit-font-smoothing:antialiased; overflow:hidden;
   }
 
@@ -109,7 +113,7 @@
 
   /* ---- editor body ---- */
   .editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-  @media (min-width:860px){ .editor{flex-direction:row} }
+  @media (min-width:700px){ .editor{flex-direction:row} }
 
   .stage{position:relative;flex:1 1 auto;min-height:0;min-width:0;overflow:hidden;background:var(--paper)}
   .panes{position:absolute;inset:0;display:flex}
@@ -139,7 +143,7 @@
 
   /* ---- sidebar ---- */
   .sidebar{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);padding:11px 12px;display:flex;flex-direction:column;gap:12px;max-height:44vh;overflow:auto}
-  @media (min-width:860px){ .sidebar{width:216px;border-top:none;border-left:1px solid var(--line);max-height:none;height:100%} }
+  @media (min-width:700px){ .sidebar{width:216px;border-top:none;border-left:1px solid var(--line);max-height:none;height:100%} }
   .side-h{font-weight:900;font-size:.7rem;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
   .agebadge{display:inline-flex;align-items:center;gap:6px;background:var(--teal);color:var(--teal-ink);font-weight:900;font-size:.72rem;border-radius:999px;padding:5px 11px;align-self:flex-start}
 
@@ -199,30 +203,98 @@
   .sheet-cell{border:1.5px solid #d9d2c6;border-radius:10px;padding:8px 10px 4px}
   .sheet-cell h3{margin:0 0 4px;font-size:.82rem;font-weight:900}
   .sheet-cell svg{width:100%;height:auto;display:block}
+    /* ===== Pixel Pad look (Oct 2026): same tokens, line icons, buttons and type as Pixel Pad ===== */
+  h1,h2,h3{font-family:var(--font-display)}
+  .tabbar,.moderow{background:var(--card);background:color-mix(in srgb, var(--card) 68%, transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .tab[aria-selected="true"] .tabname{text-decoration:underline;text-decoration-style:dotted;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:color-mix(in srgb, currentColor 55%, transparent)}
+  .tab[aria-selected="true"] .tabx{border-left-color:color-mix(in srgb, currentColor 35%, transparent)}
+  .filesbtn .ic svg{width:17px;height:17px;display:block}
+  .fdel{color:var(--muted)} .fdel svg{width:17px;height:17px;display:block}
+  .theme-btn{position:absolute;top:12px;right:12px;z-index:6;width:40px;height:40px;box-shadow:0 4px 12px -6px var(--shadow)}
+  .theme-btn svg{width:19px;height:19px;display:block;margin:auto}
+  .zoombar button svg{width:18px;height:18px;display:block}
+  /* mode row */
+  .seg{background:transparent;border-radius:12px;padding:3px}
+  .seg button{display:inline-flex;align-items:center;gap:7px;color:var(--muted);padding:6px 14px}
+  .seg button svg{width:16px;height:16px;display:block;flex:0 0 auto}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+  .wallseg button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink)}
+  .mini{display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:6px 11px;min-height:34px}
+  .mini svg{width:16px;height:16px;display:block;flex:0 0 auto}
+  .roomdims input{background:var(--card);border-radius:10px;min-height:34px}
+  @media (max-width:1320px){ .mini .ml{display:none} .mini{padding:6px 9px} }
+  @media (max-width:900px){ .roomdims label{display:none} .seg button{padding:6px 10px} .moderow{gap:8px} }
+  @media (max-width:779px){ .seg button span{display:none} }
+  @media (max-width:560px){ .float{max-width:calc(100% - 24px);top:62px} }
+  /* floating selection bar */
+  .float{width:max-content;max-width:calc(100% - 124px);border-radius:12px;border-width:1.5px;padding:5px 6px;box-shadow:0 10px 26px -8px var(--shadow), 0 0 0 1px rgba(0,0,0,.04)}
+  .float button{border:none;background:transparent;border-radius:8px;min-height:34px;padding:5px 10px;gap:6px}
+  .float button:hover{background:var(--paper)}
+  .float button svg{width:16px;height:16px;display:block;flex:0 0 auto}
+  .float button.sq{width:34px;padding:5px 0;border:2px solid var(--line)}
+  .float button.del{border:none;background:transparent;color:var(--ink)}
+  .float button.del:hover{background:rgba(224,71,76,.16)}
+  .float .dimbox{background:var(--card);border-radius:9px}
+  .hint{background:var(--teal);color:var(--teal-ink)}
+  /* sidebar = Pixel Pad tool rail */
+  .side-h{font-size:.58rem;letter-spacing:.5px;font-weight:800}
+  .tbtn{min-height:54px;border-radius:14px;position:relative;transition:transform .06s ease,background .15s,border-color .15s}
+  .tbtn .ic{display:flex;align-items:center;justify-content:center}
+  .tbtn .ic svg{width:22px;height:22px;display:block}
+  .tbtn .lb{font-size:.62rem;letter-spacing:.2px}
+  .tbtn .key{position:absolute;top:3px;right:4px;font-size:.5rem;font-weight:800;line-height:1;color:var(--muted);opacity:.65;pointer-events:none}
+  .tbtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .tbtn[aria-pressed="true"] .key{color:var(--accent-ink);opacity:.85}
+  @media (hover:none){ .tbtn .key{display:none} }
+  .agebadge{background:transparent;color:var(--muted);padding:0;border-radius:0;font-size:.58rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+  .furni-master .chev,.cat-h .chev{display:flex}
+  .furni-master .chev svg,.cat-h .chev svg{width:15px;height:15px;display:block}
+  .cat{border-radius:14px}
+  .cat-h{background:transparent;font-weight:800;font-size:.7rem}
+  .cat-body{padding:2px 9px 9px}
+  .blk[aria-pressed="true"],
+  :root[data-theme="dark"] .blk[aria-pressed="true"], :root:not([data-theme="light"]) .blk[aria-pressed="true"]{border-color:var(--accent);background:var(--card)}
+  .blk .nm{font-weight:800}
+  .cheats-btn{font-weight:800;border-color:var(--teal);background:var(--teal);color:var(--teal-ink);padding:10px 12px}
+  /* cheat codes follow the theme (same as Pixel Mosaic); the all-walls sheet stays paper-white for printing */
+  #cheats .sheet-inner{background:var(--card);color:var(--ink)}
+  #cheats .sheet-top h2,.sheet-top h2{font-family:var(--font-display);font-weight:900;font-size:1.3rem}
+  #cheats .sheet-close{border-color:var(--line);background:var(--card);color:var(--ink)}
+  .sheet-close{display:inline-flex;align-items:center;gap:6px;font-weight:800;border-radius:10px;padding:7px 12px}
+  .sheet-close svg{width:16px;height:16px;display:block}
+  .cheat-card{border-color:var(--line);background:var(--paper)}
+  .cheat-card h3{font-weight:800}
+  .cheat-card p,.kbd-grid{color:var(--muted)}
+  .kbd-grid kbd{background:var(--ink);color:var(--paper);font-weight:800}
+  button:focus-visible,input:focus-visible{outline-color:var(--teal)}
+
   @media print{
     body>.app-shell{display:none!important}
     .sheet{position:static;background:#fff;display:block!important;padding:0}
     .sheet-inner{box-shadow:none;max-width:100%}
     .sheet-close{display:none}
   }
+
+  /* ===== Black & white + Next yellow highlight (Oct 2026) ===== */
+  :root{ --paper:#F2F2F2; --card:#FFFFFF; --ink:#111111; --muted:#6B6B6B; --line:#E2E2E2; --accent:#FDB913; --accent-ink:#111111; --teal:#E6E6E6; --teal-ink:#111111; --shadow:rgba(0,0,0,0.14); --chip-ring:rgba(0,0,0,0.18); --wall:#1A1A1A; --floor:#F7F7F7; --furn:#E4E4E4; --furn-ink:#3A3A3A; --furn-soft:#F1F1F1; --ruler:#9A9A9A; --grid:rgba(0,0,0,0.07); --grid5:rgba(0,0,0,0.16); --sheet:#FFFFFF; --sel:#111111; --sel-soft:rgba(253,185,19,0.22); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --paper:#0E0E0E; --card:#1B1B1B; --ink:#F5F5F5; --muted:#A3A3A3; --line:#2E2E2E; --accent:#FDB913; --accent-ink:#111111; --teal:#3A3A3A; --teal-ink:#F5F5F5; --shadow:rgba(0,0,0,0.55); --chip-ring:rgba(255,255,255,0.24); --wall:#3A3A3A; --floor:#F7F7F7; --furn:#E4E4E4; --furn-ink:#3A3A3A; --furn-soft:#F1F1F1; --ruler:#8A8A8A; --grid:rgba(0,0,0,0.07); --grid5:rgba(0,0,0,0.16); --sheet:#FFFFFF; --sel:#111111; --sel-soft:rgba(253,185,19,0.22); } }
+  :root[data-theme="dark"]{ --paper:#0E0E0E; --card:#1B1B1B; --ink:#F5F5F5; --muted:#A3A3A3; --line:#2E2E2E; --accent:#FDB913; --accent-ink:#111111; --teal:#3A3A3A; --teal-ink:#F5F5F5; --shadow:rgba(0,0,0,0.55); --chip-ring:rgba(255,255,255,0.24); --wall:#3A3A3A; --floor:#F7F7F7; --furn:#E4E4E4; --furn-ink:#3A3A3A; --furn-soft:#F1F1F1; --ruler:#8A8A8A; --grid:rgba(0,0,0,0.07); --grid5:rgba(0,0,0,0.16); --sheet:#FFFFFF; --sel:#111111; --sel-soft:rgba(253,185,19,0.22); }
 </style>
 </head>
 <body>
 <div class="app-shell">
   <div class="tabbar">
-    <div class="brand"><span class="logo">◱</span><span>Room Planner</span></div>
     <div class="tabs" id="tabs" role="tablist"></div>
-    <button class="newtab" id="newTab" title="New room">+</button>
-    <button class="filesbtn" id="filesBtn" title="See all your rooms — open or delete them" aria-label="All rooms"><span class="ic">📂</span><span class="lbl">All rooms</span></button>
+    <button class="newtab" id="newTab" title="New room" aria-label="New room">＋</button>
+    <button class="filesbtn" id="filesBtn" title="See all your rooms — open or delete them" aria-label="All rooms"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><span class="lbl">All rooms</span></button>
     <div id="naMount" style="display:contents"></div>
-    <button class="theme-btn" id="themeBtn" title="Light / dark">◐</button>
   </div>
 
   <div class="moderow">
     <div class="seg" role="tablist">
-      <button id="modePlan" aria-pressed="true">▦ Floor plan</button>
-      <button id="modeElev" aria-pressed="false">▤ Wall views</button>
-      <button id="modeSplit" aria-pressed="false">◫ Split</button>
+      <button id="modePlan" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h9M12 3v13"/></svg><span>Floor plan</span></button>
+      <button id="modeElev" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 15h18"/><rect x="13" y="8" width="5" height="4"/></svg><span>Wall views</span></button>
+      <button id="modeSplit" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg><span>Split</span></button>
     </div>
     <div class="seg wallseg" id="wallseg" role="tablist">
       <button data-wall="N" aria-pressed="true">North</button>
@@ -237,12 +309,12 @@
       <span>×</span>
       <input type="number" id="roomH" min="6" max="60" step="1" value="26" title="Room depth (feet)">
       <span>ft</span>
-      <button class="mini icon" id="rotateRoom" title="Rotate the whole room 90°" style="margin-left:4px">⟳ 90°</button>
+      <button class="mini icon" id="rotateRoom" title="Rotate the whole room 90°" style="margin-left:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.7L21 8"/><path d="M21 3v5h-5"/></svg><span>90°</span></button>
     </div>
-    <button class="mini icon" id="undoBtn" title="Undo (Ctrl/⌘ Z)">↩︎ Undo</button>
-    <button class="mini icon" id="redoBtn" title="Redo (Ctrl/⌘ ⇧ Z)">↪︎ Redo</button>
-    <button class="mini" id="allElev" title="See all four walls together">⊞ All walls</button>
-    <button class="mini" id="fitBtn" title="Fit to screen">⤢ Fit</button>
+    <button class="mini icon" id="undoBtn" title="Undo (Ctrl/⌘ Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg><span class="ml">Undo</span></button>
+    <button class="mini icon" id="redoBtn" title="Redo (Ctrl/⌘ ⇧ Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg><span class="ml">Redo</span></button>
+    <button class="mini" id="allElev" title="See all four walls together"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="ml">All walls</span></button>
+    <button class="mini" id="fitBtn" title="Fit to screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span class="ml">Fit</span></button>
   </div>
 
   <div class="editor">
@@ -252,9 +324,10 @@
         <div class="pane" id="paneE" hidden><div class="pane-tag" id="tagE">North wall</div><svg class="surface" id="surfaceE" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
       <div class="float" id="float"></div>
+      <button class="theme-btn" id="themeBtn" title="Switch light / dark" aria-label="Switch light or dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
       <div class="zoombar">
-        <button id="zoomOut" title="Zoom out">−</button>
-        <button id="zoomIn" title="Zoom in">+</button>
+        <button id="zoomOut" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+        <button id="zoomIn" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
       <div class="hint" id="hint"></div>
     </div>
@@ -263,9 +336,9 @@
       <div id="planTools">
         <div class="side-h">Tools</div>
         <div class="toolrow" style="margin-top:7px">
-          <button class="tbtn" data-tool="select" aria-pressed="true" title="Select & move (V)"><span class="ic">✋</span><span class="lb">Select</span></button>
-          <button class="tbtn" data-tool="door" aria-pressed="false" title="Add a door"><span class="ic">🚪</span><span class="lb">Door</span></button>
-          <button class="tbtn" data-tool="window" aria-pressed="false" title="Add a window"><span class="ic">🪟</span><span class="lb">Window</span></button>
+          <button class="tbtn" data-tool="select" aria-pressed="true" title="Select & move (V)"><span class="key">V</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l7.07 17 2.51-7.39L21 11.07Z"/></svg></span><span class="lb">Select</span></button>
+          <button class="tbtn" data-tool="door" aria-pressed="false" title="Add a door"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.56v16.88a.5.5 0 0 1-.63.48l-6.98-1.99A2 2 0 0 1 4 18V6.04a2 2 0 0 1 1.43-1.92l6.94-1.99a.5.5 0 0 1 .63.48Z"/></svg></span><span class="lb">Door</span></button>
+          <button class="tbtn" data-tool="window" aria-pressed="false" title="Add a window"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M12 3v18M4 12h16"/></svg></span><span class="lb">Window</span></button>
         </div>
       </div>
 
@@ -273,8 +346,8 @@
 
       <div class="furnipanel">
         <button class="furni-master" id="furniMaster" aria-expanded="true" title="Show / hide furniture">
-          <span class="agebadge">🧒 Sized for ages 3–4</span>
-          <span class="chev">▾</span>
+          <span class="agebadge">Furniture · ages 3–4</span>
+          <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
         </button>
         <div id="furniBody">
           <div id="cats"></div>
@@ -282,7 +355,7 @@
       </div>
 
       <hr class="divider">
-      <button class="cheats-btn" id="cheatsBtn">🕹️ Cheat codes</button>
+      <button class="cheats-btn" id="cheatsBtn">Cheat codes</button>
     </div>
   </div>
 </div>
@@ -290,11 +363,11 @@
 <div class="sheet" id="cheats" aria-hidden="true">
   <div class="sheet-inner cheats-inner">
     <div class="sheet-top">
-      <h2>🕹️ Cheat Codes</h2>
+      <h2>Cheat codes</h2>
       <button class="sheet-close" id="cheatsClose">✕ Close</button>
     </div>
     <div class="cheats-body">
-      <div class="cheat-card"><h3>🏗️ Build your room</h3><p><b>Drag</b> a block from the menu into the room — or <b>tap</b> a block, then tap where it goes. Drag things to move them. Tap <b>↻ Turn</b> to spin.</p></div>
+      <div class="cheat-card"><h3>🏗️ Build your room</h3><p><b>Drag</b> a block from the menu into the room — or <b>tap</b> a block, then tap where it goes. Drag things to move them. Tap <b>Turn</b> to spin.</p></div>
       <div class="cheat-card"><h3>✨ Grab a bunch</h3><p>Hold <b>Shift</b> and tap a few things, or drag a box around them. Now they move together!</p></div>
       <div class="cheat-card"><h3>↩️ Oops!</h3><p><b>Ctrl/⌘ + Z</b> undoes anything. Did it again by mistake? <b>Ctrl/⌘ + Shift + Z</b> redoes.</p></div>
       <div class="cheat-card"><h3>🪄 Copy magic</h3><p><b>Ctrl/⌘ + C</b> to copy, <b>Ctrl/⌘ + V</b> to paste, <b>Ctrl/⌘ + D</b> to make a twin.</p></div>
@@ -318,7 +391,7 @@
     <div class="sheet-top">
       <h2 id="sheetTitle">All four wall views</h2>
       <div>
-        <button class="sheet-close" id="sheetPrint">🖨 Print</button>
+        <button class="sheet-close" id="sheetPrint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>Print</button>
         <button class="sheet-close" id="sheetClose">✕ Close</button>
       </div>
     </div>
@@ -329,7 +402,7 @@
 <div class="files" id="files" aria-hidden="true" role="dialog" aria-label="All your rooms">
   <div class="files-inner">
     <div class="files-top"><h2>All your rooms</h2><button class="files-btn" id="filesNew">＋ New room</button><button class="files-btn" id="filesClose">Done</button></div>
-    <p class="files-sub" id="filesSub">Closing a tab doesn't delete anything — your rooms wait here. Tap one to open it, or 🗑 to delete it — it waits in the Bin below for 15 days.</p>
+    <p class="files-sub" id="filesSub">Closing a tab doesn't delete anything — your rooms wait here. Tap one to open it, or the bin to delete it — it waits in the Bin below for 15 days.</p>
     <div class="files-list" id="filesList"></div>
     <div class="bin" id="binBox" hidden><h3 class="bin-h">Bin</h3><p class="files-sub">Deleted rooms wait here for 15 days, then they're gone for good.</p><div class="files-list" id="binList"></div></div>
   </div>
@@ -742,7 +815,7 @@ function renderPlan(p){
   if(marquee) s+=marqueeRect();
   return s;
 }
-function marqueeRect(){ var r=marqueeNorm(); return '<rect x="'+r.x0+'" y="'+r.y0+'" width="'+(r.x1-r.x0)+'" height="'+(r.y1-r.y0)+'" fill="rgba(255,122,69,0.12)" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/>'; }
+function marqueeRect(){ var r=marqueeNorm(); return '<rect x="'+r.x0+'" y="'+r.y0+'" width="'+(r.x1-r.x0)+'" height="'+(r.y1-r.y0)+'" fill="var(--sel-soft)" stroke="var(--sel)" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/>'; }
 function marqueeNorm(){ return {x0:Math.min(marquee.x0,marquee.x1), y0:Math.min(marquee.y0,marquee.y1), x1:Math.max(marquee.x0,marquee.x1), y1:Math.max(marquee.y0,marquee.y1)}; }
 
 function furnPlanNode(it, selected){
@@ -752,7 +825,7 @@ function furnPlanNode(it, selected){
   g+='</g>';
   var b=itemBBox(it);
   if(selected){
-    g+='<rect x="'+b.minx+'" y="'+b.miny+'" width="'+(b.maxx-b.minx)+'" height="'+(b.maxy-b.miny)+'" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"/>';
+    g+='<rect x="'+b.minx+'" y="'+b.miny+'" width="'+(b.maxx-b.minx)+'" height="'+(b.maxy-b.miny)+'" fill="none" stroke="var(--sel)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"/>';
   }
   if(s!==1 && !isStruct(it)) g+=scaleBadge(b.maxx, b.miny, s);
   return g;
@@ -760,8 +833,8 @@ function furnPlanNode(it, selected){
 function scaleBadge(x,y,s,f){
   f=f||1; var label=(Math.round(s*100)/100)+"×";
   var w=1.5*f,h=0.78*f, bx=x-w, by=y-h-0.06;
-  return '<g><rect x="'+bx+'" y="'+by+'" width="'+w+'" height="'+h+'" rx="'+(0.2*f)+'" fill="var(--accent)" stroke="#fff" stroke-width="1" vector-effect="non-scaling-stroke"/>'
-    +'<text x="'+(bx+w/2)+'" y="'+(by+h*0.71)+'" font-size="'+(0.5*f)+'" text-anchor="middle" fill="#fff" font-family="Nunito,system-ui,sans-serif" font-weight="900">'+esc(label)+'</text></g>';
+  return '<g><rect x="'+bx+'" y="'+by+'" width="'+w+'" height="'+h+'" rx="'+(0.2*f)+'" fill="var(--sel)" stroke="#fff" stroke-width="1" vector-effect="non-scaling-stroke"/>'
+    +'<text x="'+(bx+w/2)+'" y="'+(by+h*0.71)+'" font-size="'+(0.5*f)+'" text-anchor="middle" fill="#fff" font-family="Gotham Rounded,Nunito,system-ui,sans-serif" font-weight="900">'+esc(label)+'</text></g>';
 }
 
 // walls drawn as 4 rectangles (thickness outward) with rectangular gaps at openings
@@ -801,7 +874,7 @@ function openingPlanNode(p,o,selected){
     s+=doorSwing(p,o,openingSeg(p,o));   // door: leaf line + quarter-circle swing into the room
   }
   if(selected){ var pad=0.35;
-    s+='<rect x="'+(b.x-pad)+'" y="'+(b.y-pad)+'" width="'+(b.w+pad*2)+'" height="'+(b.h+pad*2)+'" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"/>';
+    s+='<rect x="'+(b.x-pad)+'" y="'+(b.y-pad)+'" width="'+(b.w+pad*2)+'" height="'+(b.h+pad*2)+'" fill="none" stroke="var(--sel)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"/>';
   }
   return s;
 }
@@ -843,7 +916,7 @@ function scaleBar(x,y){
   s+='</g>'; return s;
 }
 function txt(x,y,str,size,anchor,fill,weight){
-  return '<text x="'+x+'" y="'+y+'" font-size="'+size+'" text-anchor="'+(anchor||"start")+'" fill="'+(fill||"var(--ink)")+'" font-family="Nunito,system-ui,sans-serif" font-weight="'+(weight||"800")+'" style="paint-order:stroke" stroke="var(--halo)" stroke-width="0.05">'+esc(str)+'</text>';
+  return '<text x="'+x+'" y="'+y+'" font-size="'+size+'" text-anchor="'+(anchor||"start")+'" fill="'+(fill||"var(--ink)")+'" font-family="Gotham Rounded,Nunito,system-ui,sans-serif" font-weight="'+(weight||"800")+'" style="paint-order:stroke" stroke="var(--halo)" stroke-width="0.05">'+esc(str)+'</text>';
 }
 
 /* ---------- ELEVATION ---------- */
@@ -915,7 +988,7 @@ function renderElevation(p,w,opts){
   if(marquee) s+=marqueeRect();
   return s;
 }
-function selBox(x,y,w,h){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"/>'; }
+function selBox(x,y,w,h){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="none" stroke="var(--sel)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"/>'; }
 // map an opening to its [a,b] horizontal range on wall w's elevation
 function openingElevRange(p,o,w){
   var seg=openingSeg(p,o), len=wallLen(p,w), a,b;
@@ -941,12 +1014,12 @@ function r1(x){ return Math.round(x*10)/10; }
 function renderFloat(){
   if(!selection.length){ floatEl.className="float"; floatEl.innerHTML=""; return; }
   var p=active(); var html=""; var furn=selFurn(); var op=selOpenOne();
-  var sizeBtns='<button class="sq" data-act="smaller" title="Smaller">−</button><button class="sq" data-act="bigger" title="Bigger">+</button>';
+  var sizeBtns='<button class="sq" data-act="smaller" title="Smaller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><button class="sq" data-act="bigger" title="Bigger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>';
   if(furn.length && selection.length===furn.length && furn.length>1){
     // multiple furniture
     html='<span class="fname">'+furn.length+' items</span>';
-    html+='<button data-act="rot">↻ Turn</button>'+sizeBtns;
-    html+='<button data-act="dup">⧉ Copy</button><button class="del" data-act="del">🗑 Remove</button>';
+    html+='<button data-act="rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.7L21 8"/><path d="M21 3v5h-5"/></svg>Turn</button>'+sizeBtns;
+    html+='<button data-act="dup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/></svg>Copy</button><button class="del" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>Remove</button>';
   } else if(furn.length===1 && selection.length===1){
     var it=furn[0], f=CATALOG[it.type];
     if(f.structural){
@@ -964,29 +1037,29 @@ function renderFloat(){
         if(col){ html+='<span class="flab">Width</span>'+numBox(vd, vd==="w"?fW(it):fD(it))+'<span class="flab">ft</span>'; }
         else { html+='<span class="flab">Width</span>'+pm(vd==="w"?"bwless":"bdless", vd==="w"?"bwmore":"bdmore")+'<span class="flab">Height</span>'+pm("bhless","bhmore"); }
       }
-      html+='<button data-act="rot">↻ Turn</button><button data-act="dup">⧉ Copy</button><button class="del" data-act="del">🗑 Remove</button>';
+      html+='<button data-act="rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.7L21 8"/><path d="M21 3v5h-5"/></svg>Turn</button><button data-act="dup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/></svg>Copy</button><button class="del" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>Remove</button>';
     } else {
       html='<span class="fname">'+esc(f.name)+' · '+esc(dimStr(it))+'</span>';
-      if(!f.flat) html+='<button data-act="rot">↻ Turn</button>';
+      if(!f.flat) html+='<button data-act="rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.7L21 8"/><path d="M21 3v5h-5"/></svg>Turn</button>';
       html+=sizeBtns;
-      html+='<button data-act="dup">⧉ Copy</button><button class="del" data-act="del">🗑 Remove</button>';
+      html+='<button data-act="dup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/></svg>Copy</button><button class="del" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>Remove</button>';
     }
   } else if(op){
     var o=op;
     if(o.kind==="door"){
       html='<span class="fname">Door · '+o.width.toFixed(1)+' ft</span>';
       html+='<span class="flab">Width</span><button class="sq" data-act="narrow" title="Narrower">−</button><button class="sq" data-act="wider" title="Wider">+</button>';
-      html+='<button data-act="flip">⇄ Flip</button>';
+      html+='<button data-act="flip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="2 3"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/></svg>Flip</button>';
     } else {
       var showH = activePane.mode==="elev";
       html='<span class="fname">Window · '+o.width.toFixed(1)+(showH?(' × '+(winHead(o)-winSill(o)).toFixed(1)):'')+' ft</span>';
       html+='<span class="flab">Width</span><button class="sq" data-act="narrow" title="Narrower">−</button><button class="sq" data-act="wider" title="Wider">+</button>';
       if(showH) html+='<span class="flab">Height</span><button class="sq" data-act="shorter" title="Shorter">−</button><button class="sq" data-act="taller" title="Taller">+</button>';
     }
-    html+='<button class="del" data-act="del">🗑 Remove</button>';
+    html+='<button class="del" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>Remove</button>';
   } else {
     // mixed selection
-    html='<span class="fname">'+selection.length+' selected</span><button class="del" data-act="del">🗑 Remove</button>';
+    html='<span class="fname">'+selection.length+' selected</span><button class="del" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>Remove</button>';
   }
   floatEl.innerHTML=html; floatEl.className="float show";
 }
@@ -1229,7 +1302,14 @@ function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
   pane.svg.addEventListener("pointermove",function(e){ if(gesture||placing) CP=pane; onMove(e); });
   pane.svg.addEventListener("pointerup",function(e){ CP=pane; onUp(e); });
   pane.svg.addEventListener("pointercancel",function(e){ CP=pane; onUp(e); });
-  pane.el.addEventListener("wheel",function(e){ e.preventDefault(); CP=pane; activePane=pane; zoomAt(e.clientX,e.clientY, e.deltaY<0?1.1:1/1.1); },{passive:false});
+  pane.el.addEventListener("wheel",function(e){
+    // distance-based zoom, same feel as Pixel Pad: trackpad scroll/pinch is smooth, a mouse notch is ~1.12x
+    e.preventDefault(); CP=pane; activePane=pane;
+    var dy=e.deltaY;
+    if(e.deltaMode===1) dy*=16; else if(e.deltaMode===2) dy*=pane.el.clientHeight;
+    var factor=Math.min(2,Math.max(0.5,Math.exp(-dy*0.0011)));
+    zoomAt(e.clientX,e.clientY,factor);
+  },{passive:false});
 });
 
 /* =========================================================================
@@ -1257,7 +1337,7 @@ function buildBlocks(){
     var body=cat.items.map(blockBtn).join("");
     host.insertAdjacentHTML("beforeend",
       '<div class="cat" data-cat="'+cat.key+'" aria-expanded="'+open+'">'
-      +'<button class="cat-h" type="button"><span>'+esc(cat.label)+'</span><span class="chev">▾</span></button>'
+      +'<button class="cat-h" type="button"><span>'+esc(cat.label)+'</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button>'
       +'<div class="cat-body">'+body+'</div></div>');
   });
 }
@@ -1412,7 +1492,7 @@ function renderFiles(){
     var n=(p.furniture||[]).length;
     var sm=document.createElement("small"); sm.textContent=p.room.w+"×"+p.room.h+" ft · "+n+(n===1?" item":" items")+(p.id===state.activeId?" · showing now":(isOpenP(p)?" · in a tab":""));
     nm.appendChild(b); nm.appendChild(sm);
-    var del=document.createElement("button"); del.className="fdel"; del.textContent="🗑"; del.title='Delete "'+p.name+'" (it waits in the Bin for 15 days)'; del.setAttribute("aria-label","Delete "+p.name);
+    var del=document.createElement("button"); del.className="fdel"; del.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg>'; del.title='Delete "'+p.name+'" (it waits in the Bin for 15 days)'; del.setAttribute("aria-label","Delete "+p.name);
     del.addEventListener("click",function(){ deleteProject(p.id); });
     meta.appendChild(nm); meta.appendChild(del);
     card.appendChild(th); card.appendChild(meta); filesList.appendChild(card);
@@ -1530,16 +1610,23 @@ document.getElementById("zoomOut").addEventListener("click",function(){ CP=activ
 
 /* theme */
 var themeState=null;
-document.getElementById("themeBtn").addEventListener("click",function(){
-  var cur=document.documentElement.getAttribute("data-theme");
-  var mql=window.matchMedia("(prefers-color-scheme: dark)").matches;
-  if(!cur){ document.documentElement.setAttribute("data-theme", mql?"light":"dark"); }
-  else if(cur==="dark"){ document.documentElement.setAttribute("data-theme","light"); }
-  else { document.documentElement.removeAttribute("data-theme"); }
-  try{ localStorage.setItem("roomplanner.theme", document.documentElement.getAttribute("data-theme")||""); }catch(e){}
-  render();
-});
-(function(){ try{ var t=localStorage.getItem("roomplanner.theme"); if(t) document.documentElement.setAttribute("data-theme",t); }catch(e){} })();
+// ---- theme (dark by default, same as Pixel Pad) ----
+(function(){
+  var themeBtn=document.getElementById("themeBtn");
+  var SUN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var MOON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+  function isDark(){ var t=document.documentElement.getAttribute("data-theme"); return t==="dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+  function icon(){ themeBtn.innerHTML = isDark() ? SUN : MOON; }
+  try{ var st=localStorage.getItem("roomplanner.theme"); document.documentElement.setAttribute("data-theme", st ? st : "dark"); }
+  catch(e){ document.documentElement.setAttribute("data-theme","dark"); }
+  icon();
+  themeBtn.addEventListener("click",function(){
+    var next = isDark() ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try{ localStorage.setItem("roomplanner.theme", next); }catch(e){}
+    icon(); if(typeof render==="function") render();
+  });
+})();
 
 /* keyboard */
 window.addEventListener("keydown",function(e){

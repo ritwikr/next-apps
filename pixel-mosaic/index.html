@@ -8,6 +8,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%238C857B%22%20stroke%3D%22rgba%280%2C0%2C0%2C0.18%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%224%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23C65D3B%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%224%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23F0E4CF%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%224%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%231BA396%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2212%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23E7A733%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23FF7A45%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%2212%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23C65D3B%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2220%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%231BA396%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2220%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%233E6E8E%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%2220%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23F0E4CF%22%2F%3E%3C%2Fsvg%3E">
 <style>
   :root{
+    /* Next type: Gotham Rounded (titles) + Proxima Nova (text); Nunito + Mulish stand in */
+    --font-display:"Gotham Rounded","Nunito",system-ui,sans-serif; --font-sans:"Proxima Nova","Mulish",system-ui,sans-serif;
     --paper:#FBF6EE; --card:#FFFFFF; --ink:#2C2740; --muted:#7A7488;
     --line:#EAE3D8; --accent:#1C1A22; --accent-ink:#FFFFFF; --teal:#E2DFDA;
     --teal-ink:#1C1A22; --grout:#BFBFBF; --canvas-grid:rgba(24,20,34,0.07);
@@ -32,9 +34,10 @@
   html,body{height:100%}
   body{
     background:var(--paper); color:var(--ink);
-    font-family:"Nunito",system-ui,sans-serif; line-height:1.4;
+    font-family:var(--font-sans); line-height:1.4;
     -webkit-font-smoothing:antialiased; overflow:hidden;
   }
+  h1,h2,h3{font-family:var(--font-display)}
   /* Space held = hand cursor (grab), dragging = grabbing. Same rule in all Next apps. */
   body.space-pan .stage, body.space-pan canvas{cursor:grab!important}
   body.panning .stage, body.panning canvas{cursor:grabbing!important}
@@ -241,7 +244,7 @@
   .overlay{position:fixed;inset:0;background:rgba(20,16,30,0.6);display:none;place-items:center;padding:20px;z-index:40}
   .overlay.open{display:grid}
   .modal{background:var(--card);border-radius:20px;padding:20px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 50px -10px rgba(0,0,0,0.55)}
-  .modal h2{font-family:"Baloo 2",sans-serif;margin:0 0 4px;font-size:1.35rem}
+  .modal h2{font-family:var(--font-display);font-weight:900;margin:0 0 4px;font-size:1.35rem}
   .modal p{margin:0 0 14px;color:var(--muted);font-size:.9rem;font-weight:600}
   .modal img{width:100%;max-width:360px;border-radius:12px;box-shadow:0 6px 16px -6px var(--shadow);margin:0 auto 16px;background:var(--grout)}
   .modal button{font-family:inherit;font-weight:800;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px 18px;cursor:pointer;min-height:44px}
@@ -252,7 +255,7 @@
   .sheet.show{display:flex}
   .sheet-inner{background:var(--card);color:var(--ink);border-radius:16px;max-width:640px;width:100%;padding:20px 22px 26px;box-shadow:0 20px 60px -20px #000}
   .sheet-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-  .sheet-top h2{font-family:"Baloo 2",sans-serif;margin:0;font-size:1.3rem}
+  .sheet-top h2{font-family:var(--font-display);font-weight:900;margin:0;font-size:1.3rem}
   .sheet-close{font-family:inherit;font-weight:800;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer}
   .cheats-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
   .cheat-card{border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--paper)}
@@ -302,6 +305,11 @@
   .save .ic svg{width:19px;height:19px;display:block}
   .fdel svg{width:17px;height:17px;display:block}
   .fdel{color:var(--muted)}
+
+  /* ===== Black & white + Next yellow highlight (Oct 2026) ===== */
+  :root{ --paper:#F2F2F2; --card:#FFFFFF; --ink:#111111; --muted:#6B6B6B; --line:#E2E2E2; --accent:#FDB913; --accent-ink:#111111; --teal:#E6E6E6; --teal-ink:#111111; --shadow:rgba(0,0,0,0.14); --chip-ring:rgba(0,0,0,0.18); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --paper:#0E0E0E; --card:#1B1B1B; --ink:#F5F5F5; --muted:#A3A3A3; --line:#2E2E2E; --accent:#FDB913; --accent-ink:#111111; --teal:#3A3A3A; --teal-ink:#F5F5F5; --shadow:rgba(0,0,0,0.55); --chip-ring:rgba(255,255,255,0.24); } }
+  :root[data-theme="dark"]{ --paper:#0E0E0E; --card:#1B1B1B; --ink:#F5F5F5; --muted:#A3A3A3; --line:#2E2E2E; --accent:#FDB913; --accent-ink:#111111; --teal:#3A3A3A; --teal-ink:#F5F5F5; --shadow:rgba(0,0,0,0.55); --chip-ring:rgba(255,255,255,0.24); }
 </style>
 
 <div class="app-shell">
@@ -435,7 +443,8 @@
   </div>
 </div>
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Nunito:wght@600;700;800&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Mulish:wght@500;600;700;800;900&display=swap">
 
 <div class="files" id="files" aria-hidden="true" role="dialog" aria-label="All your mosaics">
   <div class="files-inner">

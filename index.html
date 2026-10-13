@@ -5,69 +5,220 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Next Apps — Next School</title>
 <meta name="description" content="Free, open-source learning tools made with learners at Next School, Mumbai: Pixel Pad, Pixel Mosaic, Room Blocks Planner and Cajon Groove Practice.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%23FBF6EE%22%20stroke%3D%22rgba%2844%2C39%2C64%2C0.12%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%225%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%23FF7A45%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%225%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%2314B8A6%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%2216%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%23E7A733%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%2216%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%233E6E8E%22%2F%3E%3C%2Fsvg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%232D3236%22%2F%3E%3Cg%20transform%3D%22translate(16%2016)%20scale(.68)%22%20fill%3D%22none%22%20stroke%3D%22%23FDB913%22%20stroke-width%3D%2211%22%3E%3Cpath%20d%3D%22M8%2046V27a17%2017%200%200%201%2034%200v19%22%2F%3E%3Cpath%20d%3D%22M56%209h38M56%2025h38M56%2041h38%22%2F%3E%3Cpath%20d%3D%22M9%2057l32%2036M41%2057L9%2093%22%2F%3E%3Cpath%20d%3D%22M75%2055v40M55%2075h40%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Mulish:wght@400;500;600;700;800&display=swap">
 <style>
+  /* NEXT School design system (from the nextschool.org redesign):
+     six flat brand colours, charcoal bands, uppercase rounded titles, pill buttons, square cards,
+     no watermarks. Gotham Rounded + Proxima Nova; Nunito + Mulish stand in. */
   :root{
-    --paper:#f4efe6; --card:#fffdf8; --ink:#2c2740; --muted:#7a7386;
-    --line:#e3dccd; --teal:#0f7d74; --shadow:rgba(60,50,30,.18);
-  }
-  @media (prefers-color-scheme: dark){
-    :root{ --paper:#1c1a24; --card:#26232f; --ink:#efe9dc; --muted:#a49bb0;
-      --line:#39343f; --teal:#4fd0c4; --shadow:rgba(0,0,0,.5); }
+    --yellow:#FDB913; --cyan:#00B8D3; --purple:#74489D; --green:#8DC63F; --red:#EF4957; --charcoal:#2D3236;
+    --gray-700:#54595F; --gray-400:#9DA2A6; --gray-200:#E4E6E8; --gray-50:#F6F7F8; --white:#FFFFFF;
+    --font-display:"Gotham Rounded","Nunito",system-ui,sans-serif;
+    --font-sans:"Proxima Nova","Mulish",system-ui,sans-serif;
+    --max:1140px; --gutter:clamp(16px,4vw,32px);
+    --ease:cubic-bezier(0.4,0,0.2,1);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    padding:48px 20px;line-height:1.5}
-  .wrap{max-width:760px;margin:0 auto}
-  h1{font-size:1.9rem;font-weight:800;margin:0 0 6px}
-  .sub{color:var(--muted);margin:0 0 34px;font-size:1rem}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);
-    border:1.5px solid var(--line);border-radius:16px;padding:20px 20px 18px;
-    box-shadow:0 6px 18px -12px var(--shadow);transition:transform .08s ease,border-color .15s}
-  a.card:hover{transform:translateY(-2px);border-color:var(--teal)}
-  .card h2{margin:0 0 4px;font-size:1.1rem;font-weight:800}
-  .card p{margin:0;color:var(--muted);font-size:.9rem}
-  .signin{margin-top:28px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:18px 20px}
-  .signin h2{margin:0 0 4px;font-size:1.05rem;font-weight:800}
-  .signin p{margin:0;color:var(--muted);font-size:.92rem}
-  .signin a{color:var(--teal)}
-  footer{margin-top:38px;color:var(--muted);font-size:.82rem}
-  footer a{color:var(--teal)}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--white);color:var(--gray-700);font-family:var(--font-sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  h1,h2,h3{font-family:var(--font-display);color:var(--charcoal);text-transform:uppercase;letter-spacing:.02em;line-height:1.08;margin:0}
+  a{color:inherit}
+  a:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
+  .in{max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin:0 0 14px}
+
+  /* header */
+  header{position:sticky;top:0;z-index:20;height:68px;background:var(--charcoal);border-bottom:1px solid rgba(255,255,255,.08)}
+  header .in{height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .logo{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--white)}
+  .logo img{width:90px;height:22px;display:block}
+  .logo span{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding-left:14px;border-left:1px solid rgba(255,255,255,.25);line-height:1.2}
+  nav{display:flex;align-items:center}
+  nav a{padding:12px 12px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--white);text-decoration:none;transition:color .15s var(--ease)}
+  nav a:hover{color:var(--yellow)}
+  @media (max-width:560px){ nav a.opt{display:none} .logo span{display:none} }
+
+  /* hero */
+  .hero{position:relative;overflow:hidden;background:var(--charcoal);color:var(--white);padding:clamp(64px,10vw,120px) 0 clamp(56px,8vw,96px)}
+  .hero .eyebrow{color:var(--yellow)}
+  .hero h1{color:var(--white);font-weight:900;font-size:clamp(40px,7.4vw,84px);max-width:11ch}
+  .hero h1 em{font-style:normal;color:var(--yellow)}
+  .hero p.lead{max-width:46ch;font-size:clamp(16px,1.6vw,19px);color:rgba(255,255,255,.86);margin:24px 0 32px}
+  .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 26px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease)}
+  .pill.yellow{background:var(--yellow);color:var(--charcoal)}
+  .pill.yellow:hover{background:#ffc93f}
+  .pill.ghost{border:2px solid rgba(255,255,255,.5);color:var(--white)}
+  .pill.ghost:hover{border-color:var(--white)}
+  .pill.dark{background:var(--charcoal);color:var(--white)}
+  .pill.dark:hover{background:#40464b}
+
+  /* apps */
+  .apps{padding:clamp(64px,8vw,96px) 0}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:36px}
+  .sec-head .eyebrow{color:var(--cyan)}
+  .sec-head h2{font-size:clamp(30px,4.2vw,46px);font-weight:900}
+  .sec-head p{max-width:40ch;margin:0;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+  @media (max-width:760px){ .grid{grid-template-columns:1fr} }
+  a.app{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;min-height:340px;padding:32px 32px 34px;text-decoration:none;color:var(--white);transition:filter .2s var(--ease)}
+  a.app:hover{filter:brightness(1.04)}
+  a.app .icon{width:64px;height:64px;display:block;margin:0 0 28px;border-radius:15px;box-shadow:0 6px 18px -8px rgba(0,0,0,.35)}
+  a.app .eyebrow{margin:0 0 8px;color:var(--yellow)}
+  a.app h3{color:inherit;font-weight:900;font-size:clamp(26px,3vw,34px);margin:0 0 10px}
+  a.app p{margin:0 0 18px;max-width:40ch;font-size:15px;line-height:1.6;opacity:.92}
+  a.app .go{margin-top:auto;align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding-bottom:4px;border-bottom:2px solid var(--yellow)}
+  a.app .go i{font-style:normal;display:inline-block;transition:transform .15s var(--ease)}
+  a.app:hover .go i{transform:translateX(4px)}
+  .app.purple{background:var(--purple)}
+  .app.red{background:var(--red)}
+  .app.red .eyebrow{color:var(--charcoal)} .app.red .go{border-color:var(--charcoal)}
+  .app.green{background:var(--green);color:var(--charcoal)!important}
+  .app.cyan{background:var(--cyan);color:var(--charcoal)!important}
+  .app.green .eyebrow,.app.cyan .eyebrow{color:var(--charcoal);opacity:.75}
+  .app.green .go,.app.cyan .go{border-color:var(--charcoal)}
+
+  /* sign-in band */
+  .signin{background:var(--gray-50);padding:clamp(56px,7vw,88px) 0;border-top:1px solid var(--gray-200)}
+  .signin .in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:clamp(24px,5vw,72px);align-items:start}
+  @media (max-width:760px){ .signin .in{grid-template-columns:1fr} }
+  .signin .eyebrow{color:var(--purple)}
+  .signin h2{font-size:clamp(28px,3.6vw,40px);font-weight:900}
+  .signin p{margin:0 0 16px}
+  .signin ul{margin:0 0 24px;padding:0;list-style:none;display:grid;gap:10px}
+  .signin li{display:flex;gap:12px;align-items:flex-start}
+  .signin li::before{content:"";flex:0 0 auto;width:8px;height:8px;margin-top:9px;border-radius:50%;background:var(--yellow)}
+  .signin a.txt{color:var(--charcoal);font-weight:700;text-decoration-color:var(--yellow);text-decoration-thickness:2px;text-underline-offset:3px}
+
+  /* footer */
+  footer{background:var(--charcoal);color:rgba(255,255,255,.7);padding:40px 0;font-size:14px}
+  footer .in{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  footer .links{display:flex;gap:4px 20px;flex-wrap:wrap}
+  footer .links a{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--white);text-decoration:none}
+  footer .links a:hover{color:var(--yellow)}
+  footer img{width:90px;height:22px;display:block;margin-bottom:12px}
+
+  /* motion: headline wipes up, sections rise in once */
+  @keyframes wipeUp{from{clip-path:inset(100% 0 0 0);transform:translateY(22px)}to{clip-path:inset(0 0 0 0);transform:none}}
+  @keyframes riseIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+  .hero h1 .ln{display:block;animation:wipeUp .8s var(--ease) both}
+  .hero h1 .ln:nth-child(2){animation-delay:.08s} .hero h1 .ln:nth-child(3){animation-delay:.16s}
+  .hero .lead,.hero .cta{animation:riseIn .7s var(--ease) .25s both}
+  .rise{opacity:0;transform:translateY(28px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  .rise.seen{opacity:1;transform:none}
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important} .rise{opacity:1;transform:none} }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Next Apps</h1>
-    <p class="sub">Small, self-contained learning tools built with learners at Next. Open source.</p>
-    <div class="grid">
-      <a class="card" href="./room-blocks-planner/">
-        <h2>Room Blocks Planner</h2>
-        <p>Quickly plan a room — drop in furniture and work out all four wall elevations.</p>
-      </a>
-      <a class="card" href="./pixel-pad/">
-        <h2>Pixel Pad</h2>
+
+
+<header>
+  <div class="in">
+    <a class="logo" href="./" aria-label="Next Apps home"><img src="assets/next-logo-white.png" alt="NEXT School" width="90" height="22"><span>Apps</span></a>
+    <nav>
+      <a href="#apps">Apps</a>
+      <a class="opt" href="#signin">Sign in</a>
+      <a class="opt" href="https://github.com/ritwikr/next-apps">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="in">
+    <p class="eyebrow">Made with learners at Next School, Mumbai</p>
+    <h1><span class="ln">Tools for</span><span class="ln">making</span><span class="ln"><em>things</em></span></h1>
+    <p class="lead">Small, free apps built with learners for their own projects — draw, design, plan and play. Open one and start. No account needed.</p>
+    <div class="cta">
+      <a class="pill yellow" href="#apps">See the apps</a>
+      <a class="pill ghost" href="https://github.com/ritwikr/next-apps">Open source</a>
+    </div>
+  </div>
+</section>
+
+<section class="apps" id="apps">
+  <div class="in">
+    <div class="sec-head rise">
+      <div>
+        <p class="eyebrow">The apps</p>
+        <h2>Pick one</h2>
+      </div>
+      <p>Each one works on an iPad, a laptop or a phone, and saves your work as you go.</p>
+    </div>
+    <div class="grid rise">
+      <a class="app purple" href="./pixel-pad/">
+        <img class="icon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%23FBF6EE%22%20stroke%3D%22rgba%2844%2C39%2C64%2C0.12%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%224%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FF7A45%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%224%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FFC24B%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%235B8DEF%22%2F%3E%3Crect%20x%3D%2222%22%20y%3D%2210%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%2314B8A6%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2216%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FF6B6B%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%2216%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%233FB27F%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2222%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FFC24B%22%2F%3E%3Crect%20x%3D%2222%22%20y%3D%2222%22%20width%3D%225%22%20height%3D%225%22%20rx%3D%221%22%20fill%3D%22%23FF7A45%22%2F%3E%3C%2Fsvg%3E" alt="" width="64" height="64">
+        <p class="eyebrow">Draw</p>
+        <h3>Pixel Pad</h3>
         <p>An ultra-simple pixel-art drawing pad.</p>
+        <span class="go">Open app <i>→</i></span>
       </a>
-      <a class="card" href="./pixel-mosaic/">
-        <h2>Pixel Mosaic</h2>
+      <a class="app cyan" href="./pixel-mosaic/">
+        <img class="icon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%238C857B%22%20stroke%3D%22rgba%280%2C0%2C0%2C0.18%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%224%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23C65D3B%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%224%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23F0E4CF%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%224%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%231BA396%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2212%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23E7A733%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23FF7A45%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%2212%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23C65D3B%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2220%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%231BA396%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2220%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%233E6E8E%22%2F%3E%3Crect%20x%3D%2220%22%20y%3D%2220%22%20width%3D%227%22%20height%3D%227%22%20rx%3D%220.8%22%20fill%3D%22%23F0E4CF%22%2F%3E%3C%2Fsvg%3E" alt="" width="64" height="64">
+        <p class="eyebrow">Design</p>
+        <h3>Pixel Mosaic</h3>
         <p>Design a real mosaic-tile artwork the pixel-art way — lay out catalogue tiles on a grid, then build it for real.</p>
+        <span class="go">Open app <i>→</i></span>
       </a>
-      <a class="card" href="./cajon/">
-        <h2>Cajon Groove Practice</h2>
+      <a class="app green" href="./room-blocks-planner/">
+        <img class="icon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%23FBF6EE%22%20stroke%3D%22rgba%2844%2C39%2C64%2C0.12%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%226%22%20width%3D%2222%22%20height%3D%2220%22%20rx%3D%222.5%22%20fill%3D%22%23F3EEE4%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%222.4%22%2F%3E%3Crect%20x%3D%2213%22%20y%3D%2224.2%22%20width%3D%226%22%20height%3D%223%22%20fill%3D%22%23FBF6EE%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%2216.5%22%20width%3D%2210%22%20height%3D%226.5%22%20rx%3D%221%22%20fill%3D%22%23AFC2D6%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%2219.5%22%20y%3D%229%22%20width%3D%225.5%22%20height%3D%228%22%20rx%3D%221%22%20fill%3D%22%238FA9C4%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E" alt="" width="64" height="64">
+        <p class="eyebrow">Plan</p>
+        <h3>Room Blocks Planner</h3>
+        <p>Quickly plan a room — drop in furniture and work out all four wall elevations.</p>
+        <span class="go">Open app <i>→</i></span>
+      </a>
+      <a class="app red" href="./cajon/">
+        <img class="icon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2230%22%20height%3D%2230%22%20rx%3D%227%22%20fill%3D%22%23FBF6EE%22%20stroke%3D%22rgba%2844%2C39%2C64%2C0.12%29%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%228%22%20y%3D%224.5%22%20width%3D%2216%22%20height%3D%2223%22%20rx%3D%222.2%22%20fill%3D%22%23E7A733%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M8.5%209.5h15%22%20stroke%3D%22%232C2740%22%20stroke-width%3D%221.4%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2219%22%20r%3D%223.4%22%20fill%3D%22%232C2740%22%2F%3E%3C%2Fsvg%3E" alt="" width="64" height="64">
+        <p class="eyebrow">Play</p>
+        <h3>Cajon Groove Practice</h3>
         <p>Learn cajon grooves with a beat-by-beat sequencer, count-in, a practice diary and an original backing band to play along with.</p>
+        <span class="go">Open app <i>→</i></span>
       </a>
     </div>
-    <section class="signin">
-      <h2>Sign in (optional)</h2>
-      <p>Every app works without an account — your work saves on the device you're using.
-      Learners with a school Google account can sign in once to save their work to their own
-      Google Drive, so it follows them to any device. One sign-in covers all the apps.
-      The apps can only see the files they save there, nothing else in your Drive.
-      <a href="./privacy/">Privacy</a></p>
-    </section>
-    <footer>Source on <a href="https://github.com/ritwikr/next-apps">GitHub</a>. Made at Next School, Mumbai. · <a href="./privacy/">Privacy</a> · <a href="mailto:roy.ritwik@gmail.com">Contact</a></footer>
   </div>
+</section>
+
+<section class="signin" id="signin">
+  <div class="in rise">
+    <div>
+      <p class="eyebrow">Optional</p>
+      <h2>One sign-in, every app</h2>
+    </div>
+    <div>
+      <p>Every app works without an account — your work saves on the device you're using.</p>
+      <ul>
+        <li>Learners with a school Google account can sign in once to save their work to their own Google Drive, so it follows them to any device.</li>
+        <li>One sign-in covers all the apps.</li>
+        <li>The apps can only see the files they save there — nothing else in your Drive.</li>
+      </ul>
+      <a class="pill dark" href="./privacy/">Read the privacy note</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="in">
+    <div>
+      <img src="assets/next-logo-white.png" alt="NEXT School" width="90" height="22">
+      Made at Next School, Mumbai. Free and open source.
+    </div>
+    <div class="links">
+      <a href="https://github.com/ritwikr/next-apps">GitHub</a>
+      <a href="./privacy/">Privacy</a>
+      <a href="mailto:roy.ritwik@gmail.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // sections rise in once as they scroll into view
+  (function(){
+    var els=document.querySelectorAll('.rise');
+    if(!('IntersectionObserver' in window)){ els.forEach(function(e){e.classList.add('seen')}); return; }
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('seen'); io.unobserve(e.target); } }); },{threshold:.12});
+    els.forEach(function(e){ io.observe(e); });
+  })();
+</script>
 </body>
 </html>
