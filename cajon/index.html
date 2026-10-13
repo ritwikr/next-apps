@@ -1,0 +1,2919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cajon Groove Practice</title>
+<style>
+  :root{
+    --walnut: #241610;
+    --walnut-2: #342217;
+    --tapa: #C89B6D;
+    --tapa-dim: #9c7a56;
+    --amber: #E8A33D;   /* slap */
+    --rust: #B8543A;    /* bass */
+    --cream: #F2E8DC;
+    --cream-dim: #cabca9;
+    --line: #5C4433;
+    --panel: #2c1c14;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, #3a2417 0%, transparent 55%),
+      repeating-linear-gradient(90deg, #241610 0px, #251710 2px, #221409 3px, #241610 4px),
+      var(--walnut);
+    color: var(--cream);
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  .wrap{ max-width: 720px; margin: 0 auto; }
+
+  header{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family: Georgia, 'Palatino Linotype', 'Iowan Old Style', serif;
+    font-weight: 700;
+    font-size: clamp(28px, 6vw, 40px);
+    margin: 0 0 6px;
+    color: var(--cream);
+    letter-spacing: -0.01em;
+  }
+  .sub{ color: var(--cream-dim); font-size: 14.5px; max-width: 52ch; line-height:1.5; }
+
+  .panel{
+    background: linear-gradient(180deg, var(--panel), #23150f);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  /* top-level view nav */
+  .viewnav{ display:flex; gap:8px; margin-bottom:18px; }
+  .viewtab{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-weight:700; font-size:13px;
+    background:transparent; color:var(--cream-dim);
+    border:1px solid var(--line); border-radius:999px;
+    padding:9px 18px; cursor:pointer; transition:all .15s ease;
+  }
+  .viewtab:hover{ color:var(--cream); border-color:var(--tapa-dim); }
+  .viewtab.active{ background:var(--amber); color:#241610; border-color:var(--amber); }
+
+  /* section headings (composer) */
+  .ch-head{ margin-bottom:16px; }
+  .ch-title{ font-family:Georgia,'Palatino Linotype',serif; font-weight:700; font-size:22px; margin:0 0 6px; color:var(--cream); }
+  .ch-sub{ color:var(--cream-dim); font-size:13.5px; line-height:1.5; margin:0; max-width:56ch; }
+  /* Practice diary: one dot per day (empty · half · solid · solid+ring = 30 min goal) */
+  .diary{ margin:22px 0 0; padding-top:16px; border-top:1px solid var(--line); }
+  .diary-head{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:8px; }
+  .diary-title{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--tapa-dim); }
+  .diary-sum{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11.5px; color:var(--cream-dim); white-space:nowrap; }
+  .diary-dots{ display:grid; grid-template-columns:repeat(30, 1fr); gap:4px; }
+  .ddot{ aspect-ratio:1; width:100%; max-width:18px; justify-self:center; border-radius:50%; border:1.5px solid var(--line); background:transparent; padding:0; cursor:pointer; }
+  .ddot.l1{ border-color:var(--rust); background:linear-gradient(to top, var(--rust) 50%, transparent 50%); }
+  .ddot.l2{ border-color:var(--rust); background:var(--rust); }
+  .ddot.l3{ border-color:var(--amber); background:var(--rust); box-shadow:0 0 0 2px var(--amber) inset; }
+  .ddot.today{ outline:1px dashed var(--tapa); outline-offset:2px; }
+  .ddot.sel{ outline:1.5px solid var(--cream); outline-offset:2px; }
+  .cc-diary{ display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:10.5px; color:var(--tapa-dim); }
+  .cc-diary .ddot{ display:inline-block; width:10px; height:10px; vertical-align:-1px; margin-right:4px; cursor:default; }
+  .diary-detail{ margin-top:10px; font-size:12.5px; color:var(--cream-dim); line-height:1.5; min-height:1.5em; }
+  .diary-detail b{ color:var(--cream); font-weight:600; }
+  @media (max-width:520px){ .diary-head{ flex-direction:column; gap:4px; } .diary-sum{ white-space:normal; } .diary-dots{ gap:2px; } .ddot{ border-width:1px; } }
+
+
+  /* composer */
+  .cmp-hint{ color:var(--tapa-dim); font-style:italic; }
+  #cmpHitRow .hit{ cursor:pointer; }
+  #cmpHitRow .hit:hover{ border-color:var(--tapa); box-shadow:0 0 0 1px var(--tapa-dim) inset; }
+  .cmp-style{
+    font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11px;
+    background:var(--walnut-2); color:var(--cream-dim);
+    border:1px solid var(--line); border-radius:999px; padding:8px 12px; cursor:pointer;
+  }
+  .cmp-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .cmp-name{
+    flex:1; min-width:160px;
+    font-family:inherit; font-size:13px; color:var(--cream);
+    background:var(--walnut-2); border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+  }
+  .cmp-name::placeholder{ color:var(--tapa-dim); }
+  .cmp-name:focus{ outline:none; border-color:var(--tapa-dim); }
+  .cmp-saved{ margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+  .cmp-saved-head{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin-bottom:10px; }
+  .cmp-saved-list{ display:flex; flex-direction:column; gap:6px; }
+  .cmp-empty{ color:var(--tapa-dim); font-size:12.5px; }
+  .cmp-row{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; padding:9px 12px; }
+  .cmp-row .cr-name{ font-weight:600; font-size:13px; color:var(--cream); flex:1; }
+  .cmp-row .cr-meta{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:10.5px; color:var(--tapa-dim); }
+  .cr-btn{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11px; background:transparent; color:var(--tapa-dim); border:1px solid var(--line); border-radius:999px; padding:5px 10px; cursor:pointer; white-space:nowrap; }
+  .cr-btn:hover{ color:var(--cream); border-color:var(--tapa-dim); }
+  .cr-btn.danger:hover{ color:var(--rust); border-color:var(--rust); }
+
+  /* subdivision tabs */
+  .tabs{ display:flex; gap:8px; margin-bottom: 16px; }
+  .tab{
+    flex:1;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    background: transparent;
+    color: var(--cream-dim);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 6px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .tab:hover{ color: var(--cream); border-color: var(--tapa-dim); }
+  .tab.active{
+    background: var(--tapa);
+    color: #241610;
+    border-color: var(--tapa);
+  }
+
+  /* groove list */
+  .groove-list{ display:flex; flex-direction:column; gap:6px; margin-bottom: 18px; }
+  .groove-btn{
+    display:flex; align-items:center; justify-content:space-between;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--cream-dim);
+    cursor:pointer;
+    font-size: 13.5px;
+    text-align:left;
+    transition: all .15s ease;
+  }
+  .groove-btn:hover{ background: rgba(255,255,255,0.05); color: var(--cream); }
+  .groove-btn.active{
+    border-color: var(--amber);
+    background: rgba(232,163,61,0.09);
+    color: var(--cream);
+  }
+  .groove-btn .name{ font-weight:600; }
+  .groove-btn .tag{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 10.5px;
+    color: var(--tapa-dim);
+  }
+
+  /* Switch drill: alternate two grooves on beat 1 without stopping */
+  .switch-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:-6px 0 16px; }
+  .sw-label{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11px; color:var(--tapa-dim); }
+  .sw-bars{ display:flex; gap:4px; }
+  .sw-bar{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:12px; font-weight:600; background:transparent; color:var(--cream-dim); border:1px solid var(--line); border-radius:999px; min-width:30px; padding:5px 9px; cursor:pointer; }
+  .sw-bar:hover{ color:var(--cream); border-color:var(--tapa-dim); }
+  .sw-bar.active{ background:var(--tapa); color:#241610; border-color:var(--tapa); }
+  .switch-bar:not(.on) .sw-label, .switch-bar:not(.on) .sw-bars{ opacity:.45; }
+  .groove-btn{ gap:10px; }
+  .groove-btn .name{ white-space:nowrap; }
+  .groove-btn .gb-right{ display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width:0; }
+  .groove-btn .gb-right .tag{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .partner-chip{ flex-shrink:0; min-width:78px; text-align:center; }
+  .partner-chip{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:10.5px; color:var(--tapa-dim); border:1px dashed var(--line); border-radius:999px; padding:3px 8px; white-space:nowrap; }
+  .partner-chip:hover{ color:var(--cream); border-color:var(--tapa); }
+  .groove-btn.partner{ border-color:var(--tapa-dim); border-style:dashed; }
+  .groove-btn.partner .partner-chip{ background:var(--tapa); color:#241610; border:1px solid var(--tapa); }
+  .grid-row[hidden]{ display:none; }
+  .next-row{ margin-top:8px; opacity:.38; height:30px; align-items:center; }
+  .next-row .hit{ max-width:30px; max-height:30px; }
+  .switch-tag{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:12px; color:var(--tapa-dim); margin-top:10px; height:20px; line-height:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .switch-tag:empty{ display:none; }
+  .switch-tag.soon{ color:var(--amber); font-weight:700; font-size:14px; }
+  /* Fixed-height stage: the grid row is always 44px tall whatever the subdivision,
+     and while a "next up" preview can appear its space is reserved, so nothing
+     below the stage jumps when grooves or sections change. */
+  .stage .grid-row.hits{ height:44px; align-items:center; }
+  .stage .grid-row.hits .hit{ max-height:44px; }
+  .stage.reserve .next-row[hidden]{ display:grid; visibility:hidden; }
+  .stage.reserve .switch-tag:empty{ display:block; }
+
+  /* notation grid */
+  .stage{
+    background: var(--walnut-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 14px 14px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .grid-row{ display:grid; grid-template-columns: repeat(var(--steps,4), 1fr); gap: 5px; min-width: 0; }
+  .count-row{ margin-bottom: 8px; }
+  .cell{
+    width: auto;
+    min-width: 0;
+    text-align:center;
+  }
+  .count-label{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: clamp(9px, 1.6vw, 12px);
+    color: var(--cream-dim);
+  }
+  .hit{
+    position: relative;
+    width: 100%;
+    max-width: 44px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(0,0,0,0.15);
+    transition: all .08s ease;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hit.rest{ border-style: dashed; }
+  .hit.rest::after{ content:''; width:12%; height:12%; border-radius:50%; background: var(--line); }
+
+  /* Bass = solid low circle (thump) */
+  .hit.B{ border-color: rgba(184,84,58,0.45); }
+  .hit.B::after{
+    content:'';
+    width: 50%; height: 50%;
+    border-radius: 50%;
+    background: var(--rust);
+  }
+
+  /* Double bass = two solid circles side by side (thump-thump) */
+  .hit.W{ border-color: rgba(184,84,58,0.45); gap: 8%; }
+  .hit.W::before, .hit.W::after{
+    content:'';
+    width: 30%; height: 30%;
+    border-radius: 50%;
+    background: var(--rust);
+  }
+
+  /* Slap = sharp angular cross (crack) */
+  .hit.S{ border-color: rgba(232,163,61,0.45); }
+  .hit.S::before, .hit.S::after{
+    content:'';
+    position:absolute;
+    width: 55%; height: 9%;
+    background: var(--amber);
+    border-radius: 2px;
+  }
+  .hit.S::before{ transform: rotate(45deg); }
+  .hit.S::after{ transform: rotate(-45deg); }
+
+  /* Ghost note = faint slap shown on a former rest when ghost mode is on */
+  .hit.ghost{ border-style: solid; border-color: rgba(200,155,109,0.3); }
+  .hit.ghost::before, .hit.ghost::after{
+    content:'';
+    position:absolute;
+    width: 40%; height: 8%;
+    background: var(--tapa-dim);
+    opacity: 0.6;
+    border-radius: 2px;
+  }
+  .hit.ghost::before{ transform: rotate(45deg); }
+  .hit.ghost::after{ transform: rotate(-45deg); }
+
+  /* Hand-assigned slaps (R/L) and doubles — shown as letters for rudiment practice */
+  .hit.R, .hit.L, .hit.D{ font-family: Georgia, serif; font-weight:700; font-size: clamp(12px, 3.4vw, 19px); line-height:1; }
+  .hit.R{ color: var(--amber); border-color: rgba(232,163,61,0.5); }
+  .hit.L{ color: var(--tapa); border-color: rgba(200,155,109,0.5); }
+  .hit.D{ color: var(--rust); border-color: rgba(184,84,58,0.5); font-size: clamp(11px, 3vw, 17px); }
+  .swatch.letter{ font-family:Georgia,serif; font-weight:700; font-size:11px; }
+  .swatch.letter.R{ color:var(--amber); }
+  .swatch.letter.L{ color:var(--tapa); }
+  .swatch.letter.D{ color:var(--rust); }
+
+  .hit.playing{
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px var(--tapa);
+  }
+  .hit.B.playing, .hit.W.playing{ background: rgba(184,84,58,0.18); }
+  .hit.S.playing{ background: rgba(232,163,61,0.18); }
+  .hit.rest.playing{ background: rgba(92,68,51,0.3); }
+
+  .legend{
+    display:flex; gap: 18px; margin-top: 14px;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11.5px;
+    color: var(--cream-dim);
+  }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .swatch{ width:16px; height:16px; border-radius:5px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; background: rgba(0,0,0,0.15); }
+  .swatch.B::after{ content:''; width:9px; height:9px; border-radius:50%; background: var(--rust); }
+  .swatch.S::before, .swatch.S::after{ content:''; position:absolute; width:11px; height:2px; background: var(--amber); border-radius:1px; }
+  .swatch.S::before{ transform: rotate(45deg); }
+  .swatch.S::after{ transform: rotate(-45deg); }
+  .swatch.W{ gap:2px; }
+  .swatch.W::before, .swatch.W::after{ content:''; width:5px; height:5px; border-radius:50%; background: var(--rust); }
+  .swatch.rest{ border-style:dashed; }
+  .swatch.rest::after{ content:''; width:4px; height:4px; border-radius:50%; background:var(--line); }
+
+  /* transport */
+  .transport{
+    display:flex; align-items:center; gap: 14px; flex-wrap: wrap;
+  }
+  .tempo-line{ flex:1; min-width:240px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .tempo-line .bpm-num{ min-width:84px; line-height:1; }
+  .tempo-line .bpm-num small{ font-size:13px; font-weight:400; color:var(--cream-dim); }
+  .tempo-line .tempo-chips{ margin-top:0; }
+  .toggle-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .toggle-row .countdown{ margin:0 0 0 6px; min-height:0; }
+  .timer-toggle{ height:36px; }
+  .play-btn{
+    font-family: Georgia, 'Palatino Linotype', 'Iowan Old Style', serif;
+    font-weight: 700;
+    font-size: 16px;
+    background: var(--amber);
+    color: #241610;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 26px;
+    cursor: pointer;
+    display:flex; align-items:center; gap:8px;
+    transition: transform .1s ease, filter .1s ease;
+  }
+  .play-btn:hover{ filter: brightness(1.08); }
+  .play-btn:active{ transform: scale(0.97); }
+  .play-btn.playing{ background: var(--rust); color: var(--cream); }
+
+  .bpm-block{ flex:1; min-width: 200px; }
+  .tempo-block{ flex:1; min-width: 230px; }
+  .tempo-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .tempo-chip{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px; font-weight:600;
+    background: transparent; color: var(--cream-dim);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 12px; cursor: pointer; transition: all .12s ease;
+  }
+  .tempo-chip:hover{ color: var(--cream); border-color: var(--tapa-dim); }
+  .tempo-chip.active{ background: var(--tapa); color: #241610; border-color: var(--tapa); }
+  .bpm-row{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px; }
+  .bpm-num{
+    font-family: Georgia, 'Palatino Linotype', 'Iowan Old Style', serif;
+    font-weight:700;
+    font-size: 22px;
+    color: var(--cream);
+  }
+  .bpm-label{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color: var(--tapa-dim);
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%; height: 4px;
+    border-radius: 2px;
+    background: var(--line);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width: 16px; height:16px;
+    border-radius:50%;
+    background: var(--tapa);
+    cursor:pointer;
+    border: 2px solid var(--walnut);
+  }
+  input[type=range]::-moz-range-thumb{
+    width: 16px; height:16px;
+    border-radius:50%;
+    background: var(--tapa);
+    cursor:pointer;
+    border: 2px solid var(--walnut);
+  }
+
+  /* mixer */
+  .mixer{
+    display:flex; gap: 18px; flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .mix-ch{ flex:1; min-width: 150px; }
+  .mix-row{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px; }
+  .mix-val{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--cream);
+  }
+  #grooveVol::-webkit-slider-thumb{ background: var(--amber); }
+  #grooveVol::-moz-range-thumb{ background: var(--amber); }
+  #musicVol::-webkit-slider-thumb{ background: var(--tapa); }
+  #musicVol::-moz-range-thumb{ background: var(--tapa); }
+
+  .pulse{
+    width: 14px; height:14px; border-radius:50%;
+    background: var(--line);
+    transition: background .05s ease, transform .05s ease;
+    flex-shrink:0;
+  }
+  .pulse.on{ background: var(--tapa); transform: scale(1.3); }
+
+  .timer-toggle{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    background: transparent;
+    color: var(--cream-dim);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 9px 14px;
+    cursor: pointer;
+    display:flex; align-items:center; gap:8px;
+    transition: all .15s ease;
+  }
+  .timer-toggle:hover{ color: var(--cream); border-color: var(--tapa-dim); }
+  .timer-toggle .timer-dot{
+    width:7px; height:7px; border-radius:50%;
+    background: var(--line);
+    transition: background .15s ease;
+  }
+  .timer-toggle.active{
+    border-color: var(--amber);
+    color: var(--cream);
+    background: rgba(232,163,61,0.08);
+  }
+  .timer-toggle.active .timer-dot{ background: var(--amber); }
+
+  #musicToggle.active{
+    border-color: var(--tapa);
+    color: var(--cream);
+    background: rgba(200,155,109,0.1);
+  }
+  #musicToggle.active .timer-dot{ background: var(--tapa); }
+
+  /* Count-in: big 1-2-3-4 overlay before the groove starts */
+  .countin-overlay{
+    position: fixed; inset: 0;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none; z-index: 50;
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: min(42vw, 320px); font-weight: 700; line-height:1;
+    color: var(--tapa);
+    text-shadow: 0 4px 30px rgba(0,0,0,0.55);
+    opacity: 0;
+    transition: opacity .08s ease;
+  }
+  .countin-overlay.show{ opacity: 0.9; }
+  .countin-overlay.one{ color: var(--rust); }
+  #countInToggle.active .timer-dot, #cmpCountInToggle.active .timer-dot{ background: var(--tapa); }
+
+  .countdown{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 12.5px;
+    color: var(--tapa-dim);
+    margin-top: 10px;
+    min-height: 16px;
+  }
+
+  .style-row{
+    display:flex; gap:6px; flex-wrap:wrap;
+    margin-top: 12px;
+  }
+  .style-pill{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    background: transparent;
+    color: var(--cream-dim);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 11px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .style-pill:hover{ color: var(--cream); border-color: var(--tapa-dim); }
+  .style-pill.active{
+    background: var(--tapa);
+    color: #241610;
+    border-color: var(--tapa);
+  }
+
+  .track-bar{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    margin-top: 12px;
+  }
+  .track-status{
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--tapa-dim);
+    line-height: 1.4;
+  }
+  .track-status.live{ color: var(--amber); }
+
+  .session-bar{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .session-btn{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    background: transparent;
+    color: var(--tapa-dim);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .session-btn:hover{ color: var(--cream); border-color: var(--tapa-dim); }
+  .session-btn.active{ color: var(--cream); border-color: var(--tapa-dim); }
+  .session-stats{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--tapa-dim);
+  }
+  .diary-today{
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--cream-dim);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* header + cheat codes */
+  header.top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .cheat-btn{ margin-top:4px; font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:12px; font-weight:700; background:transparent; color:var(--tapa); border:1px solid var(--tapa-dim); border-radius:999px; padding:8px 14px; cursor:pointer; white-space:nowrap; }
+  .cheat-btn:hover{ color:var(--walnut); background:var(--tapa); }
+  .cheat{ position:fixed; inset:0; z-index:60; background:rgba(18,10,6,0.78); display:flex; justify-content:center; align-items:flex-start; overflow-y:auto; padding:28px 16px; }
+  .cheat[hidden]{ display:none; }
+  .cheat-card{ width:100%; max-width:680px; background:linear-gradient(180deg, var(--panel), #23150f); border:1px solid var(--tapa-dim); border-radius:var(--radius); padding:20px 22px 8px; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+  .cheat-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .cheat-top h2{ font-family:Georgia,'Palatino Linotype',serif; font-size:24px; margin:0; }
+  .cheat-close{ background:transparent; border:1px solid var(--line); color:var(--cream-dim); border-radius:50%; width:34px; height:34px; cursor:pointer; font-size:14px; }
+  .cheat-close:hover{ color:var(--cream); border-color:var(--tapa); }
+  .cheat section{ padding:14px 0; border-top:1px solid var(--line); }
+  .cheat section:first-of-type{ border-top:none; }
+  .cheat h3{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:0 0 10px; }
+  .cc-sym{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+  .cc-sym li{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--cream-dim); line-height:1.45; }
+  .cc-sym li b{ color:var(--cream); font-weight:600; white-space:nowrap; }
+  .cc-sym .swatch{ width:22px; height:22px; }
+  .cc-sym .swatch.letter{ font-size:13px; }
+  .cc-count{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11px; color:var(--cream-dim); border:1px solid var(--line); border-radius:5px; padding:2px 5px; white-space:nowrap; }
+  .swatch.ghost{ border-color:rgba(200,155,109,0.3); }
+  .swatch.ghost::before, .swatch.ghost::after{ content:''; position:absolute; width:9px; height:2px; background:var(--tapa-dim); opacity:.6; border-radius:1px; }
+  .swatch.ghost::before{ transform:rotate(45deg); } .swatch.ghost::after{ transform:rotate(-45deg); }
+  .cc-keys, .cc-list{ display:grid; grid-template-columns:max-content 1fr; gap:7px 14px; margin:0; font-size:13px; line-height:1.45; }
+  .cc-keys dt, .cc-list dt{ color:var(--cream); font-weight:600; white-space:nowrap; }
+  .cc-keys dd, .cc-list dd{ margin:0; color:var(--cream-dim); }
+  .cc-list dd b{ color:var(--cream); }
+  .cheat kbd{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11.5px; color:var(--cream); border:1px solid var(--tapa-dim); border-bottom-width:2px; border-radius:5px; padding:1px 6px; margin-right:3px; }
+  .cc-p{ font-size:13px; color:var(--cream-dim); line-height:1.5; margin:10px 0 0; }
+  @media (max-width:520px){ .cc-keys, .cc-list{ grid-template-columns:1fr; gap:2px; } .cc-keys dd, .cc-list dd{ margin-bottom:8px; } header.top{ flex-direction:column; } }
+
+  /* songs */
+  .song-picker{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .song-pill{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:12px; font-weight:700; background:transparent; color:var(--cream-dim); border:1px solid var(--line); border-radius:10px; padding:9px 14px; cursor:pointer; text-align:left; line-height:1.3; }
+  .song-pill small{ display:block; font-weight:400; font-size:10.5px; color:var(--tapa-dim); }
+  .song-pill:hover{ color:var(--cream); border-color:var(--tapa-dim); }
+  .song-pill.active{ background:var(--tapa); color:#241610; border-color:var(--tapa); }
+  .song-pill.active small{ color:#4a3222; }
+  .song-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .song-title{ font-family:Georgia,'Palatino Linotype',serif; font-size:24px; margin:0; }
+  .song-meta{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:11.5px; color:var(--tapa-dim); }
+  .now-line{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:-4px 0 12px; height:28px; }
+  .now-sec{ font-family:Georgia,'Palatino Linotype',serif; font-weight:700; font-size:20px; color:var(--cream); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .now-sec small{ font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-weight:400; font-size:13px; color:var(--cream-dim); margin-left:8px; }
+  .now-bar{ font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:13px; color:var(--amber); white-space:nowrap; }
+  .now-bar.fill{ font-weight:700; }
+  .song-stage .switch-tag.soon{ font-size:15px; }
+  .sheet{ margin-top:18px; display:flex; flex-direction:column; gap:6px; }
+  .sec{ display:grid; grid-template-columns:minmax(120px, 0.9fr) 1.6fr; gap:6px 14px; align-items:center; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-left:3px solid var(--line); border-radius:10px; padding:10px 12px; cursor:pointer; text-align:left; color:inherit; font:inherit; width:100%; }
+  .sec:hover{ border-color:var(--tapa-dim); }
+  .sec.cur{ border-color:var(--amber); border-left-color:var(--amber); background:rgba(232,163,61,0.07); }
+  .sec.start{ border-left-color:var(--tapa); }
+  .sec-name{ font-weight:600; font-size:14px; color:var(--cream); }
+  .sec-groove{ display:block; font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:10.5px; color:var(--tapa-dim); margin-top:2px; }
+  .sec-notes{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .mini{ display:grid; grid-template-columns:repeat(var(--steps,8), 1fr); gap:3px; max-width:360px; }
+  .mini .hit{ max-width:20px; border-radius:4px; }
+  .mini .hit.R, .mini .hit.L, .mini .hit.D{ font-size:10px; }
+  .bars{ display:flex; gap:4px; flex-wrap:wrap; }
+  .bdot{ width:9px; height:9px; border-radius:50%; border:1.5px solid var(--line); }
+  .bdot.fill{ border-color:var(--amber); }
+  .bdot.done{ background:var(--tapa-dim); border-color:var(--tapa-dim); }
+  .bdot.fill.done{ background:var(--amber); border-color:var(--amber); }
+  .bdot.now{ background:var(--cream); border-color:var(--cream); transform:scale(1.25); }
+  @media (max-width:520px){ .sec{ grid-template-columns:1fr; } }
+
+  footer{
+    text-align:center;
+    color: var(--tapa-dim);
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    margin-top: 10px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .hit, .pulse, .play-btn{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <p class="eyebrow">Cajon · Practice Box</p>
+      <h1>Groove Practice</h1>
+    </div>
+    <button class="cheat-btn" id="cheatBtn" title="Cheat codes — every symbol, button and shortcut explained (?)">? Cheat codes</button>
+  </header>
+
+  <nav class="viewnav" id="viewnav">
+    <button class="viewtab active" data-view="practice">Practice</button>
+    <button class="viewtab" data-view="compose">Compose</button>
+    <button class="viewtab" data-view="songs">Songs</button>
+  </nav>
+
+  <div id="practiceView">
+  <div class="panel">
+    <div class="tabs" id="tabs"></div>
+    <div class="groove-list" id="grooveList"></div>
+    <div class="switch-bar" id="switchBar">
+      <button class="timer-toggle" id="switchToggle" title="Alternate between this groove and a partner groove on beat 1, without stopping">
+        <span class="timer-dot"></span>⇄ Switch
+      </button>
+      <span class="sw-label">every</span>
+      <span class="sw-bars" id="switchBars">
+        <button class="sw-bar active" data-n="4">4</button><button class="sw-bar" data-n="2">2</button><button class="sw-bar" data-n="1">1</button>
+      </span>
+      <span class="sw-label">bars</span>
+    </div>
+
+    <div class="stage">
+      <div class="grid-row count-row" id="countRow"></div>
+      <div class="grid-row hits" id="hitRow"></div>
+      <div class="grid-row next-row" id="nextRow" hidden></div>
+      <div class="switch-tag" id="switchTag"></div>
+    </div>
+
+    <div class="transport">
+      <div class="pulse" id="pulse"></div>
+      <button class="play-btn" id="playBtn">▶ Play</button>
+      <div class="tempo-line">
+        <span class="bpm-num"><span id="bpmVal">70</span><small> bpm</small></span>
+        <div class="tempo-chips" id="tempoChips"></div>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button class="timer-toggle" id="countInToggle"><span class="timer-dot"></span>Count-in</button>
+      <button class="timer-toggle" id="ghostToggle"><span class="timer-dot"></span>Ghost notes</button>
+      <button class="timer-toggle" id="musicToggle"><span class="timer-dot"></span>Backing music</button>
+      <button class="timer-toggle" id="timerToggle"><span class="timer-dot"></span>1 min timer</button>
+      <span class="countdown" id="countdown"></span>
+    </div>
+
+    <div class="mixer">
+      <div class="mix-ch">
+        <div class="mix-row">
+          <span class="bpm-label">Groove volume</span>
+          <span class="mix-val"><span id="grooveVolVal">85</span>%</span>
+        </div>
+        <input type="range" id="grooveVol" min="0" max="100" value="85">
+      </div>
+      <div class="mix-ch">
+        <div class="mix-row">
+          <span class="bpm-label">Music volume</span>
+          <span class="mix-val"><span id="musicVolVal">85</span>%</span>
+        </div>
+        <input type="range" id="musicVol" min="0" max="100" value="85">
+      </div>
+    </div>
+
+    <div class="style-row" id="styleRow">
+      <button class="style-pill active" data-style="auto">Auto</button>
+      <button class="style-pill" data-style="beatles">Jangle Pop-Rock</button>
+      <button class="style-pill" data-style="zeppelin">Riff Hard Rock</button>
+      <button class="style-pill" data-style="floyd">Spacey Prog</button>
+      <button class="style-pill" data-style="pearljam">Grunge</button>
+    </div>
+
+    <div class="track-bar">
+      <button class="timer-toggle" id="matchTempoToggle">
+        <span class="timer-dot"></span>Match my tempo
+      </button>
+      <span class="track-status" id="trackStatus"></span>
+    </div>
+
+    <div class="session-bar">
+      <button class="session-btn" id="sessionBtn">Start session</button>
+      <span class="session-stats" id="sessionStats"></span>
+      <span class="diary-today" id="diaryToday" title="Saved automatically every time a groove plays"></span>
+    </div>
+  </div>
+  </div><!-- /practiceView -->
+
+  <div id="songsView" hidden>
+    <div class="panel">
+      <div class="song-picker" id="songPicker"></div>
+      <div class="song-head">
+        <h2 class="song-title" id="songTitle"></h2>
+        <span class="song-meta" id="songMeta"></span>
+      </div>
+
+      <div class="stage song-stage reserve">
+        <div class="now-line">
+          <span class="now-sec" id="songNowSec"></span>
+          <span class="now-bar" id="songNowBar"></span>
+        </div>
+        <div class="grid-row count-row" id="songCountRow"></div>
+        <div class="grid-row hits" id="songHitRow"></div>
+        <div class="grid-row next-row" id="songNextRow" hidden></div>
+        <div class="switch-tag" id="songNextTag"></div>
+      </div>
+
+      <div class="transport">
+        <div class="pulse" id="songPulse"></div>
+        <button class="play-btn" id="songPlayBtn">▶ Play song</button>
+        <button class="timer-toggle" id="songCountInToggle"><span class="timer-dot"></span>Count-in</button>
+        <button class="timer-toggle" id="songGhostToggle"><span class="timer-dot"></span>Ghost notes</button>
+        <button class="timer-toggle" id="songBandToggle"><span class="timer-dot"></span>Band</button>
+      </div>
+
+      <div class="sheet" id="songSheet"></div>
+
+      <div class="diary" id="diary">
+        <div class="diary-head">
+          <span class="diary-title">Practice diary · last 30 days</span>
+          <span class="diary-sum" id="diarySum"></span>
+        </div>
+        <div class="diary-dots" id="diaryDots"></div>
+        <div class="diary-detail" id="diaryDetail"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="composerView" hidden>
+    <div class="panel">
+      <div class="ch-head">
+        <h2 class="ch-title">Groove Composer</h2>
+      </div>
+
+      <div class="tabs" id="cmpSubTabs"></div>
+
+      <div class="stage">
+        <div class="grid-row count-row" id="cmpCountRow"></div>
+        <div class="grid-row" id="cmpHitRow"></div>
+      </div>
+
+      <div class="transport">
+        <div class="pulse" id="cmpPulse"></div>
+        <button class="play-btn" id="cmpPlayBtn">▶ Play</button>
+        <button class="timer-toggle" id="cmpGhostToggle"><span class="timer-dot"></span>Ghost notes</button>
+        <button class="timer-toggle" id="cmpCountInToggle"><span class="timer-dot"></span>Count-in</button>
+        <button class="timer-toggle" id="cmpMusicToggle"><span class="timer-dot"></span>Backing band</button>
+        <select id="cmpStyle" class="cmp-style">
+          <option value="beatles">Jangle Pop-Rock</option>
+          <option value="zeppelin">Riff Hard Rock</option>
+          <option value="floyd">Spacey Prog</option>
+          <option value="pearljam" selected>Grunge</option>
+        </select>
+        <div class="tempo-block">
+          <div class="bpm-row"><span class="bpm-label">Tempo</span><span class="bpm-num"><span id="cmpBpmVal">80</span> bpm</span></div>
+          <div class="tempo-chips" id="cmpTempoChips"></div>
+        </div>
+      </div>
+
+      <div class="cmp-actions">
+        <input type="text" id="cmpName" class="cmp-name" placeholder="Name this groove" maxlength="40">
+        <button class="session-btn" id="cmpSave">Save</button>
+        <button class="session-btn" id="cmpClear">Clear</button>
+        <button class="dg-btn" id="cmpSend">▶ Send to Practice</button>
+      </div>
+
+      <div class="cmp-saved">
+        <div class="cmp-saved-head">Saved grooves</div>
+        <div id="cmpSavedList" class="cmp-saved-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Start slow. Speed comes after accuracy.</footer>
+</div>
+<div class="cheat" id="cheat" hidden>
+  <div class="cheat-card" role="dialog" aria-modal="true" aria-label="Cheat codes">
+    <div class="cheat-top">
+      <h2>Cheat codes</h2>
+      <button class="cheat-close" id="cheatClose" aria-label="Close">✕</button>
+    </div>
+
+    <section>
+      <h3>Reading the grid</h3>
+      <ul class="cc-sym">
+        <li><i class="swatch B"></i><b>Bass</b> — flat palm, upper-centre of the face. Deep thump.</li>
+        <li><i class="swatch S"></i><b>Slap</b> — fingertips flick the top edge and spring off. Sharp crack.</li>
+        <li><i class="swatch W"></i><b>Double bass</b> — two quick palm hits in one step.</li>
+        <li><i class="swatch letter D">2</i><b>Double slap</b> — two quick slaps in one step.</li>
+        <li><i class="swatch letter R">R</i><i class="swatch letter L">L</i><b>Right / left hand</b> — used in the rudiments.</li>
+        <li><i class="swatch rest"></i><b>Rest</b> — play nothing, keep counting.</li>
+        <li><i class="swatch ghost"></i><b>Ghost note</b> — a whisper-soft slap (shown on rests when Ghost notes is on).</li>
+        <li><span class="cc-count">1 &amp; 2 &amp;</span><b>Counts</b> — 1/4 = one step per beat, 1/8 = “1 &amp;”, 1/16 = “1 e &amp; a”. The ringed square is the step sounding now; the dot left of Play flashes on every step.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Keyboard</h3>
+      <dl class="cc-keys">
+        <dt><kbd>Space</kbd></dt><dd>Play / stop (Practice, Songs, Compose)</dd>
+        <dt><kbd>↑</kbd><kbd>↓</kbd></dt><dd>Practice: previous / next groove · Songs: previous / next song</dd>
+        <dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Practice: slower / faster tempo · Songs: start from the previous / next section</dd>
+        <dt><kbd>C</kbd></dt><dd>Count-in on / off</dd>
+        <dt><kbd>G</kbd></dt><dd>Ghost notes on / off</dd>
+        <dt><kbd>M</kbd></dt><dd>Band on / off</dd>
+        <dt><kbd>S</kbd></dt><dd>Switch drill on / off (Practice)</dd>
+        <dt><kbd>?</kbd></dt><dd>Open these cheat codes · <kbd>Esc</kbd> closes them</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Practice</h3>
+      <dl class="cc-list">
+        <dt>Tempo chips</dt><dd>Beats per minute. Start slow — speed comes after accuracy.</dd>
+        <dt>Count-in</dt><dd>One bar of 1-2-3-4 clicks (with big numbers) before the groove starts. Remembered between visits.</dd>
+        <dt>Ghost notes</dt><dd>Every rest becomes a very soft slap — fills the gaps while the main hits stay loud.</dd>
+        <dt>Backing music</dt><dd>A band plays along, locked to your groove.</dd>
+        <dt>1 min timer</dt><dd>Stops the groove after one minute of playing — for “hold it without a mistake” drills.</dd>
+        <dt>⇄ Switch</dt><dd>Alternates between the selected groove and a partner every 4, 2 or 1 bars, on beat 1, without stopping. Tap the small ⇄ on any groove to make it the partner (dashed outline). In the last bar before a change the next groove appears faintly under the grid.</dd>
+        <dt>Volume knobs</dt><dd>Groove = the cajon sounds, Music = the band. Keep the band just under you.</dd>
+        <dt>Band styles</dt><dd><b>Auto</b> picks the band that suits each groove; or choose one yourself.</dd>
+        <dt>Match my tempo</dt><dd>Off: your tempo snaps to the band’s own tempo so it sounds natural. On: the band follows your tempo (it gets lower in pitch when slowed down).</dd>
+        <dt>Start session</dt><dd>Session = time since you pressed it; Practice = time actually playing.</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Songs</h3>
+      <dl class="cc-list">
+        <dt>Ghost notes</dt><dd>Same switch as in Practice: rests become whisper-soft slaps. Off unless you turn it on (here, in Practice, or with <kbd>G</kbd>).</dd>
+        <dt>Play song</dt><dd>Plays the whole song start to finish with its band — intro, verses, choruses, breaks and an ending hit.</dd>
+        <dt>The sheet</dt><dd>Every section with its groove. One dot per bar; the amber dot is a fill bar (a short burst that leads into the next section). The section playing now is outlined.</dd>
+        <dt>Tap a section</dt><dd>Starts the song from there — handy for drilling just the chorus.</dd>
+        <dt>Next up</dt><dd>In the last bar of each section the next groove appears faintly under the grid.</dd>
+        <dt>Full band</dt><dd>Flannel Static is fully arranged: the band plays its own part in every section — quiet verses, a pre-chorus that builds, big choruses with a melody, real stops, and a final chord. The other songs still use the practice band and just get quieter or louder per section.</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Compose</h3>
+      <dl class="cc-list">
+        <dt>Cells</dt><dd>Click a cell to cycle rest → bass → double bass → slap → double slap.</dd>
+        <dt>Save / Send</dt><dd>Save keeps it in this browser. Send to Practice puts it at the end of that subdivision’s groove list.</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Practice diary</h3>
+      <div class="cc-diary">
+        <span><span class="ddot"></span>none</span>
+        <span><span class="ddot l1"></span>under 15 min</span>
+        <span><span class="ddot l2"></span>15+ min</span>
+        <span><span class="ddot l3"></span>30 min goal</span>
+      </div>
+      <p class="cc-p">Saved automatically whenever something plays (after the count-in). Tap a dot to see that day’s grooves and best tempos. A streak counts days with at least a minute of playing.</p>
+    </section>
+  </div>
+</div>
+<div class="countin-overlay" id="countInOverlay" aria-live="polite"></div>
+
+<!-- Backing tracks and songs live in the audio/ folder next to this file (one .js per
+     loop/song, MP3 as base64). They load only when needed and are decoded into the Web
+     Audio clock, so they stay sample-locked to the cajon groove. Script tags load from
+     file:// with no internet, unlike fetch(). Keep the audio/ folder beside this HTML. -->
+
+
+<script>
+// ---------- Groove data ----------
+const GROOVES = {
+  quarter: {
+    label: '1/4',
+    counts: ['1','2','3','4'],
+    patterns: [
+      { name: 'Basic heartbeat', tag: 'foundation', hits: ['B','S','B','S'], style: 'beatles' },
+      { name: 'Bass-led', tag: 'weighted', hits: ['B','B','S','S'], style: 'beatles' },
+      { name: 'Slap-forward', tag: 'ear training', hits: ['S','B','S','B'], style: 'pearljam' },
+      { name: 'With a rest', tag: 'internalize pulse', hits: ['B','S','B','.'], style: 'floyd' },
+      { name: 'Double bass anchor', tag: 'ballad feel', hits: ['B','.','B','S'], style: 'floyd' },
+    ]
+  },
+  eighth: {
+    label: '1/8',
+    counts: ['1','&','2','&','3','&','4','&'],
+    patterns: [
+      { name: 'Basic alternating', tag: 'warm-up', hits: ['B','B','S','S','B','B','S','S'], style: 'beatles' },
+      { name: 'Classic pop / folk', tag: 'kick-snare feel', hits: ['B','.','S','B','S','.','S','.'], style: 'beatles' },
+      { name: 'Rock backbeat', tag: 'kick & snare', hits: ['B','.','S','.','B','.','S','.'], style: 'pearljam' },
+      { name: 'Bass-heavy backbeat', tag: 'driving', hits: ['B','B','.','S','B','B','.','S'], style: 'zeppelin' },
+      { name: 'Four-on-the-floor', tag: 'dance pulse', hits: ['B','.','B','S','B','.','B','S'], style: 'zeppelin' },
+      { name: 'Offbeat push', tag: 'push & pull', hits: ['B','S','.','S','B','S','.','S'], style: 'pearljam' },
+      { name: 'Syncopated', tag: 'leave space', hits: ['B','.','.','S','B','.','S','.'], style: 'zeppelin' },
+      { name: 'Reggae lift', tag: 'space & lift', hits: ['.','.','B','S','.','.','B','S'], style: 'floyd' },
+      { name: 'Half-time feel', tag: 'laid back', hits: ['B','.','.','.','S','.','.','B'], style: 'floyd' },
+      { name: 'Funk ghost', tag: 'funky', hits: ['B','.','S','B','.','S','B','.'], style: 'zeppelin' },
+      { name: 'Latin (tresillo-ish)', tag: 'independence', hits: ['B','.','S','.','.','B','S','.'], style: 'zeppelin' },
+    ]
+  },
+  sixteenth: {
+    label: '1/16',
+    counts: ['1','e','&','a','2','e','&','a','3','e','&','a','4','e','&','a'],
+    patterns: [
+      { name: 'Your pop-rock pocket', tag: 'backbeat + syncopated kick', hits: ['B','.','B','.','S','.','.','S','.','.','B','.','S','.','.','.'], style: 'pearljam' },
+      { name: 'Full mechanical drill', tag: 'technique', hits: ['B','B','S','S','B','B','S','S','B','B','S','S','B','B','S','S'], style: 'beatles' },
+      { name: '16th funk groove', tag: 'funk pocket', hits: ['B','.','S','.','.','S','B','.','B','.','S','.','.','S','B','.'], style: 'zeppelin' },
+      { name: 'Bossa feel', tag: 'smooth & even', hits: ['B','.','.','S','.','.','B','.','.','B','.','S','.','.','B','.'], style: 'floyd' },
+      { name: 'Rolling 16ths', tag: 'endurance', hits: ['B','S','S','S','B','S','S','S','B','S','S','S','B','S','S','S'], style: 'beatles' },
+      { name: 'Gallop', tag: 'driving', hits: ['B','.','B','S','B','.','B','S','B','.','B','S','B','.','B','S'], style: 'zeppelin' },
+      { name: 'Ghost-note groove', tag: 'ghost notes', hits: ['B','.','.','S','B','.','S','.','.','B','.','S','B','.','S','.'], style: 'pearljam' },
+      { name: 'Rumba clave feel', tag: 'clave', hits: ['B','.','.','S','.','.','B','.','.','B','.','.','S','.','S','.'], style: 'zeppelin' },
+      { name: 'Flamenco-style groove', tag: 'musical, with rests', hits: ['B','.','S','.','B','S','B','.','B','.','S','.','B','S','B','.'], style: 'pearljam' },
+    ]
+  },
+  rudiments: {
+    label: 'Rudiments',
+    counts: ['1','e','&','a','2','e','&','a','3','e','&','a','4','e','&','a'],
+    patterns: [
+      { name: 'Single strokes', tag: 'both hands · R L R L', hits: ['R','L','R','L','R','L','R','L','R','L','R','L','R','L','R','L'], style: 'pearljam' },
+      { name: 'Left-hand lead', tag: 'weak hand · L R L R', hits: ['L','R','L','R','L','R','L','R','L','R','L','R','L','R','L','R'], style: 'pearljam' },
+      { name: 'Double stroke roll', tag: 'doubles · R R L L', hits: ['R','R','L','L','R','R','L','L','R','R','L','L','R','R','L','L'], style: 'zeppelin' },
+      { name: 'Single paradiddle', tag: 'R L R R · L R L L', hits: ['R','L','R','R','L','R','L','L','R','L','R','R','L','R','L','L'], style: 'pearljam' },
+      { name: 'Inverted paradiddle', tag: 'R R L R · L L R L', hits: ['R','R','L','R','L','L','R','L','R','R','L','R','L','L','R','L'], style: 'pearljam' },
+      { name: 'Paradiddle (left lead)', tag: 'L R L L · R L R R', hits: ['L','R','L','L','R','L','R','R','L','R','L','L','R','L','R','R'], style: 'pearljam' },
+      { name: 'Singles with doubles', tag: 'a fast double on each “&”', hits: ['R','L','D','L','R','L','D','L','R','L','D','L','R','L','D','L'], style: 'zeppelin' },
+      { name: 'Snare backbeat (hands)', tag: 'accent 2 & 4', hits: ['R','L','R','L','S','L','R','L','R','L','R','L','S','L','R','L'], style: 'pearljam' },
+    ]
+  }
+};
+
+let currentSub = 'quarter';
+let currentPatternIdx = 0;
+let bpm = 70;
+let isPlaying = false;
+let stepIndex = 0;
+let timerId = null;
+
+// ---------- Audio ----------
+let audioCtx = null;
+let masterGain = null, grooveGain = null, musicGain = null, masterComp = null;
+let bandGain = null;   // song section dynamics (intro soft, chorus full); 1 outside songs
+const GROOVE_SCALE = 1.0;   // groove slider 100% -> gain 1.0
+const MUSIC_SCALE  = 1.6;   // music slider 100% -> gain 1.6 (headroom to sit over the cajon)
+
+function ensureAudio(){
+  if(audioCtx && (audioStuck || audioCtx.state === 'closed' || audioCtx.state === 'interrupted')) rebuildAudio();
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterComp = audioCtx.createDynamicsCompressor();
+    masterComp.threshold.value = -16;
+    masterComp.ratio.value = 3;
+    masterComp.attack.value = 0.003;
+    masterComp.release.value = 0.25;
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 1.0;
+    grooveGain = audioCtx.createGain();
+    musicGain  = audioCtx.createGain();
+    bandGain   = audioCtx.createGain();
+    grooveGain.connect(masterGain);
+    musicGain.connect(bandGain).connect(masterGain);
+    masterGain.connect(masterComp).connect(audioCtx.destination);
+    applyVolumes();
+    decodeTracks();
+    audioCtx.onstatechange = onAudioState;
+  }
+  wakeAudio();
+}
+
+// ---------- Safari audio recovery ----------
+// Safari can park the audio in an 'interrupted' state (Mac sleep, AirPods switching,
+// another app taking the sound) or leave it "running" with a frozen clock, and the tab
+// stays silent. Every Play wakes it; 0.7 s later we check the clock is really moving.
+// If not, the next Play swaps in a fresh AudioContext (inside the click, which Safari
+// requires). Decoded tracks carry over. If even that fails, a note says to open a new tab.
+var audioStuck = false, audioRebuilt = false, audioCheckId = null;
+function wakeAudio(){
+  if(!audioCtx) return;
+  if(audioCtx.state !== 'running' && audioCtx.state !== 'closed'){
+    try{ const p = audioCtx.resume(); if(p && p.catch) p.catch(() => {}); }catch(e){}
+  }
+  const ctx = audioCtx, t0 = ctx.currentTime;
+  clearTimeout(audioCheckId);
+  audioCheckId = setTimeout(() => {
+    if(ctx !== audioCtx) return;
+    const alive = ctx.state === 'running' && ctx.currentTime - t0 > 0.3;
+    if(alive){ audioStuck = false; audioRebuilt = false; showAudioNote(null); return; }
+    audioStuck = true;
+    showAudioNote(audioRebuilt
+      ? "Safari's sound is stuck in this tab. Close it and open the app in a new tab."
+      : 'Sound got stuck (Safari). Press Play again to restart the audio.');
+  }, 700);
+}
+function rebuildAudio(){
+  const old = audioCtx;
+  if(isPlaying){ try{ stop(); }catch(e){ isPlaying = false; } }
+  trackSource = null;
+  audioCtx = null;
+  try{ old.onstatechange = null; old.close(); }catch(e){}
+  // re-decode anything that was still decoding on the old context
+  tracksDecoded = false;
+  Object.keys(SONG_BUF).forEach(k => { if(SONG_BUF[k] === 'loading'){ SONG_BUF[k] = null; SONG_WAIT[k] = []; } });
+  songLoading = false;
+  audioStuck = false;
+  audioRebuilt = true;
+}
+function onAudioState(){
+  if(!audioCtx) return;
+  if(audioCtx.state === 'running'){ showAudioNote(null); return; }
+  if(isPlaying && audioCtx.state === 'interrupted'){
+    try{ const p = audioCtx.resume(); if(p && p.catch) p.catch(() => {}); }catch(e){}
+    showAudioNote('Sound was interrupted (Safari). Press Play again if it stays quiet.');
+  }
+}
+function showAudioNote(msg){
+  let el = document.getElementById('audioNote');
+  if(!msg){ if(el) el.hidden = true; return; }
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'audioNote';
+    el.setAttribute('role', 'status');
+    el.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;' +
+      'max-width:min(92vw,460px);padding:10px 16px;border-radius:12px;background:var(--panel);' +
+      'border:1px solid var(--amber);color:var(--cream);font-size:15px;line-height:1.35;' +
+      'box-shadow:0 6px 24px rgba(0,0,0,.45);text-align:center;cursor:pointer;';
+    el.title = 'Click to hide';
+    el.addEventListener('click', () => { el.hidden = true; });
+    document.body.appendChild(el);
+  }
+  el.textContent = '🔇 ' + msg;
+  el.hidden = false;
+}
+// Coming back to the tab: nudge the audio awake if it's playing
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && audioCtx && isPlaying && audioCtx.state !== 'running'){
+    try{ const p = audioCtx.resume(); if(p && p.catch) p.catch(() => {}); }catch(e){}
+  }
+});
+// Release the audio when the page goes away, so a reload starts clean
+window.addEventListener('pagehide', () => {
+  if(!audioCtx) return;
+  try{ audioCtx.onstatechange = null; audioCtx.close(); }catch(e){}
+  audioStuck = true;   // if Safari restores this page from cache, the next Play rebuilds
+});
+
+// note name -> frequency, e.g. nf('E4'), nf('F#3')
+function nf(name){
+  const m = name.match(/^([A-G])(#|b)?(-?\d)$/);
+  const map = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+  let semis = map[m[1]];
+  if(m[2] === '#') semis++;
+  if(m[2] === 'b') semis--;
+  const octave = parseInt(m[3], 10);
+  const midi = semis + (octave + 1) * 12;
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+// ---------- Cajon voices (route through grooveGain) ----------
+function playBass(time, peak){
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(120, time);
+  osc.frequency.exponentialRampToValueAtTime(55, time + 0.15);
+  gain.gain.setValueAtTime(0.001, time);
+  gain.gain.exponentialRampToValueAtTime(peak || 0.9, time + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
+  osc.connect(gain).connect(grooveGain);
+  osc.start(time);
+  osc.stop(time + 0.24);
+}
+
+function playSlap(time, peak, hpFreq, decay, pan){
+  peak = peak || 0.8; hpFreq = hpFreq || 2200; decay = decay || 0.09; pan = pan || 0;
+  const bufferSize = audioCtx.sampleRate * 0.12;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){
+    data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 2);
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const hp = audioCtx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = hpFreq;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(peak, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + decay);
+  let tail = gain;
+  if(pan && audioCtx.createStereoPanner){ const p = audioCtx.createStereoPanner(); p.pan.value = pan; gain.connect(p); tail = p; }
+  noise.connect(hp).connect(gain);
+  tail.connect(grooveGain);
+  noise.start(time);
+}
+// Ghost note: very soft, dull slap used to fill rests when ghost mode is on
+function playGhost(time){ playSlap(time, 0.055, 1300, 0.045); }
+// Hand-assigned slaps: right sits brighter and panned right, left darker and panned left
+function playRight(time){ playSlap(time, 0.8, 2500, 0.09, 0.55); }
+function playLeft(time){ playSlap(time, 0.8, 1950, 0.10, -0.55); }
+// Double: two quick strikes (a diddle) within the step
+function playDouble(time, stepDur){
+  const gap = Math.min(stepDur * 0.5, 0.07);
+  playSlap(time, 0.8, 2200, 0.07, 0.12);
+  playSlap(time + gap, 0.6, 2200, 0.06, -0.12);
+}
+// Double bass: two quick palm thumps within the step (second slightly softer)
+function playDoubleBass(time, stepDur){
+  const gap = Math.min(stepDur * 0.5, 0.09);
+  playBass(time, 0.9);
+  playBass(time + gap, 0.7);
+}
+
+// ---------- Backing band (synthesized live, routes through musicGain) ----------
+// ---------- Count-in ----------
+// One bar of clicks before the groove; "1" is accented. Clicks go through their own
+// bus (into grooveGain, so they follow the groove volume) so stop() can silence them.
+const COUNTIN_KEY = 'cajon.countin.v1';
+let countInEnabled = (function(){ try{ return localStorage.getItem(COUNTIN_KEY) !== '0'; }catch(e){ return true; } })();
+let clickBus = null;
+let countInTimers = [];
+
+function playClick(time, accent){
+  if(!clickBus){ clickBus = audioCtx.createGain(); clickBus.connect(grooveGain); }
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(accent ? 2000 : 1500, time);
+  g.gain.setValueAtTime(0.0001, time);
+  g.gain.exponentialRampToValueAtTime(accent ? 0.45 : 0.3, time + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
+  osc.connect(g).connect(clickBus);
+  osc.start(time);
+  osc.stop(time + 0.04);
+}
+
+function showCount(n){
+  const el = document.getElementById('countInOverlay');
+  if(!el) return;
+  if(!n){ el.classList.remove('show', 'one'); el.textContent = ''; return; }
+  el.textContent = n;
+  el.classList.toggle('one', n === 1);
+  el.classList.add('show');
+}
+
+function cancelCountIn(){
+  countInTimers.forEach(id => clearTimeout(id));
+  countInTimers = [];
+  showCount(0);
+  if(clickBus){ try{ clickBus.disconnect(); }catch(e){} clickBus = null; }
+}
+
+// Schedule 4 clicks starting at t0; returns the length of the count-in in seconds
+function scheduleCountIn(t0){
+  cancelCountIn();
+  if(!countInEnabled) return 0;
+  const beat = 60 / bpm;
+  for(let i = 0; i < 4; i++){
+    const t = t0 + i * beat;
+    playClick(t, i === 0);
+    countInTimers.push(setTimeout(() => showCount(i + 1), Math.max(0, (t - audioCtx.currentTime) * 1000)));
+  }
+  countInTimers.push(setTimeout(() => showCount(0), Math.max(0, (t0 + 4 * beat - audioCtx.currentTime) * 1000)));
+  return 4 * beat;
+}
+
+function makeDistortionCurve(amount){
+  const samples = 256;
+  const curve = new Float32Array(samples);
+  const deg = Math.PI / 180;
+  for(let i = 0; i < samples; i++){
+    const x = i * 2 / samples - 1;
+    curve[i] = (3 + amount) * x * 20 * deg / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+const DRIVE_LIGHT = makeDistortionCurve(14);
+const DRIVE_HEAVY = makeDistortionCurve(45);
+
+let musicEnabled = false;
+let selectedStyle = 'auto';
+let chordIdx = 0;
+let activeChordGains = [];
+
+function currentStyleKey(){
+  if(playSource === 'song' && typeof songCur === 'function' && songCur()) return songCur().style;
+  if(selectedStyle !== 'auto') return selectedStyle;
+  if(playSource === 'composer') return 'beatles';
+  if(switchStyle) return switchStyle;   // switch drill: keep one band for both grooves
+  return currentPattern().style || 'beatles';
+}
+
+// Electric-guitar-ish note: two detuned saws -> soft-clip -> lowpass, with optional stereo pan
+function guitarNote(freq, time, duration, opts){
+  const { drive='light', peak=0.05, attack=0.006, filterFreq=2400, detune=6, pan=0 } = opts || {};
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  osc1.type = 'sawtooth'; osc2.type = 'sawtooth';
+  osc1.frequency.setValueAtTime(freq, time);
+  osc2.frequency.setValueAtTime(freq, time);
+  osc1.detune.setValueAtTime(-detune, time);
+  osc2.detune.setValueAtTime(detune, time);
+  const shaper = audioCtx.createWaveShaper();
+  shaper.curve = drive === 'heavy' ? DRIVE_HEAVY : DRIVE_LIGHT;
+  shaper.oversample = '2x';
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = filterFreq;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peak, time + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+  osc1.connect(shaper); osc2.connect(shaper);
+  shaper.connect(filter).connect(gain);
+  let tail = gain;
+  if(pan && audioCtx.createStereoPanner){
+    const p = audioCtx.createStereoPanner();
+    p.pan.value = pan;
+    gain.connect(p);
+    tail = p;
+  }
+  tail.connect(musicGain);
+  osc1.start(time); osc2.start(time);
+  osc1.stop(time + duration + 0.05); osc2.stop(time + duration + 0.05);
+  activeChordGains.push(gain);
+}
+
+// Warm sustained pad under the chords
+function padNote(freqs, time, duration, level){
+  const peak = 0.02 * (level || 1);
+  freqs.forEach(f => {
+    const o1 = audioCtx.createOscillator(), o2 = audioCtx.createOscillator();
+    o1.type = 'sawtooth'; o2.type = 'sawtooth';
+    o1.frequency.setValueAtTime(f, time); o2.frequency.setValueAtTime(f, time);
+    o1.detune.value = -9; o2.detune.value = 9;
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 1500;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.linearRampToValueAtTime(peak, time + duration*0.18);
+    gain.gain.setValueAtTime(peak, time + duration*0.7);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    o1.connect(lp); o2.connect(lp); lp.connect(gain).connect(musicGain);
+    o1.start(time); o2.start(time);
+    const end = time + duration + 0.05;
+    o1.stop(end); o2.stop(end);
+    activeChordGains.push(gain);
+  });
+}
+
+// Singing lead: triangle + soft octave, gentle vibrato, light drive
+function leadNote(freq, time, duration, opts){
+  const { peak=0.06 } = opts || {};
+  const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+  const oct = audioCtx.createOscillator(); oct.type = 'sine';
+  osc.frequency.setValueAtTime(freq, time);
+  oct.frequency.setValueAtTime(freq*2, time);
+  const lfo = audioCtx.createOscillator(); lfo.frequency.value = 5.5;
+  const lfoGain = audioCtx.createGain(); lfoGain.gain.value = freq * 0.007;
+  lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+  const shaper = audioCtx.createWaveShaper();
+  shaper.curve = DRIVE_LIGHT; shaper.oversample = '2x';
+  const octGain = audioCtx.createGain(); octGain.gain.value = 0.28;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peak, time + 0.02);
+  gain.gain.setValueAtTime(peak, time + duration*0.55);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+  osc.connect(shaper); shaper.connect(gain);
+  oct.connect(octGain); octGain.connect(gain);
+  gain.connect(musicGain);
+  osc.start(time); oct.start(time); lfo.start(time);
+  const end = time + duration + 0.05;
+  osc.stop(end); oct.stop(end); lfo.stop(end);
+  activeChordGains.push(gain);
+}
+
+function bassNote(freq, time, duration, opts){
+  const { peak=0.09 } = opts || {};
+  const osc = audioCtx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(freq, time);
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 850;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.linearRampToValueAtTime(peak, time + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+  osc.connect(filter).connect(gain).connect(musicGain);
+  osc.start(time); osc.stop(time + duration + 0.05);
+  activeChordGains.push(gain);
+}
+
+function shakerTick(time, peak){
+  const bufferSize = audioCtx.sampleRate * 0.045;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i = 0; i < bufferSize; i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 1.5);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = 6200; bp.Q.value = 0.7;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(peak, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  src.connect(bp).connect(gain).connect(musicGain);
+  src.start(time);
+  activeChordGains.push(gain);
+}
+
+// ---- guitar rhythm shapes ----
+function guitarRhythm(kind, freqs, t, dur, drive){
+  drive = drive || 'light';
+  if(kind === 'jangle'){
+    const order = [0,1,2,1,0,2,1,2], sp = dur/8;
+    for(let s=0;s<8;s++) guitarNote(freqs[order[s] % freqs.length], t+s*sp, sp*1.5, { drive:'light', peak:0.05, filterFreq:3200, detune:5, pan:(s%2?0.16:-0.16) });
+  } else if(kind === 'pick'){
+    const order = [0,1,2,1], sp = dur/4;
+    for(let s=0;s<4;s++) guitarNote(freqs[order[s] % freqs.length], t+s*sp, sp*1.7, { drive:'light', peak:0.04, filterFreq:2400, detune:4, pan:(s%2?0.1:-0.1) });
+  } else if(kind === 'strum'){
+    const heavy = drive === 'heavy';
+    const sp = dur/8;
+    for(let s=0;s<8;s++){
+      const accent = s % 4 === 0;
+      freqs.forEach((f,i) => guitarNote(f, t+s*sp + i*0.008, sp*(heavy?0.72:0.9), { drive, peak: accent?(heavy?0.07:0.06):(heavy?0.05:0.042), filterFreq: heavy?2100:2600, detune:6 }));
+    }
+  } else if(kind === 'chug'){
+    const sp = dur/8, pat = [1,1,0,1,1,0,1,1];
+    for(let s=0;s<8;s++){
+      if(pat[s]) freqs.forEach((f,i) => guitarNote(f, t+s*sp + i*0.004, sp*0.5, { drive:'heavy', peak:0.06, filterFreq:1900, detune:7 }));
+    }
+  }
+}
+
+// ---- moving bass shapes ----
+function bassPattern(kind, root, t, dur){
+  const beat = dur/4, fifth = root * 1.4983, oct = root * 2;
+  if(kind === 'quarter'){
+    [root, root, fifth, root].forEach((f,i) => bassNote(f, t+i*beat, beat*0.9, { peak:0.1 }));
+  } else if(kind === 'eighths'){
+    const sp = dur/8;
+    for(let s=0;s<8;s++) bassNote(s===6?fifth:root, t+s*sp, sp*0.9, { peak: s%2===0?0.11:0.075 });
+  } else { // 'half'
+    bassNote(root, t, beat*1.9, { peak:0.11 });
+    bassNote(fifth, t+beat*2, beat*1.9, { peak:0.095 });
+  }
+}
+
+// ================= Backing band styles =================
+// Chord voicings by note name. Heavy styles use power chords (root+5+oct)
+// so distortion stays clean; clean styles use full triads. Lead "riff" bars
+// list notes with p (start) and d (length) as fractions of a bar.
+
+// --- The Beatles: bright major pop-rock (I–vi–IV–V with a lift) ---
+const BEATLES_CH = { C:['C3','E3','G3'], Am:['A3','C4','E4'], F:['F3','A3','C4'], G:['G3','B3','D4'], Dm:['D3','F3','A3'] };
+const BEATLES_PROG  = ['C','Am','F','G','C','Am','Dm','G'].map(k => BEATLES_CH[k]);
+const BEATLES_ROOTS = ['C2','A2','F2','G2','C2','A2','D2','G2'];
+const RIFF_BEATLES = [
+  [{n:'E4',p:0,d:0.22},{n:'G4',p:0.28,d:0.22},{n:'C5',p:0.55,d:0.4}],
+  [{n:'E4',p:0,d:0.22},{n:'A4',p:0.28,d:0.22},{n:'C5',p:0.55,d:0.4}],
+  [{n:'F4',p:0,d:0.22},{n:'A4',p:0.28,d:0.22},{n:'C5',p:0.55,d:0.4}],
+  [{n:'D4',p:0,d:0.22},{n:'G4',p:0.28,d:0.22},{n:'B4',p:0.55,d:0.4}],
+  [{n:'G4',p:0,d:0.24},{n:'E5',p:0.45,d:0.4}],
+  [{n:'A4',p:0,d:0.22},{n:'C5',p:0.28,d:0.22},{n:'E5',p:0.55,d:0.4}],
+  [{n:'F4',p:0,d:0.22},{n:'A4',p:0.28,d:0.22},{n:'D5',p:0.55,d:0.4}],
+  [{n:'D5',p:0,d:0.24},{n:'B4',p:0.4,d:0.22},{n:'G4',p:0.72,d:0.3}]
+];
+
+// --- Led Zeppelin: heavy blues hard-rock (I–bIII–IV riff) ---
+const ZEP_CH = { A:['A2','E3','A3'], C:['C3','G3','C4'], D:['D3','A3','D4'], E:['E2','B2','E3'], G:['G2','D3','G3'] };
+const ZEP_PROG  = ['A','C','D','A','A','C','D','E'].map(k => ZEP_CH[k]);
+const ZEP_ROOTS = ['A2','C2','D2','A2','A2','C2','D2','E2'];
+const RIFF_ZEP = [
+  [{n:'A4',p:0,d:0.18},{n:'C5',p:0.25,d:0.18},{n:'A4',p:0.5,d:0.18},{n:'G4',p:0.75,d:0.2}],
+  [{n:'C5',p:0,d:0.18},{n:'D5',p:0.32,d:0.2},{n:'C5',p:0.62,d:0.3}],
+  [{n:'D5',p:0,d:0.18},{n:'E5',p:0.28,d:0.18},{n:'D5',p:0.55,d:0.3}],
+  [{n:'A4',p:0,d:0.2},{n:'G4',p:0.4,d:0.2},{n:'E4',p:0.72,d:0.3}],
+  [{n:'A4',p:0,d:0.18},{n:'C5',p:0.25,d:0.18},{n:'D5',p:0.5,d:0.18},{n:'E5',p:0.75,d:0.2}],
+  [{n:'E5',p:0,d:0.2},{n:'D5',p:0.35,d:0.2},{n:'C5',p:0.65,d:0.3}],
+  [{n:'D5',p:0,d:0.2},{n:'C5',p:0.35,d:0.2},{n:'A4',p:0.65,d:0.3}],
+  [{n:'E4',p:0,d:0.3},{n:'G4',p:0.4,d:0.25},{n:'A4',p:0.72,d:0.3}]
+];
+
+// --- Pink Floyd: spacious prog (minor, slow, soaring lead) ---
+const FLOYD_CH = { Dm:['D3','F3','A3'], Bb:['A#3','D4','F4'], C:['C3','E3','G3'], Am:['A3','C4','E4'], A:['A3','C#4','E4'] };
+const FLOYD_PROG  = ['Dm','Bb','C','Am','Dm','Bb','C','A'].map(k => FLOYD_CH[k]);
+const FLOYD_ROOTS = ['D2','A#1','C2','A1','D2','A#1','C2','A1'];
+const RIFF_FLOYD = [
+  [{n:'A4',p:0.1,d:0.78}],
+  [{n:'D5',p:0.1,d:0.78}],
+  [{n:'C5',p:0.1,d:0.5},{n:'D5',p:0.6,d:0.35}],
+  [{n:'A4',p:0.1,d:0.82}],
+  [{n:'F5',p:0.1,d:0.78}],
+  [{n:'D5',p:0.1,d:0.4},{n:'F5',p:0.55,d:0.42}],
+  [{n:'E5',p:0.1,d:0.78}],
+  [{n:'A4',p:0.1,d:0.4},{n:'C#5',p:0.55,d:0.42}]
+];
+
+// --- Pearl Jam: melodic grunge (emotive minor, distorted) ---
+const PJ_CH = { Em:['E2','B2','E3'], D:['D3','A3','D4'], C:['C3','G3','C4'], G:['G2','D3','G3'] };
+const PJ_PROG  = ['Em','D','C','D','Em','D','C','G'].map(k => PJ_CH[k]);
+const PJ_ROOTS = ['E2','D2','C2','D2','E2','D2','C2','G2'];
+const RIFF_PJ = [
+  [{n:'B4',p:0,d:0.3},{n:'D5',p:0.45,d:0.35}],
+  [{n:'A4',p:0,d:0.3},{n:'B4',p:0.45,d:0.35}],
+  [{n:'G4',p:0,d:0.3},{n:'E4',p:0.45,d:0.4}],
+  [{n:'D4',p:0,d:0.3},{n:'F#4',p:0.45,d:0.35}],
+  [{n:'E5',p:0,d:0.3},{n:'D5',p:0.45,d:0.35}],
+  [{n:'B4',p:0,d:0.3},{n:'A4',p:0.45,d:0.35}],
+  [{n:'G4',p:0,d:0.3},{n:'B4',p:0.45,d:0.35}],
+  [{n:'D5',p:0,d:0.3},{n:'B4',p:0.42,d:0.24},{n:'G4',p:0.72,d:0.3}]
+];
+
+const STYLES = {
+  beatles:  { label:'Jangle Pop-Rock',   chords:BEATLES_PROG, roots:BEATLES_ROOTS, guitar:'jangle', bassMove:'quarter', pad:true,  shaker:true,  melody:RIFF_BEATLES, leadPeak:0.05 },
+  zeppelin: { label:'Riff Hard Rock', chords:ZEP_PROG,     roots:ZEP_ROOTS,     guitar:'chug',   guitarDrive:'heavy', bassMove:'eighths', pad:false, shaker:false, melody:RIFF_ZEP, leadPeak:0.062 },
+  floyd:    { label:'Spacey Prog',         chords:FLOYD_PROG,   roots:FLOYD_ROOTS,   guitar:'pick',   bassMove:'half',    pad:true,  padLevel:1.7, shaker:false, melody:RIFF_FLOYD, leadPeak:0.06 },
+  pearljam: { label:'Grunge',   chords:PJ_PROG,      roots:PJ_ROOTS,      guitar:'strum',  guitarDrive:'heavy', bassMove:'quarter', pad:false, shaker:true,  melody:RIFF_PJ, leadPeak:0.056 }
+};
+
+function renderBand(cfg, bar, t, dur){
+  const chordNames = cfg.chords[bar % cfg.chords.length];
+  const freqs = chordNames.map(nf);
+  if(cfg.pad) padNote(freqs, t, dur*0.98, cfg.padLevel || 1);
+  guitarRhythm(cfg.guitar, freqs, t, dur, cfg.guitarDrive);
+  bassPattern(cfg.bassMove, nf(cfg.roots[bar % cfg.roots.length]), t, dur);
+  if(cfg.melody){
+    (cfg.melody[bar % cfg.melody.length] || []).forEach(ev =>
+      leadNote(nf(ev.n), t + ev.p*dur, (ev.d || 0.25)*dur, { peak: cfg.leadPeak || 0.055 }));
+  }
+  if(cfg.shaker){
+    const sp = dur/8;
+    for(let s=0;s<8;s++){ if(s % 2 === 1) shakerTick(t + s*sp, 0.03); }
+  }
+}
+
+function playBackingBar(styleKey, time, duration, bar){
+  activeChordGains = [];
+  const cfg = STYLES[styleKey];
+  if(cfg.custom) cfg.custom(time, duration, bar);
+  else renderBand(cfg, bar, time, duration);
+}
+
+function fadeOutChord(){
+  if(!audioCtx) return;
+  const now = audioCtx.currentTime;
+  activeChordGains.forEach(g => {
+    try{
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(g.gain.value, now);
+      g.gain.linearRampToValueAtTime(0.0001, now + 0.2);
+    }catch(e){}
+  });
+  activeChordGains = [];
+}
+
+const musicToggle = document.getElementById('musicToggle');
+musicToggle.addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+  musicToggle.classList.toggle('active', musicEnabled);
+  syncSongBand();
+  if(!musicEnabled){ fadeOutChord(); stopAllTracks(); }
+  else maybeSnapTempo();
+  updateBacking();
+  updateTrackStatus();
+});
+
+const styleRow = document.getElementById('styleRow');
+styleRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.style-pill');
+  if(!btn) return;
+  selectedStyle = btn.dataset.style;
+  styleRow.querySelectorAll('.style-pill').forEach(b => b.classList.toggle('active', b === btn));
+  fadeOutChord();
+  maybeSnapTempo();
+  updateBacking();
+  updateTrackStatus();
+});
+
+// ---------- Backing tracks (embedded, decoded onto the Web Audio clock) ----------
+// Each track is an exact-length loop. We decode it to an AudioBuffer and start it
+// with an AudioBufferSourceNode at the SAME audioCtx time as the first cajon
+// downbeat, so the loop stays sample-locked to the groove (no drift, no phase gap).
+const TRACK_KEYS = ['beatles','zeppelin','floyd','pearljam'];
+const TRACKS = {};
+let matchTempo = false;              // ON = keep my tempo (stretch track); OFF = snap to track's native tempo
+const TRACK_BASE = { beatles:96, zeppelin:88, floyd:72, pearljam:84 };
+// Each embedded MP3 is one 16-bar loop with a little wrap-around padding on both
+// sides (so MP3 edge artefacts fall outside the loop). We loop only the inner window.
+const TRACK_LOOP = { beatles:{loop:1764000/44100, pad:4096/44100}, zeppelin:{loop:1924364/44100, pad:4096/44100}, floyd:{loop:2352000/44100, pad:4096/44100}, pearljam:{loop:2016000/44100, pad:4096/44100} };
+let trackSource = null;
+let playStartTime = 0;               // audioCtx time of the first cajon downbeat
+let lastBarTime = 0;                 // audioCtx time of the most recent downbeat
+let barDur = 4 * (60/70);
+TRACK_KEYS.forEach(k => { TRACKS[k] = { buffer:null }; });
+
+// Quick-snap tempos per subdivision (busier subdivisions get lower common tempos)
+const TEMPOS = {
+  quarter:   [50, 60, 70, 80, 90, 100, 120],
+  eighth:    [50, 60, 70, 80, 90, 100, 110],
+  sixteenth: [40, 50, 60, 70, 80, 90, 100],
+  rudiments: [40, 50, 60, 70, 80, 90, 100]
+};
+function setBpm(v){
+  v = Math.max(40, Math.min(160, Math.round(v)));
+  bpm = v;
+  if(diaryRun) diaryRun.max = Math.max(diaryRun.max, v);
+  if(typeof bpmVal !== 'undefined' && bpmVal) bpmVal.textContent = v;
+  if(typeof cmpBpmVal !== 'undefined' && cmpBpmVal) cmpBpmVal.textContent = v;
+  markTempoChips();
+}
+function markTempoChips(){
+  document.querySelectorAll('.tempo-chip').forEach(c => c.classList.toggle('active', parseInt(c.dataset.t,10) === bpm));
+}
+function renderTempoChips(container, sub){
+  if(!container) return;
+  container.innerHTML = '';
+  (TEMPOS[sub] || TEMPOS.eighth).forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'tempo-chip' + (t === bpm ? ' active' : '');
+    b.dataset.t = t;
+    b.textContent = t;
+    b.addEventListener('click', () => {
+      setBpm(t);
+      if(trackSource) trackSource.playbackRate.value = trackRate(currentStyleKey());
+    });
+    container.appendChild(b);
+  });
+}
+// When music is on and we're not stretching, lock the cajon to the loop's native
+// tempo. Uses TRACK_BASE (known up front) so it's right even before decoding finishes.
+function maybeSnapTempo(){
+  const key = currentStyleKey();
+  if(musicEnabled && !matchTempo && TRACK_BASE[key]) setBpm(TRACK_BASE[key]);
+}
+
+function b64ToArrayBuffer(b64){
+  const bin = atob(b64), len = bin.length, bytes = new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+// ---------- Audio files (audio/*.js, loaded on demand) ----------
+// Each file sets window.CAJON_AUDIO["loop-beatles"] = "<mp3 as base64>". A <script src>
+// is used (not fetch) because it works from file:// with no internet in every browser.
+const AUDIO_MISSING = {};
+const AUDIO_WAIT = {};
+function needAudio(name, done){
+  const have = (window.CAJON_AUDIO || {})[name];
+  if(have){ done(have); return; }
+  if(AUDIO_WAIT[name]){ AUDIO_WAIT[name].push(done); return; }
+  AUDIO_WAIT[name] = [done];
+  const el = document.createElement('script');
+  el.src = 'audio/' + name + '.js';
+  const finish = () => {
+    const d = (window.CAJON_AUDIO || {})[name] || null;
+    if(d) delete AUDIO_MISSING[name]; else AUDIO_MISSING[name] = true;
+    const w = AUDIO_WAIT[name] || [];
+    delete AUDIO_WAIT[name];
+    el.remove();
+    w.forEach(f => f(d));
+  };
+  el.onload = finish;
+  el.onerror = finish;
+  document.head.appendChild(el);
+}
+// once decoded, the base64 text isn't needed any more
+function dropAudioText(name){ if(window.CAJON_AUDIO) delete window.CAJON_AUDIO[name]; }
+
+let tracksDecoded = false;
+function decodeTracks(){
+  if(tracksDecoded || !audioCtx) return;
+  tracksDecoded = true;
+  // the loop you're about to hear first, then the rest
+  const first = currentStyleKey();
+  const keys = TRACK_KEYS.includes(first) ? [first, ...TRACK_KEYS.filter(k => k !== first)] : TRACK_KEYS;
+  keys.forEach(k => {
+    if(TRACKS[k].buffer) return;
+    needAudio('loop-' + k, b64 => {
+    if(!b64 || !audioCtx || TRACKS[k].buffer){ updateTrackStatus(); return; }
+    try{
+      audioCtx.decodeAudioData(b64ToArrayBuffer(b64), (buf) => {
+        TRACKS[k].buffer = buf;
+        dropAudioText('loop-' + k);
+        updateTrackStatus();
+        if(isPlaying && musicEnabled && currentStyleKey() === k && !trackSource){
+          const t = nextBarTime();
+          startTrackAt(t, trackBarsAt(t));
+        }
+      }, () => {});
+    }catch(e){}
+    });
+  });
+}
+
+function currentTrackReady(){
+  if(playSource === 'song' && songAudioKey()) return songAudioReady();
+  const t = TRACKS[currentStyleKey()];
+  return !!(t && t.buffer);
+}
+function trackRate(key){
+  const base = TRACK_BASE[key] || 120;
+  return Math.max(0.5, Math.min(2, bpm / base)); // track always follows the cajon tempo → stays locked
+}
+function stopTrackSource(){
+  if(trackSource){ try{ trackSource.stop(); }catch(e){} try{ trackSource.disconnect(); }catch(e){} trackSource = null; }
+}
+function stopAllTracks(){ stopTrackSource(); }
+
+function nextBarTime(){
+  if(!audioCtx) return 0;
+  const now = audioCtx.currentTime;
+  let t = lastBarTime;
+  for(let i=0;i<10000 && t < now + 0.03; i++) t += barDur;
+  return t;
+}
+
+// Inner loop window of a decoded track. Some browsers keep the MP3 encoder delay
+// (1105 samples of lead-in) when decoding; detect that from the length and skip it,
+// so bar 1 of the band lands exactly on the cajon's first downbeat.
+function trackWindow(key, buf){
+  const m = TRACK_LOOP[key];
+  if(!m) return { start:0, end:buf.duration };
+  const extra = buf.duration - (m.loop + 2*m.pad);
+  const lead = extra > 0.02 ? 1105/44100 : 0;
+  return { start: m.pad + lead, end: m.pad + lead + m.loop };
+}
+
+// Start the current style's track (if decoded) exactly at time `when`,
+// `bars` bars into the loop (0 = from the top)
+function startTrackAt(when, bars){
+  stopTrackSource();
+  if(playSource === 'song' && songAudioKey()) return startSongAudio(when);
+  const key = currentStyleKey();
+  const t = TRACKS[key];
+  if(!(t && t.buffer && musicGain)) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = t.buffer;
+  src.loop = true;
+  const w = trackWindow(key, t.buffer);
+  src.loopStart = w.start;
+  src.loopEnd = w.end;
+  src.playbackRate.value = trackRate(key);
+  src.connect(musicGain);
+  const off = bars ? (bars * 240 / (TRACK_BASE[key] || bpm)) % (w.end - w.start) : 0;
+  try{ src.start(when, w.start + off); }catch(e){ try{ src.start(0, w.start + off); }catch(e2){} }
+  trackSource = src;
+}
+
+// Re-evaluate what should be sounding right now (called on style/music/tempo changes)
+function updateBacking(){
+  if(!(isPlaying && musicEnabled)){ stopTrackSource(); updateTrackStatus(); return; }
+  const key = currentStyleKey();
+  const t = TRACKS[key];
+  if(t && t.buffer){
+    if(playSource === 'practice' && !matchTempo && TRACK_BASE[key]) setBpm(TRACK_BASE[key]); // snap cajon to the loop's native tempo
+    const t = nextBarTime();
+    startTrackAt(t, trackBarsAt(t));
+  } else {
+    stopTrackSource(); // synth covers it via the scheduler
+  }
+  updateTrackStatus();
+}
+
+const trackStatus = document.getElementById('trackStatus');
+function updateTrackStatus(){
+  if(!trackStatus) return;
+  const key = currentStyleKey();
+  const t = TRACKS[key];
+  const nice = STYLES[key] ? STYLES[key].label : key;
+  const live = !!(t && t.buffer);
+  trackStatus.classList.toggle('live', live && musicEnabled);
+  const prefix = selectedStyle === 'auto' ? `Auto → ${nice}` : nice;
+  const tempo = TRACK_BASE[key] ? ` · ${TRACK_BASE[key]} bpm loop` : '';
+  const missing = !live && AUDIO_MISSING['loop-' + key];
+  trackStatus.textContent = live ? `${prefix}: real track ✓${tempo}`
+    : missing ? `${prefix}: track file not found (keep the audio folder next to this page) · synth band`
+    : `${prefix}: loading…`;
+}
+
+const matchTempoToggle = document.getElementById('matchTempoToggle');
+matchTempoToggle.addEventListener('click', () => {
+  matchTempo = !matchTempo;
+  matchTempoToggle.classList.toggle('active', matchTempo);
+  if(isPlaying && musicEnabled && currentTrackReady()) updateBacking();
+});
+
+// ---------- Volume knobs ----------
+const grooveVol = document.getElementById('grooveVol');
+const musicVol = document.getElementById('musicVol');
+const grooveVolVal = document.getElementById('grooveVolVal');
+const musicVolVal = document.getElementById('musicVolVal');
+
+function applyVolumes(){
+  if(grooveGain) grooveGain.gain.value = (parseInt(grooveVol.value,10)/100) * GROOVE_SCALE;
+  if(musicGain)  musicGain.gain.value  = (parseInt(musicVol.value,10)/100) * MUSIC_SCALE;
+}
+grooveVol.addEventListener('input', () => { grooveVolVal.textContent = grooveVol.value; applyVolumes(); });
+musicVol.addEventListener('input', () => { musicVolVal.textContent = musicVol.value; applyVolumes(); });
+
+// ---------- Scheduler (lookahead) ----------
+let nextNoteTime = 0;
+const lookahead = 25;      // ms
+const scheduleAhead = 0.12; // seconds
+
+function currentPattern(){
+  return GROOVES[currentSub].patterns[currentPatternIdx];
+}
+
+// what's currently playing: 'practice' or 'composer'
+let playSource = 'practice';
+function activeHits(){ return playSource === 'composer' ? composerHits : currentPattern().hits; }
+function activeSub(){ return playSource === 'composer' ? composerSub : currentSub; }
+
+// ---------- Switch drill (Day 22): alternate two grooves every N bars on beat 1 ----------
+var switchOn = false;      // var: read by renderGrid() during start-up
+var switchIdx = -1;        // partner groove index in the current subdivision
+var switchBars = 4;
+var switchBarCount = 0;    // completed bars since play started (while switching)
+var switchLeft = null;     // bars until the next change, as shown on screen
+var switchStyle = null;    // auto band style locked for the whole run
+function switchPartnerValid(){
+  const n = GROOVES[currentSub].patterns.length;
+  return switchIdx >= 0 && switchIdx < n && switchIdx !== currentPatternIdx;
+}
+function ensurePartner(){
+  if(switchPartnerValid()) return;
+  const n = GROOVES[currentSub].patterns.length;
+  switchIdx = n > 1 ? (currentPatternIdx + 1) % n : -1;
+}
+function switchActive(){ return switchOn && playSource === 'practice' && switchPartnerValid(); }
+function renderSwitchUI(){
+  const bar = document.getElementById('switchBar');
+  const tog = document.getElementById('switchToggle');
+  const tag = document.getElementById('switchTag');
+  const next = document.getElementById('nextRow');
+  if(!bar || !tag || !next) return;
+  bar.classList.toggle('on', switchOn);
+  const stage = next.closest('.stage');
+  if(stage) stage.classList.toggle('reserve', switchOn);   // keep room for the preview while switching
+  if(tog) tog.classList.toggle('active', switchOn);
+  bar.querySelectorAll('.sw-bar').forEach(b => b.classList.toggle('active', +b.dataset.n === switchBars));
+  tag.classList.remove('soon');
+  next.hidden = true;
+  if(!switchOn || !switchPartnerValid()){ tag.textContent = ''; return; }
+  const partner = GROOVES[currentSub].patterns[switchIdx];
+  const playingHere = isPlaying && playSource === 'practice' && switchLeft != null;
+  if(!playingHere){
+    tag.textContent = `⇄ Alternating with ${partner.name} every ${switchBars} bar${switchBars > 1 ? 's' : ''}`;
+    return;
+  }
+  if(switchLeft <= 1){
+    tag.textContent = `⇄ Next bar: ${partner.name}`;
+    tag.classList.add('soon');
+    fillHits(next, partner.hits);
+    next.hidden = false;
+  } else {
+    tag.textContent = `⇄ ${partner.name} in ${switchLeft} bars`;
+  }
+}
+
+// Draw a row of hit cells (ids `idPrefix + i` when given, for the playhead)
+function fillHits(container, hits, idPrefix){
+  container.style.setProperty('--steps', hits.length);
+  container.innerHTML = '';
+  hits.forEach((h, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const inner = document.createElement('div');
+    if(idPrefix) inner.id = idPrefix + i;
+    let cls = 'hit ' + (h === '.' ? 'rest' : h);
+    if(h === '.' && ghostEnabled) cls += ' ghost';
+    inner.className = cls;
+    if(h === 'R' || h === 'L') inner.textContent = h;
+    else if(h === 'D') inner.textContent = '2';
+    inner.title = TOKEN_TITLE[h] || (ghostEnabled ? 'Ghost note' : 'Rest');
+    cell.appendChild(inner);
+    container.appendChild(cell);
+  });
+}
+function fillCounts(container, sub){
+  const counts = GROOVES[sub].counts;
+  container.style.setProperty('--steps', counts.length);
+  container.innerHTML = '';
+  counts.forEach(c => {
+    const cell = document.createElement('div');
+    cell.className = 'cell count-label';
+    cell.textContent = c;
+    container.appendChild(cell);
+  });
+}
+function playHit(hit, t, step){
+  if(hit === 'B') playBass(t);
+  else if(hit === 'S') playSlap(t);
+  else if(hit === 'R') playRight(t);
+  else if(hit === 'L') playLeft(t);
+  else if(hit === 'D') playDouble(t, step);
+  else if(hit === 'W') playDoubleBass(t, step);
+  else if(ghostEnabled) playGhost(t); // rests become soft ghost slaps
+}
+
+function scheduler(){
+  if(playSource === 'song'){ songScheduler(); timerId = setTimeout(scheduler, lookahead); return; }
+  let pattern = activeHits();
+  const secondsPerStep = stepDuration();
+  const barDuration = 4 * (60 / bpm);
+  barDur = barDuration;
+  while(nextNoteTime < audioCtx.currentTime + scheduleAhead){
+    const pos = stepIndex % pattern.length;
+    if(pos === 0){
+      lastBarTime = nextNoteTime;
+      if(switchActive()){
+        let swapped = false;
+        if(stepIndex > 0){
+          switchBarCount++;
+          if(switchBarCount % switchBars === 0){
+            const t = currentPatternIdx; currentPatternIdx = switchIdx; switchIdx = t;
+            pattern = activeHits();
+            swapped = true;
+          }
+        }
+        const left = switchBars - (switchBarCount % switchBars);
+        const delay = Math.max(0, (nextNoteTime - audioCtx.currentTime) * 1000);
+        setTimeout(() => {
+          if(isPlaying) switchLeft = left;
+          if(swapped){ renderGrid(); buildGrooveList(); } else renderSwitchUI();
+        }, delay);
+      }
+    }
+    playHit(pattern[pos], nextNoteTime, secondsPerStep);
+    if(musicEnabled && !currentTrackReady() && pos === 0){
+      playBackingBar(currentStyleKey(), nextNoteTime, barDuration, chordIdx);
+      chordIdx++;
+    }
+    scheduleVisual(pos, nextNoteTime);
+    nextNoteTime += secondsPerStep;
+    stepIndex++;
+  }
+  timerId = setTimeout(scheduler, lookahead);
+}
+
+function stepDuration(){
+  const sub = activeSub();
+  const stepsPerBeat = sub === 'quarter' ? 1 : (sub === 'eighth' ? 2 : 4);
+  return (60 / bpm) / stepsPerBeat;
+}
+
+function scheduleVisual(idx, time){
+  const delay = Math.max(0, (time - audioCtx.currentTime) * 1000);
+  setTimeout(() => highlightStep(idx), delay);
+}
+
+function highlightStep(idx){
+  const composer = playSource === 'composer';
+  const rowId = composer ? 'cmpHitRow' : 'hitRow';
+  const row = document.getElementById(rowId);
+  if(row) row.querySelectorAll('.hit').forEach(el => el.classList.remove('playing'));
+  const cell = document.getElementById((composer ? 'chit-' : 'hit-') + idx);
+  if(cell) cell.classList.add('playing');
+  const pulse = document.getElementById(composer ? 'cmpPulse' : 'pulse');
+  if(pulse){ pulse.classList.add('on'); setTimeout(() => pulse.classList.remove('on'), 90); }
+}
+
+// ---------- Transport ----------
+const playBtn = document.getElementById('playBtn');
+const timerToggle = document.getElementById('timerToggle');
+const countdownEl = document.getElementById('countdown');
+let timerEnabled = false;
+let autoStopId = null;
+let countdownId = null;
+let secondsLeft = 60;
+
+timerToggle.addEventListener('click', () => {
+  timerEnabled = !timerEnabled;
+  timerToggle.classList.toggle('active', timerEnabled);
+  if(!timerEnabled){
+    countdownEl.textContent = '';
+    clearTimeout(autoStopId);
+    clearInterval(countdownId);
+  } else if(isPlaying){
+    startCountdown();
+  }
+});
+
+playBtn.addEventListener('click', () => {
+  ensureAudio();
+  if(isPlaying && playSource === 'practice'){ stop(); }
+  else { if(isPlaying) stop(); start('practice'); }
+});
+
+// ---------- Ghost notes ----------
+const ghostToggle = document.getElementById('ghostToggle');
+let ghostEnabled = false;
+// One shared setting; every Ghost notes button (Practice, Songs, Compose) shows it
+function setGhost(on){
+  ghostEnabled = on;
+  ['ghostToggle', 'songGhostToggle', 'cmpGhostToggle'].forEach(id => {
+    const b = document.getElementById(id); if(b) b.classList.toggle('active', on);
+  });
+  renderGrid(); // show/hide the faint ghost markers on the rests
+  if(typeof renderComposerGrid === 'function' && typeof cmpHitRow !== 'undefined') renderComposerGrid();
+  songShown = -1;
+  if(!(isPlaying && playSource === 'song') && typeof renderSongs === 'function') renderSongs();
+}
+ghostToggle.addEventListener('click', () => setGhost(!ghostEnabled));
+document.getElementById('songGhostToggle').addEventListener('click', () => setGhost(!ghostEnabled));
+
+function startCountdown(){
+  secondsLeft = 60;
+  countdownEl.textContent = `Stops in ${secondsLeft}s`;
+  clearTimeout(autoStopId);
+  clearInterval(countdownId);
+  autoStopId = setTimeout(() => { stop(); }, 60000);
+  countdownId = setInterval(() => {
+    secondsLeft -= 1;
+    if(secondsLeft <= 0){
+      clearInterval(countdownId);
+      countdownEl.textContent = '';
+    } else {
+      countdownEl.textContent = `Stops in ${secondsLeft}s`;
+    }
+  }, 1000);
+}
+
+function setPlayingUI(on){
+  const btns = { practice: playBtn, composer: cmpPlayBtn, song: document.getElementById('songPlayBtn') };
+  const idle = { practice: '▶ Play', composer: '▶ Play', song: '▶ Play song' };
+  Object.keys(btns).forEach(k => {
+    const b = btns[k]; if(!b) return;
+    const act = on && k === playSource;
+    b.textContent = act ? '■ Stop' : idle[k];
+    b.classList.toggle('playing', act);
+  });
+}
+
+function start(source){
+  playSource = source || 'practice';
+  isPlaying = true;
+  stepIndex = 0;
+  chordIdx = 0;
+  switchBarCount = 0;
+  switchLeft = null;
+  switchStyle = (switchActive() && selectedStyle === 'auto') ? (currentPattern().style || 'beatles') : null;
+  if(playSource === 'song') songPrepare();
+  // In practice mode, if a real track will play and we're not stretching, snap the
+  // cajon to the loop's native tempo BEFORE we set the start time so both begin locked.
+  if(playSource === 'practice') maybeSnapTempo();
+  barDur = 4 * (60 / bpm);
+  const t0 = audioCtx.currentTime + 0.12;
+  const countIn = scheduleCountIn(t0);       // 0 when count-in is off
+  nextNoteTime = t0 + countIn;               // first groove hit lands right after "4"
+  playStartTime = nextNoteTime;
+  lastBarTime = nextNoteTime;
+  setPlayingUI(true);
+  scheduler();
+  if(musicEnabled) startTrackAt(playStartTime, trackBarsAt(playStartTime)); // start the loop on the exact first downbeat
+  updateTrackStatus();
+  // The 1-minute timer and practice clock start on the downbeat, not during the count
+  const beginClocks = () => {
+    if(!isPlaying) return;
+    diaryBegin();
+    if(timerEnabled) startCountdown();
+    if(sessionActive){ clearInterval(practiceTickId); practiceTickId = setInterval(() => { practiceSeconds++; updateSessionStats(); }, 1000); }
+  };
+  if(countIn > 0) countInTimers.push(setTimeout(beginClocks, Math.max(0, (playStartTime - audioCtx.currentTime) * 1000)));
+  else beginClocks();
+}
+
+function stop(){
+  diaryEnd();
+  isPlaying = false;
+  cancelCountIn();
+  clearTimeout(timerId);
+  clearTimeout(autoStopId);
+  clearInterval(countdownId);
+  clearInterval(practiceTickId);
+  fadeOutChord();
+  stopAllTracks();
+  countdownEl.textContent = '';
+  setPlayingUI(false);
+  document.querySelectorAll('.hit').forEach(el => el.classList.remove('playing'));
+  switchStyle = null;
+  switchLeft = null;
+  renderSwitchUI();
+  if(bandGain){ bandGain.gain.cancelScheduledValues(0); bandGain.gain.setValueAtTime(1, audioCtx.currentTime); }
+  if(playSource === 'song') songStopped();
+}
+
+// ---------- Session timer ----------
+const sessionBtn = document.getElementById('sessionBtn');
+const sessionStats = document.getElementById('sessionStats');
+let sessionActive = false;
+let sessionSeconds = 0;
+let practiceSeconds = 0;
+let sessionTickId = null;
+let practiceTickId = null;
+
+sessionBtn.addEventListener('click', () => {
+  if(!sessionActive){
+    sessionActive = true;
+    sessionSeconds = 0;
+    practiceSeconds = 0;
+    sessionBtn.textContent = 'Reset session';
+    sessionBtn.classList.add('active');
+    clearInterval(sessionTickId);
+    sessionTickId = setInterval(() => { sessionSeconds++; updateSessionStats(); }, 1000);
+    if(isPlaying) practiceTickId = setInterval(() => { practiceSeconds++; updateSessionStats(); }, 1000);
+    updateSessionStats();
+  } else {
+    sessionSeconds = 0;
+    practiceSeconds = 0;
+    updateSessionStats();
+  }
+});
+
+function fmtTime(s){
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function updateSessionStats(){
+  sessionStats.textContent = `Session ${fmtTime(sessionSeconds)} · Practice ${fmtTime(practiceSeconds)}`;
+}
+
+// ---------- Practice diary (auto-saved, survives reloads) ----------
+// Every time a groove actually plays (from the first downbeat, after the count-in)
+// the seconds are added to today's total, with the fastest tempo per groove.
+// Stored in localStorage as { "2026-10-10": { s: 840, g: { "Rock backbeat": 70 } } }.
+const LOG_KEY = 'cajon.log.v1';
+var diaryRun = null;          // { t: start ms, max: bpm, name } while a groove is playing (var: setBpm reads it early)
+var diaryTickId = null;   // var: stop() may run before this line
+let diarySel = null;          // day key shown in the detail line
+let practiceLog = (function(){ try{ return JSON.parse(localStorage.getItem(LOG_KEY) || '{}') || {}; }catch(e){ return {}; } })();
+const dayKey = d => { const x = d || new Date(); return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0'); };
+const daysAgo = n => { const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() - n); return d; };
+function fmtMin(sec){
+  if(sec > 0 && sec < 60) return sec + ' sec';
+  const m = Math.round(sec / 60);
+  return m < 60 ? m + ' min' : Math.floor(m/60) + 'h ' + String(m % 60).padStart(2,'0') + 'm';
+}
+function diaryGrooveName(){
+  if(playSource === 'composer') return ((cmpName && cmpName.value || '').trim() || 'Composer groove') + ' (composer)';
+  if(playSource === 'song' && songCur()) return '♪ ' + songCur().title;
+  if(switchActive()) return currentPattern().name + ' ⇄ ' + GROOVES[currentSub].patterns[switchIdx].name;
+  return currentPattern().name;
+}
+function diaryBegin(){
+  if(diaryRun) return;
+  diaryRun = { t: Date.now(), max: bpm, name: diaryGrooveName() };
+  clearInterval(diaryTickId);
+  diaryTickId = setInterval(renderDiaryToday, 5000);
+  renderDiaryToday();
+}
+function diaryEnd(){
+  clearInterval(diaryTickId);
+  if(!diaryRun) return;
+  const sec = Math.round((Date.now() - diaryRun.t) / 1000);
+  const run = diaryRun;
+  diaryRun = null;
+  if(sec >= 1){
+    const k = dayKey(new Date(run.t));
+    const d = practiceLog[k] || (practiceLog[k] = { s: 0, g: {} });
+    d.s += sec;
+    d.g[run.name] = Math.max(d.g[run.name] || 0, run.max);
+    try{ localStorage.setItem(LOG_KEY, JSON.stringify(practiceLog)); }catch(e){}
+  }
+  renderDiary();
+}
+// closing or reloading the tab mid-groove still counts
+window.addEventListener('pagehide', diaryEnd);
+
+function daySeconds(k){
+  let s = (practiceLog[k] && practiceLog[k].s) || 0;
+  if(diaryRun && k === dayKey()) s += Math.round((Date.now() - diaryRun.t) / 1000);
+  return s;
+}
+function diaryStreak(){
+  // a day counts if you played at least a minute; today not played yet doesn't break it
+  let n = 0, i = daySeconds(dayKey()) >= 60 ? 0 : 1;
+  while(daySeconds(dayKey(daysAgo(i))) >= 60){ n++; i++; }
+  return n;
+}
+function renderDiaryToday(){
+  const el = document.getElementById('diaryToday');
+  if(!el) return;
+  const st = diaryStreak();
+  el.textContent = 'Today ' + fmtMin(daySeconds(dayKey())) + (st >= 2 ? ' · ' + st + '-day streak' : '');
+}
+function renderDiaryDetail(){
+  const el = document.getElementById('diaryDetail');
+  if(!el) return;
+  const k = diarySel || dayKey();
+  const d = practiceLog[k];
+  const dateTxt = new Date(k + 'T12:00:00').toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short' });
+  const s = daySeconds(k);
+  if(!s){ el.innerHTML = '<b>' + dateTxt + '</b> · no grooves played'; return; }
+  const gs = d ? Object.entries(d.g).sort((a,b) => b[1]-a[1]).map(([n,b]) => n + ' ' + b + ' bpm').join(' · ') : '';
+  el.innerHTML = '<b>' + dateTxt + ' · ' + fmtMin(s) + '</b>' + (gs ? ' — ' + gs.replace(/</g,'&lt;') : '');
+}
+function renderDiary(){
+  renderDiaryToday();
+  const dots = document.getElementById('diaryDots');
+  if(!dots) return;
+  dots.innerHTML = '';
+  let week = 0, played = 0;
+  for(let i = 29; i >= 0; i--){
+    const k = dayKey(daysAgo(i));
+    const s = daySeconds(k);
+    if(i < 7) week += s;
+    if(s >= 60) played++;
+    const lvl = s >= 1800 ? 3 : s >= 900 ? 2 : s >= 60 ? 1 : 0;
+    const b = document.createElement('button');
+    b.className = 'ddot' + (lvl ? ' l' + lvl : '') + (i === 0 ? ' today' : '') + (k === diarySel ? ' sel' : '');
+    b.title = k + ' · ' + fmtMin(s);
+    b.setAttribute('aria-label', b.title);
+    b.addEventListener('click', () => { diarySel = (diarySel === k ? null : k); renderDiary(); });
+    dots.appendChild(b);
+  }
+  const sum = document.getElementById('diarySum');
+  if(sum) sum.textContent = 'This week ' + fmtMin(week) + ' · ' + played + '/30 days · streak ' + diaryStreak();
+  renderDiaryDetail();
+}
+
+// ---------- BPM ----------
+const bpmVal = document.getElementById('bpmVal');
+const tempoChips = document.getElementById('tempoChips');
+
+// ---------- Build UI ----------
+const tabsEl = document.getElementById('tabs');
+const grooveListEl = document.getElementById('grooveList');
+const countRow = document.getElementById('countRow');
+const hitRow = document.getElementById('hitRow');
+
+function buildTabs(){
+  tabsEl.innerHTML = '';
+  Object.keys(GROOVES).forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (key === currentSub ? ' active' : '');
+    btn.textContent = GROOVES[key].label;
+    btn.addEventListener('click', () => {
+      if(isPlaying) stop();
+      currentSub = key;
+      currentPatternIdx = 0;
+      switchIdx = -1;
+      renderAll();
+    });
+    tabsEl.appendChild(btn);
+  });
+}
+
+function buildGrooveList(){
+  grooveListEl.innerHTML = '';
+  if(switchOn) ensurePartner();
+  GROOVES[currentSub].patterns.forEach((p, i) => {
+    const btn = document.createElement('button');
+    const isPartner = switchOn && i === switchIdx && i !== currentPatternIdx;
+    btn.className = 'groove-btn' + (i === currentPatternIdx ? ' active' : '') + (isPartner ? ' partner' : '');
+    const chip = (switchOn && i !== currentPatternIdx)
+      ? `<span class="partner-chip" title="Alternate with this groove">${isPartner ? '⇄ partner' : '⇄'}</span>` : '';
+    btn.innerHTML = `<span class="name">${p.name}</span><span class="gb-right"><span class="tag">${p.tag}</span>${chip}</span>`;
+    btn.addEventListener('click', e => {
+      if(e.target.closest && e.target.closest('.partner-chip')){
+        switchIdx = i;            // pick the partner; never interrupts playback
+        buildGrooveList();
+        renderSwitchUI();
+        return;
+      }
+      if(isPlaying) stop();
+      if(switchOn && i === switchIdx) switchIdx = currentPatternIdx; // picking the partner swaps the pair
+      currentPatternIdx = i;
+      renderGrid();
+      buildGrooveList();
+    });
+    grooveListEl.appendChild(btn);
+  });
+}
+
+function renderGrid(){
+  const { counts } = GROOVES[currentSub];
+  const { hits } = currentPattern();
+  const steps = hits.length;
+  countRow.style.setProperty('--steps', steps);
+  hitRow.style.setProperty('--steps', steps);
+  countRow.innerHTML = '';
+  hitRow.innerHTML = '';
+  counts.forEach(c => {
+    const cell = document.createElement('div');
+    cell.className = 'cell count-label';
+    cell.textContent = c;
+    countRow.appendChild(cell);
+  });
+  fillHits(hitRow, hits, 'hit-');
+  renderSwitchUI();
+}
+
+function renderAll(){
+  buildTabs();
+  buildGrooveList();
+  renderGrid();
+  renderTempoChips(tempoChips, currentSub);
+}
+
+const SUBLABEL = { quarter:'1/4', eighth:'1/8', sixteenth:'1/16', rudiments:'Rud' };
+const TOKEN_TITLE = { 'B':'Bass', 'S':'Slap', 'R':'Right slap', 'L':'Left slap', 'D':'Double slap (two quick hits)', 'W':'Double bass (two quick bass hits)', '.':'Rest' };
+function patternIndexByName(sub, name){
+  return GROOVES[sub].patterns.findIndex(p => p.name === name);
+}
+
+
+// ---------- View switching ----------
+const practiceView = document.getElementById('practiceView');
+const songsView = document.getElementById('songsView');
+const composerView = document.getElementById('composerView');
+function showView(name){
+  if(isPlaying) stop();
+  practiceView.hidden  = name !== 'practice';
+  songsView.hidden    = name !== 'songs';
+  composerView.hidden  = name !== 'compose';
+  document.querySelectorAll('.viewtab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  if(name === 'compose') syncComposerControls();
+  if(name === 'songs') songsShown();
+}
+document.getElementById('viewnav').addEventListener('click', e => {
+  const btn = e.target.closest('.viewtab');
+  if(!btn) return;
+  showView(btn.dataset.view);
+});
+
+// ================= Groove Composer =================
+const CMP_STEPS = { quarter:4, eighth:8, sixteenth:16 };
+let composerSub = 'eighth';
+let composerHits = ['B','.','S','.','B','.','S','.']; // a starter backbeat to edit
+const CYCLE = { '.':'B', 'B':'W', 'W':'S', 'S':'D', 'D':'.' };
+
+const cmpSubTabs = document.getElementById('cmpSubTabs');
+const cmpCountRow = document.getElementById('cmpCountRow');
+const cmpHitRow = document.getElementById('cmpHitRow');
+const cmpPlayBtn = document.getElementById('cmpPlayBtn');
+const cmpPulse = document.getElementById('cmpPulse');
+const cmpGhostToggle = document.getElementById('cmpGhostToggle');
+const cmpMusicToggle = document.getElementById('cmpMusicToggle');
+const cmpStyle = document.getElementById('cmpStyle');
+const cmpBpmVal = document.getElementById('cmpBpmVal');
+const cmpTempoChips = document.getElementById('cmpTempoChips');
+const cmpName = document.getElementById('cmpName');
+
+function buildCmpSubTabs(){
+  cmpSubTabs.innerHTML = '';
+  Object.keys(GROOVES).filter(k => k !== 'rudiments').forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (key === composerSub ? ' active' : '');
+    btn.textContent = GROOVES[key].label;
+    btn.addEventListener('click', () => {
+      if(isPlaying) stop();
+      composerSub = key;
+      composerHits = new Array(CMP_STEPS[key]).fill('.');
+      buildCmpSubTabs();
+      renderComposerGrid();
+    });
+    cmpSubTabs.appendChild(btn);
+  });
+}
+
+function renderComposerGrid(){
+  const counts = GROOVES[composerSub].counts;
+  const steps = composerHits.length;
+  cmpCountRow.style.setProperty('--steps', steps);
+  cmpHitRow.style.setProperty('--steps', steps);
+  cmpCountRow.innerHTML = '';
+  cmpHitRow.innerHTML = '';
+  counts.forEach(c => {
+    const cell = document.createElement('div');
+    cell.className = 'cell count-label';
+    cell.textContent = c;
+    cmpCountRow.appendChild(cell);
+  });
+  composerHits.forEach((h, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const inner = document.createElement('div');
+    inner.id = 'chit-' + i;
+    let cls = 'hit ' + (h === '.' ? 'rest' : h);
+    if(h === '.' && ghostEnabled) cls += ' ghost';
+    inner.className = cls;
+    if(h === 'D') inner.textContent = '2';
+    inner.title = 'click: rest → bass → double bass → slap → double slap';
+    inner.addEventListener('click', () => {
+      composerHits[i] = CYCLE[composerHits[i]];
+      renderComposerGrid();
+    });
+    cell.appendChild(inner);
+    cmpHitRow.appendChild(cell);
+  });
+  renderTempoChips(cmpTempoChips, composerSub);
+}
+
+function syncComposerControls(){
+  cmpGhostToggle.classList.toggle('active', ghostEnabled);
+  cmpMusicToggle.classList.toggle('active', musicEnabled);
+  if(selectedStyle !== 'auto') cmpStyle.value = selectedStyle;
+  cmpBpmVal.textContent = bpm;
+  renderComposerGrid();
+}
+
+cmpPlayBtn.addEventListener('click', () => {
+  ensureAudio();
+  if(isPlaying && playSource === 'composer'){ stop(); }
+  else { if(isPlaying) stop(); start('composer'); }
+});
+cmpGhostToggle.addEventListener('click', () => setGhost(!ghostEnabled));
+cmpMusicToggle.addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+  cmpMusicToggle.classList.toggle('active', musicEnabled);
+  musicToggle.classList.toggle('active', musicEnabled);
+  syncSongBand();
+  if(!musicEnabled){ fadeOutChord(); stopAllTracks(); }
+  else { selectedStyle = cmpStyle.value; }
+  if(isPlaying && playSource === 'composer') updateBacking();
+  updateTrackStatus();
+});
+cmpStyle.addEventListener('change', () => {
+  selectedStyle = cmpStyle.value;
+  styleRow.querySelectorAll('.style-pill').forEach(b => b.classList.toggle('active', b.dataset.style === selectedStyle));
+  if(isPlaying && playSource === 'composer' && musicEnabled) updateBacking();
+  updateTrackStatus();
+});
+
+// ---- save / load ----
+const CMP_KEY = 'cajon.grooves.v1';
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(CMP_KEY) || '[]'); }catch(e){ return []; } }
+function persistSaved(){ try{ localStorage.setItem(CMP_KEY, JSON.stringify(savedGrooves)); }catch(e){} }
+let savedGrooves = loadSaved();
+function isEmptyGroove(hits){ return hits.every(h => h === '.'); }
+
+document.getElementById('cmpSave').addEventListener('click', () => {
+  if(isEmptyGroove(composerHits)) return;
+  let name = (cmpName.value || '').trim();
+  if(!name) name = 'Groove ' + (savedGrooves.length + 1);
+  savedGrooves.push({ name, sub: composerSub, hits: composerHits.slice() });
+  persistSaved();
+  cmpName.value = '';
+  renderSavedList();
+});
+document.getElementById('cmpClear').addEventListener('click', () => {
+  composerHits = new Array(CMP_STEPS[composerSub]).fill('.');
+  renderComposerGrid();
+});
+document.getElementById('cmpSend').addEventListener('click', () => {
+  sendToPractice(composerSub, composerHits, (cmpName.value || '').trim());
+});
+
+function sendToPractice(sub, hits, name){
+  if(isEmptyGroove(hits)) return;
+  const arr = GROOVES[sub].patterns;
+  const patt = { name: name || 'Custom groove', tag: 'your composition', hits: hits.slice(),
+                 style: selectedStyle !== 'auto' ? selectedStyle : 'beatles', custom: true };
+  let idx = arr.findIndex(p => p.custom);
+  if(idx >= 0) arr[idx] = patt; else { arr.push(patt); idx = arr.length - 1; }
+  currentSub = sub; currentPatternIdx = idx;
+  showView('practice');
+  renderAll();
+}
+
+function renderSavedList(){
+  const list = document.getElementById('cmpSavedList');
+  list.innerHTML = '';
+  if(!savedGrooves.length){
+    const e = document.createElement('div'); e.className = 'cmp-empty';
+    e.textContent = 'No saved grooves yet.';
+    list.appendChild(e); return;
+  }
+  savedGrooves.forEach((g, i) => {
+    const row = document.createElement('div'); row.className = 'cmp-row';
+    const nm = document.createElement('span'); nm.className = 'cr-name'; nm.textContent = g.name;
+    const meta = document.createElement('span'); meta.className = 'cr-meta'; meta.textContent = SUBLABEL[g.sub];
+    const load = document.createElement('button'); load.className = 'cr-btn'; load.textContent = 'Load';
+    load.addEventListener('click', () => {
+      if(isPlaying) stop();
+      composerSub = g.sub; composerHits = g.hits.slice();
+      cmpName.value = g.name;
+      buildCmpSubTabs(); renderComposerGrid();
+    });
+    const send = document.createElement('button'); send.className = 'cr-btn'; send.textContent = 'To Practice';
+    send.addEventListener('click', () => sendToPractice(g.sub, g.hits, g.name));
+    const del = document.createElement('button'); del.className = 'cr-btn danger'; del.textContent = 'Delete';
+    del.addEventListener('click', () => { savedGrooves.splice(i, 1); persistSaved(); renderSavedList(); });
+    row.appendChild(nm); row.appendChild(meta); row.appendChild(load); row.appendChild(send); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+buildCmpSubTabs();
+renderComposerGrid();
+renderSavedList();
+
+renderAll();
+
+// Switch drill controls
+document.getElementById('switchToggle').addEventListener('click', () => {
+  switchOn = !switchOn;
+  if(switchOn){
+    ensurePartner();
+    if(isPlaying && selectedStyle === 'auto' && playSource !== 'composer') switchStyle = currentStyleKey();
+    switchBarCount = 0;
+  }
+  buildGrooveList();
+  renderSwitchUI();
+});
+document.querySelectorAll('#switchBars .sw-bar').forEach(b => b.addEventListener('click', () => {
+  switchBars = +b.dataset.n;
+  switchBarCount = 0;
+  renderSwitchUI();
+}));
+renderDiary();
+updateTrackStatus();
+
+// ================= Songs =================
+// Whole songs played start to finish over the app's bands. Each section names a
+// groove from the library (or its own hits); `fill` turns the section's last bar
+// into a short fill that leads into the next section; `band` sets how loud the band
+// sits in that section (intros and breaks drop back, choruses come in full).
+// Every song starts with a 4-bar intro and the band loop (16 bars) is started 12 bars
+// in, so verses and choruses land on the top and middle of the loop.
+const SPB = { quarter:1, eighth:2, sixteenth:4, rudiments:4 };
+const FILLS = {
+  eighth:    ['B','.','S','.','S','S','S','S'],
+  sixteenth: ['B','.','.','S','.','.','B','.','S','.','S','.','S','S','S','S']
+};
+const STOP_HITS = ['B','.','.','.'];
+const SONGS = [
+  // Fully arranged: the band is a rendered song (audio/song-flannel.js), not the practice loop.
+  { title:'Flannel Static', style:'pearljam', bpm:84, feel:'grunge · full band', audio:'flannel', sections:[
+    { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',      bars:4 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',        bars:8 },
+    { name:'Pre-chorus',  sub:'eighth',    groove:'Four-on-the-floor',    bars:4, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Offbeat push',         bars:8 },
+    { name:'Pre-chorus',  sub:'eighth',    groove:'Four-on-the-floor',    bars:4, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
+    { name:'Bridge',      sub:'eighth',    groove:'Half-time feel',       bars:4 },
+    { name:'Stops',       sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:4, fill:true },
+    { name:'Last chorus', sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
+    { name:'Outro',       sub:'eighth',    groove:'Rock backbeat',        bars:4 }
+  ]},
+  { title:'Sunday Paper', style:'beatles', bpm:96, feel:'bright pop-rock', sections:[
+    { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4, band:0.55 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, band:0.8, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8, band:1,   fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, band:0.8, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8, band:1,   fill:true },
+    { name:'Bridge',      sub:'quarter',   groove:'With a rest',         bars:8, band:0.6, fill:true },
+    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
+    { name:'Outro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4, band:0.5 }
+  ]},
+  { title:'Iron Lantern', style:'zeppelin', bpm:88, feel:'heavy riff rock', sections:[
+    { name:'Intro riff',  sub:'eighth',    groove:'Bass-heavy backbeat', bars:4, band:0.7 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',       bars:8, band:0.85, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Bass-heavy backbeat', bars:8, band:0.85, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
+    { name:'Solo',        sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, band:1,  fill:true },
+    { name:'Breakdown',   sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:4, band:0.35 },
+    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
+    { name:'Outro',       sub:'eighth',    groove:'Bass-heavy backbeat', bars:4, band:0.7 }
+  ]},
+  { title:'Slow Tide', style:'floyd', bpm:72, feel:'spacious, slow', sections:[
+    { name:'Intro',       sub:'quarter',   groove:'Double bass anchor',  bars:4, band:0.5 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Half-time feel',      bars:8, band:0.75, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8, band:1,   fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Half-time feel',      bars:8, band:0.75, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8, band:1,   fill:true },
+    { name:'Drift',       sub:'quarter',   groove:'With a rest',         bars:8, band:0.45 },
+    { name:'Last chorus', sub:'sixteenth', groove:'Bossa feel',          bars:8, band:1,   fill:true },
+    { name:'Outro',       sub:'quarter',   groove:'Double bass anchor',  bars:4, band:0.45 }
+  ]},
+];
+
+var songIdx = 0;            // var: currentStyleKey() may ask before this line runs
+var songStartSec = 0;       // section to start from (tap a section to change it)
+var songBars = null;        // flattened bars of the playing song
+var songBarIdx = 0, songPos = 0, songStartBar = 0;
+var songEnded = false, songJustFinished = false, songPrevBpm = null, songShown = -1;
+var songBandAuto = false;
+// Rendered songs (band-renderer/song_*.py). The MP3 starts with `pad` samples of
+// silence; some decoders also keep the encoder's 1105-sample delay — detected
+// from the length, exactly like trackWindow() does for the loops.
+const SONG_AUDIO = { flannel: { samples:8310646, pad:4096, barS:240/84 } };
+const SONG_BUF = {};
+function songAudioKey(){ const s = songCur(); return s && s.audio && SONG_AUDIO[s.audio] ? s.audio : null; }
+const SONG_WAIT = {};
+const SONG_TOK = {};
+function decodeSongAudio(key, done){
+  if(done){ (SONG_WAIT[key] = SONG_WAIT[key] || []).push(done); }
+  const flush = () => { const w = SONG_WAIT[key] || []; SONG_WAIT[key] = []; w.forEach(f => f()); };
+  if(!key || !audioCtx){ flush(); return; }
+  if(SONG_BUF[key] === 'loading') return;
+  if(SONG_BUF[key]){ flush(); return; }
+  SONG_BUF[key] = 'loading';
+  const tok = SONG_TOK[key] = {};
+  needAudio('song-' + key, b64 => {
+  if(SONG_TOK[key] !== tok || SONG_BUF[key] !== 'loading') return;   // superseded (audio restarted)
+  if(!b64 || !audioCtx){ SONG_BUF[key] = null; flush(); return; }
+  try{
+    audioCtx.decodeAudioData(b64ToArrayBuffer(b64), buf => {
+      SONG_BUF[key] = buf;
+      dropAudioText('song-' + key);
+      flush();
+      if(isPlaying && playSource === 'song' && musicEnabled && songAudioKey() === key && !trackSource){
+        const t = nextBarTime();
+        startTrackAt(t);
+      }
+    }, () => { SONG_BUF[key] = null; flush(); });
+  }catch(e){ SONG_BUF[key] = null; flush(); }
+  });
+}
+function songAudioReady(){ const k = songAudioKey(); return !!(k && SONG_BUF[k] && SONG_BUF[k] !== 'loading'); }
+// start the rendered song at audio time `when`, from whatever bar of the song falls there
+function startSongAudio(when){
+  const k = songAudioKey(), buf = SONG_BUF[k], m = SONG_AUDIO[k];
+  if(!(buf && buf !== 'loading' && musicGain)) return;
+  const extra = buf.length - m.samples;
+  const lead = extra > 200 ? 1105 / 44100 : 0;
+  const bar = songStartBar + Math.max(0, Math.round((when - playStartTime) / barDur));
+  const off = m.pad / 44100 + lead + bar * m.barS;
+  if(off >= buf.duration) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(musicGain);
+  try{ src.start(when, off); }catch(e){ try{ src.start(0, off); }catch(e2){} }
+  trackSource = src;
+}
+function songCur(){ return SONGS[songIdx]; }
+function secHits(sec){
+  if(sec.hits) return sec.hits;
+  const i = patternIndexByName(sec.sub, sec.groove);
+  return GROOVES[sec.sub].patterns[i >= 0 ? i : 0].hits;
+}
+function secLabel(sec){ return (sec.label || sec.groove) + ' · ' + SUBLABEL[sec.sub]; }
+function fillSub(sec){ return sec.sub === 'quarter' ? 'eighth' : sec.sub; }
+function songBarList(song){
+  const out = [];
+  song.sections.forEach((sec, si) => {
+    for(let b = 0; b < sec.bars; b++){
+      const isFill = !!sec.fill && b === sec.bars - 1;
+      out.push({ si, b, fill:isFill, sub: isFill ? fillSub(sec) : sec.sub, hits: isFill ? FILLS[fillSub(sec)] : secHits(sec) });
+    }
+  });
+  return out;
+}
+function secStartBar(song, si){ let n = 0; for(let i = 0; i < si; i++) n += song.sections[i].bars; return n; }
+function songTotalBars(song){ return secStartBar(song, song.sections.length); }
+function songLoopBar(i){ const s = songCur(); return ((16 - s.sections[0].bars % 16) % 16 + i) % 16; }
+function trackBarsAt(when){
+  if(playSource !== 'song' || !songBars) return 0;
+  return songLoopBar(songStartBar + Math.max(0, Math.round((when - playStartTime) / barDur)));
+}
+function setBandLevel(level, t){
+  if(!bandGain) return;
+  bandGain.gain.cancelScheduledValues(t - 0.15);
+  bandGain.gain.setTargetAtTime(level, t - 0.15, 0.08);
+}
+
+function songPrepare(){
+  const song = songCur();
+  songBars = songBarList(song);
+  songStartBar = secStartBar(song, songStartSec);
+  songBarIdx = songStartBar; songPos = 0;
+  songEnded = false; songJustFinished = false; songShown = -1;
+  if(songPrevBpm == null) songPrevBpm = bpm;
+  setBpm(song.bpm);
+  chordIdx = songLoopBar(songStartBar);
+  if(bandGain){ bandGain.gain.cancelScheduledValues(0); bandGain.gain.setValueAtTime(song.sections[songStartSec].band ?? 1, audioCtx.currentTime); }
+  decodeSongAudio(songAudioKey());
+}
+
+function songScheduler(){
+  while(isPlaying && !songEnded && nextNoteTime < audioCtx.currentTime + scheduleAhead){
+    if(songBarIdx >= songBars.length){ songFinish(nextNoteTime); return; }
+    const bar = songBars[songBarIdx];
+    const step = (60 / bpm) / SPB[bar.sub];
+    const delay = Math.max(0, (nextNoteTime - audioCtx.currentTime) * 1000);
+    if(songPos === 0){
+      lastBarTime = nextNoteTime;
+      barDur = 4 * (60 / bpm);
+      if(bar.b === 0 && songBarIdx !== songStartBar && songCur().sections[bar.si].band != null) setBandLevel(songCur().sections[bar.si].band, nextNoteTime);
+      if(musicEnabled && !currentTrackReady() && !songAudioKey()){ playBackingBar(currentStyleKey(), nextNoteTime, barDur, chordIdx); chordIdx++; }
+      const idx = songBarIdx;
+      setTimeout(() => { if(isPlaying && playSource === 'song') songShowBar(idx); }, delay);
+    }
+    playHit(bar.hits[songPos], nextNoteTime, step);
+    const pos = songPos;
+    setTimeout(() => { if(isPlaying && playSource === 'song') songHighlight(pos); }, delay);
+    nextNoteTime += step;
+    songPos++;
+    if(songPos >= bar.hits.length){ songPos = 0; songBarIdx++; }
+  }
+}
+
+// One big hit on the "1" after the last bar, let the band ring out, then stop
+function songFinish(t){
+  songEnded = true;
+  playBass(t, 1.0);
+  playSlap(t, 0.9, 2200, 0.25);
+  const arranged = !!songAudioKey() && songAudioReady() && musicEnabled;
+  if(bandGain && !arranged){ bandGain.gain.cancelScheduledValues(t); bandGain.gain.setTargetAtTime(0.0001, t + 0.15, 0.7); }
+  const ms = Math.max(0, (t - audioCtx.currentTime) * 1000);
+  setTimeout(() => {
+    if(!(isPlaying && playSource === 'song')) return;
+    document.getElementById('songNowSec').innerHTML = 'The end';
+    document.getElementById('songNowBar').textContent = '';
+    const tag = document.getElementById('songNextTag'); tag.textContent = ''; tag.classList.remove('soon');
+    document.getElementById('songNextRow').hidden = true;
+    songHighlight(-1);
+  }, ms);
+  setTimeout(() => {
+    if(!(isPlaying && playSource === 'song')) return;
+    songJustFinished = true;
+    stop();
+  }, ms + (arranged ? 5400 : 3200));
+}
+
+function songStopped(){
+  if(songPrevBpm != null){ setBpm(songPrevBpm); songPrevBpm = null; }
+  songBars = null;
+  playSource = 'practice';
+  songShowIdle();
+  updateTrackStatus();
+}
+
+// ---- drawing ----
+function songHighlight(pos){
+  const row = document.getElementById('songHitRow');
+  row.querySelectorAll('.hit.playing').forEach(el => el.classList.remove('playing'));
+  if(pos < 0) return;
+  const cell = document.getElementById('shit-' + pos);
+  if(cell) cell.classList.add('playing');
+  const pulse = document.getElementById('songPulse');
+  if(pulse){ pulse.classList.add('on'); setTimeout(() => pulse.classList.remove('on'), 90); }
+}
+function songDrawBar(hits, sub){
+  fillCounts(document.getElementById('songCountRow'), sub);
+  fillHits(document.getElementById('songHitRow'), hits, 'shit-');
+}
+function songMarkSheet(curSi, barInSec){
+  document.querySelectorAll('#songSheet .sec').forEach(el => {
+    const si = +el.dataset.si;
+    el.classList.toggle('cur', si === curSi);
+    el.classList.toggle('start', curSi < 0 && si === songStartSec);
+    el.querySelectorAll('.bdot').forEach((d, b) => {
+      d.classList.toggle('done', curSi >= 0 && (si < curSi || (si === curSi && b < barInSec)));
+      d.classList.toggle('now', si === curSi && b === barInSec);
+    });
+  });
+}
+function songShowBar(idx){
+  const song = songCur(), bar = songBars[idx], sec = song.sections[bar.si];
+  document.getElementById('songNowSec').innerHTML = esc(sec.name) + '<small>' + esc(secLabel(sec)) + '</small>';
+  const nb = document.getElementById('songNowBar');
+  nb.textContent = 'bar ' + (bar.b + 1) + ' / ' + sec.bars + (bar.fill ? ' · fill' : '');
+  nb.classList.toggle('fill', bar.fill);
+  const key = bar.sub + bar.hits.join('');
+  if(songShown !== key){ songDrawBar(bar.hits, bar.sub); songShown = key; }
+  // next-up preview in the last bar of a section
+  const tag = document.getElementById('songNextTag'), next = document.getElementById('songNextRow');
+  tag.classList.remove('soon'); next.hidden = true; tag.textContent = '';
+  if(bar.b === sec.bars - 1){
+    const ns = song.sections[bar.si + 1];
+    if(ns){
+      tag.textContent = 'Next: ' + ns.name + ' — ' + (ns.label || ns.groove);
+      fillHits(next, secHits(ns)); next.hidden = false;
+    } else tag.textContent = 'Last bar — big hit on the next 1';
+    tag.classList.add('soon');
+  }
+  songMarkSheet(bar.si, bar.b);
+}
+function songShowIdle(){
+  const song = songCur(), sec = song.sections[songStartSec];
+  document.getElementById('songNowSec').innerHTML = esc(sec.name) + '<small>' + esc(secLabel(sec)) + '</small>';
+  const nb = document.getElementById('songNowBar'); nb.textContent = sec.bars + ' bars'; nb.classList.remove('fill');
+  songDrawBar(secHits(sec), sec.sub); songShown = -1;
+  const tag = document.getElementById('songNextTag');
+  tag.classList.remove('soon');
+  tag.textContent = songJustFinished ? '✓ Song complete' : (songStartSec > 0 ? 'Starts from ' + sec.name : '');
+  document.getElementById('songNextRow').hidden = true;
+  songMarkSheet(-1, -1);
+}
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDur(sec){ sec = Math.round(sec); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+
+function renderSongs(){
+  const picker = document.getElementById('songPicker');
+  picker.innerHTML = '';
+  SONGS.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'song-pill' + (i === songIdx ? ' active' : '');
+    b.innerHTML = esc(s.title) + '<small>' + esc(s.feel) + '</small>';
+    b.addEventListener('click', () => {
+      if(isPlaying) stop();
+      songIdx = i; songStartSec = 0; songJustFinished = false;
+      renderSongs();
+      decodeSongAudio(songAudioKey());
+    });
+    picker.appendChild(b);
+  });
+  const song = songCur(), bars = songTotalBars(song);
+  document.getElementById('songTitle').textContent = song.title;
+  document.getElementById('songMeta').textContent =
+    (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / song.bpm);
+  const sheet = document.getElementById('songSheet');
+  sheet.innerHTML = '';
+  song.sections.forEach((sec, si) => {
+    const el = document.createElement('div');
+    el.className = 'sec';
+    el.dataset.si = si;
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.title = 'Start from ' + sec.name;
+    const left = document.createElement('div');
+    left.innerHTML = '<span class="sec-name">' + esc(sec.name) + '</span><span class="sec-groove">' + esc(secLabel(sec)) + (sec.fill ? ' + fill' : '') + '</span>';
+    const notes = document.createElement('div'); notes.className = 'sec-notes';
+    const mini = document.createElement('div'); mini.className = 'mini';
+    fillHits(mini, secHits(sec));
+    const dots = document.createElement('div'); dots.className = 'bars';
+    for(let b = 0; b < sec.bars; b++){
+      const d = document.createElement('span');
+      d.className = 'bdot' + (sec.fill && b === sec.bars - 1 ? ' fill' : '');
+      dots.appendChild(d);
+    }
+    notes.appendChild(mini); notes.appendChild(dots);
+    el.appendChild(left); el.appendChild(notes);
+    el.addEventListener('click', () => songStartFrom(si));
+    el.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); songStartFrom(si); } });
+    sheet.appendChild(el);
+  });
+  songShowIdle();
+}
+function songStartFrom(si){
+  const wasPlaying = isPlaying && playSource === 'song';
+  if(isPlaying) stop();
+  songStartSec = si; songJustFinished = false;
+  if(wasPlaying){ ensureAudio(); start('song'); }
+  else songShowIdle();
+}
+function songPlayingSection(){
+  if(isPlaying && playSource === 'song' && songBars){
+    const i = Math.min(songBarIdx, songBars.length - 1);
+    return songBars[i].si;
+  }
+  return songStartSec;
+}
+function syncSongBand(){
+  const b = document.getElementById('songBandToggle');
+  if(b) b.classList.toggle('active', musicEnabled);
+}
+function songsShown(){
+  decodeSongAudio(songAudioKey());
+  // first visit: songs are meant to be played with the band
+  if(!songBandAuto){
+    songBandAuto = true;
+    if(!musicEnabled){ musicEnabled = true; musicToggle.classList.add('active'); cmpMusicToggle.classList.add('active'); updateTrackStatus(); }
+  }
+  syncSongBand();
+  songShowIdle();
+}
+var songLoading = false;
+document.getElementById('songPlayBtn').addEventListener('click', () => {
+  ensureAudio();
+  if(isPlaying && playSource === 'song'){ stop(); return; }
+  if(isPlaying) stop();
+  const key = songAudioKey();
+  if(key && musicEnabled && !songAudioReady()){
+    // first play of an arranged song: decode the band (about a second), then start
+    if(songLoading) return;
+    songLoading = true;
+    const btn = document.getElementById('songPlayBtn');
+    btn.textContent = '… Loading band';
+    decodeSongAudio(key, () => { songLoading = false; btn.textContent = '▶ Play song'; if(!isPlaying) start('song'); });
+    return;
+  }
+  start('song');
+});
+document.getElementById('songBandToggle').addEventListener('click', () => {
+  if(!(isPlaying && playSource === 'song')) { musicToggle.click(); return; }
+  // mid-song: toggle without the practice-tempo snap side effects
+  musicEnabled = !musicEnabled;
+  musicToggle.classList.toggle('active', musicEnabled);
+  syncSongBand();
+  if(!musicEnabled){ fadeOutChord(); stopAllTracks(); }
+  updateBacking();
+});
+renderSongs();
+
+// ---------- Cheat codes overlay ----------
+const cheatEl = document.getElementById('cheat');
+function openCheat(){ cheatEl.hidden = false; document.getElementById('cheatClose').focus(); }
+function closeCheat(){ cheatEl.hidden = true; }
+document.getElementById('cheatBtn').addEventListener('click', openCheat);
+document.getElementById('cheatClose').addEventListener('click', closeCheat);
+cheatEl.addEventListener('click', e => { if(e.target === cheatEl) closeCheat(); });
+
+// ---------- Count-in toggles (shared between Practice, Songs and Composer) ----------
+(function(){
+  const btns = [document.getElementById('countInToggle'), document.getElementById('cmpCountInToggle'), document.getElementById('songCountInToggle')].filter(Boolean);
+  const sync = () => btns.forEach(b => b.classList.toggle('active', countInEnabled));
+  btns.forEach(b => b.addEventListener('click', () => {
+    countInEnabled = !countInEnabled;
+    try{ localStorage.setItem(COUNTIN_KEY, countInEnabled ? '1' : '0'); }catch(e){}
+    sync();
+  }));
+  sync();
+})();
+
+// ---------- Keyboard shortcuts (play from the cajon) ----------
+// Practice: Space play/stop, ↑/↓ groove, ←/→ tempo chip, S switch drill.
+// Songs: Space play/stop, ↑/↓ song, ←/→ start from previous/next section.
+// Everywhere: G ghosts, C count-in, M band, ? cheat codes, Esc closes them.
+// Reuses the buttons' own click handlers so every side-effect stays in one place.
+(function(){
+  const typing = t => t && t.closest && t.closest('input, select, textarea, [contenteditable]');
+  // Stop a focused button from also firing on Space/Enter keyup (double toggle)
+  document.addEventListener('keyup', e => {
+    if(e.key === ' ' && !typing(e.target) && e.target.closest && e.target.closest('button, summary, [role=button]')) e.preventDefault();
+  });
+  document.addEventListener('keydown', e => {
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    if(typing(e.target)) return;
+    if(!cheatEl.hidden){
+      if(e.key === 'Escape' || e.key === '?'){ e.preventDefault(); closeCheat(); }
+      return;
+    }
+    if(e.key === '?'){ e.preventDefault(); openCheat(); return; }
+    const inPractice = !practiceView.hidden;
+    const inSongs = !songsView.hidden;
+    const inComposer = !composerView.hidden;
+    const press = el => { if(el){ e.preventDefault(); el.click(); } };
+
+    if(e.key === ' '){
+      if(e.repeat){ e.preventDefault(); return; }
+      if(inPractice) press(playBtn);
+      else if(inSongs) press(document.getElementById('songPlayBtn'));
+      else if(inComposer) press(cmpPlayBtn);
+      return;
+    }
+    switch(e.key.toLowerCase()){
+      case 'g': press(inComposer ? cmpGhostToggle : ghostToggle); return;
+      case 'c': press(document.getElementById('countInToggle')); return;
+      case 'm': press(inSongs ? document.getElementById('songBandToggle') : inComposer ? cmpMusicToggle : musicToggle); return;
+    }
+
+    if(inSongs){
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        const items = document.querySelectorAll('#songPicker .song-pill'), n = items.length;
+        press(items[(songIdx + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]);
+      } else if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+        const n = songCur().sections.length;
+        const si = songPlayingSection() + (e.key === 'ArrowRight' ? 1 : -1);
+        e.preventDefault();
+        if(si >= 0 && si < n) songStartFrom(si);
+      }
+      return;
+    }
+    if(!inPractice) return;
+
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      const items = grooveListEl.children, n = items.length;
+      if(!n) return;
+      const d = e.key === 'ArrowDown' ? 1 : -1;
+      press(items[(currentPatternIdx + d + n) % n]);
+      return;
+    }
+    if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+      const chips = [...document.querySelectorAll('#tempoChips .tempo-chip')];
+      if(!chips.length) return;
+      const vals = chips.map(c => parseInt(c.dataset.t, 10));
+      let target;
+      if(e.key === 'ArrowRight'){ const i = vals.findIndex(v => v > bpm); target = chips[i < 0 ? chips.length - 1 : i]; }
+      else { let i = -1; vals.forEach((v, k) => { if(v < bpm) i = k; }); target = chips[i < 0 ? 0 : i]; }
+      press(target);
+      return;
+    }
+    if(e.key.toLowerCase() === 's') press(document.getElementById('switchToggle'));
+  });
+})();
+</script>
+</body>
+</html>
