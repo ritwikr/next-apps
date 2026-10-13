@@ -47,4 +47,4 @@ requests are welcome.
 ## License
 
 [MIT](./LICENSE) — free to use, adapt, and share.
-The Cajon Groove Practice backing music (`cajon/audio/`) is CC BY 4.0.
+The Cajon Groove Practice backing music (`cajon/audio/`) is made with Apple Loops and used under Apple's GarageBand licence (not CC BY).
