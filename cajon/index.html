@@ -679,8 +679,8 @@
   .cheat kbd{ font-family:var(--font-sans); font-weight:800; background:var(--ink); color:var(--paper); border:none; border-radius:6px; padding:2px 6px; }
   input[type=range]::-webkit-slider-thumb{ background:var(--accent); border-color:var(--card); width:20px; height:20px; }
   input[type=range]::-moz-range-thumb{ background:var(--accent); border-color:var(--card); width:20px; height:20px; }
-  #grooveVol::-webkit-slider-thumb, #musicVol::-webkit-slider-thumb{ background:var(--accent); }
-  #grooveVol::-moz-range-thumb, #musicVol::-moz-range-thumb{ background:var(--accent); }
+  #grooveVol::-webkit-slider-thumb, #musicVol::-webkit-slider-thumb, #syncDelay::-webkit-slider-thumb{ background:var(--accent); }
+  #grooveVol::-moz-range-thumb, #musicVol::-moz-range-thumb, #syncDelay::-moz-range-thumb{ background:var(--accent); }
   .cmp-name{ border:2px solid var(--line); border-radius:10px; background:var(--card); }
   .sec{ border-radius:12px; }
   .sec.cur{ border-color:var(--accent); border-left-color:var(--accent); background:transparent; }
@@ -765,6 +765,13 @@
           <span class="mix-val"><span id="musicVolVal">85</span>%</span>
         </div>
         <input type="range" id="musicVol" min="0" max="100" value="85">
+      </div>
+      <div class="mix-ch">
+        <div class="mix-row">
+          <span class="bpm-label">Light delay</span>
+          <span class="mix-val" id="syncVal">Auto</span>
+        </div>
+        <input type="range" id="syncDelay" min="0" max="500" step="10" value="0" title="If the squares light up before you hear the sound, slide right until they match">
       </div>
     </div>
 
@@ -922,6 +929,7 @@
         <dt>Backing music</dt><dd>A band plays along, locked to your groove.</dd>
         <dt>1 min timer</dt><dd>Stops the groove after one minute of playing — for “hold it without a mistake” drills.</dd>
         <dt>⇄ Switch</dt><dd>Alternates between the selected groove and a partner every 4, 2 or 1 bars, on beat 1, without stopping. Tap the small ⇄ on any groove to make it the partner (dashed outline). In the last bar before a change the next groove appears faintly under the grid.</dd>
+        <dt>Light delay</dt><dd>Keeps the lit square in step with the sound. Some browsers (Safari especially) play sound a little late; the app corrects what it can by itself (“Auto”). If the square still lights up before you hear the hit, slide right until they match. Remembered on this device.</dd>
         <dt>Volume knobs</dt><dd>Groove = the cajon sounds, Music = the band. Keep the band just under you.</dd>
         <dt>Band styles</dt><dd><b>Auto</b> picks the band that suits each groove; or choose one yourself.</dd>
         <dt>Match my tempo</dt><dd>Off: your tempo snaps to the band’s own tempo so it sounds natural. On: the band follows your tempo (it gets lower in pitch when slowed down).</dd>
@@ -1259,9 +1267,9 @@ function scheduleCountIn(t0){
   for(let i = 0; i < 4; i++){
     const t = t0 + i * beat;
     playClick(t, i === 0);
-    countInTimers.push(setTimeout(() => showCount(i + 1), Math.max(0, (t - audioCtx.currentTime) * 1000)));
+    countInTimers.push(setTimeout(() => showCount(i + 1), lightDelay(t)));
   }
-  countInTimers.push(setTimeout(() => showCount(0), Math.max(0, (t0 + 4 * beat - audioCtx.currentTime) * 1000)));
+  countInTimers.push(setTimeout(() => showCount(0), lightDelay(t0 + 4 * beat)));
   return 4 * beat;
 }
 
@@ -1589,7 +1597,7 @@ let matchTempo = false;              // ON = keep my tempo (stretch track); OFF 
 const TRACK_BASE = { beatles:96, zeppelin:88, floyd:72, pearljam:84 };
 // Each embedded MP3 is one 16-bar loop with a little wrap-around padding on both
 // sides (so MP3 edge artefacts fall outside the loop). We loop only the inner window.
-const TRACK_LOOP = { beatles:{loop:1764000/44100, pad:4096/44100}, zeppelin:{loop:1924364/44100, pad:4096/44100}, floyd:{loop:2352000/44100, pad:4096/44100}, pearljam:{loop:2016000/44100, pad:4096/44100} };
+const TRACK_LOOP = { beatles:{loop:1764000/44100, pad:4096/44100}, zeppelin:{loop:1924363/44100, pad:4096/44100}, floyd:{loop:2352000/44100, pad:4096/44100}, pearljam:{loop:2016000/44100, pad:4096/44100} };
 let trackSource = null;
 let playStartTime = 0;               // audioCtx time of the first cajon downbeat
 let lastBarTime = 0;                 // audioCtx time of the most recent downbeat
@@ -1800,6 +1808,39 @@ function applyVolumes(){
 grooveVol.addEventListener('input', () => { grooveVolVal.textContent = grooveVol.value; applyVolumes(); });
 musicVol.addEventListener('input', () => { musicVolVal.textContent = musicVol.value; applyVolumes(); });
 
+// ---------- Sound/light sync ----------
+// The browser plays a sound a little after the time we schedule it (speaker buffers,
+// Safari's own audio path, Bluetooth). Lights must wait the same amount, or they run ahead.
+// audioLag() = what the browser tells us + the learner's own "Light delay" slider.
+const SYNC_KEY = 'cajon.sync.v1';
+let syncExtra = (function(){ try{ const v = parseInt(localStorage.getItem(SYNC_KEY), 10); return isFinite(v) ? v : 0; }catch(e){ return 0; } })();
+function browserLag(){
+  if(!audioCtx) return 0;
+  let lag = NaN;
+  try{
+    if(audioCtx.getOutputTimestamp){
+      const ts = audioCtx.getOutputTimestamp();
+      if(ts && ts.performanceTime > 0 && ts.contextTime > 0){
+        const heardNow = ts.contextTime + (performance.now() - ts.performanceTime) / 1000;
+        lag = audioCtx.currentTime - heardNow;
+      }
+    }
+  }catch(e){}
+  if(!(lag >= 0 && lag < 1)) lag = (audioCtx.outputLatency || 0) + (audioCtx.baseLatency || 0);
+  return (lag >= 0 && lag < 1) ? lag : 0;
+}
+function audioLag(){ return browserLag() + syncExtra / 1000; }
+// ms to wait before showing something that sounds at audio time t
+function lightDelay(t){ return Math.max(0, (t - audioCtx.currentTime + audioLag()) * 1000); }
+const syncSlider = document.getElementById('syncDelay');
+const syncVal = document.getElementById('syncVal');
+function showSync(){ syncVal.textContent = syncExtra ? '+' + syncExtra + ' ms' : 'Auto'; }
+syncSlider.value = syncExtra; showSync();
+syncSlider.addEventListener('input', () => {
+  syncExtra = parseInt(syncSlider.value, 10) || 0; showSync();
+  try{ localStorage.setItem(SYNC_KEY, String(syncExtra)); }catch(e){}
+});
+
 // ---------- Scheduler (lookahead) ----------
 let nextNoteTime = 0;
 const lookahead = 25;      // ms
@@ -1922,7 +1963,7 @@ function scheduler(){
           }
         }
         const left = switchBars - (switchBarCount % switchBars);
-        const delay = Math.max(0, (nextNoteTime - audioCtx.currentTime) * 1000);
+        const delay = lightDelay(nextNoteTime);
         setTimeout(() => {
           if(isPlaying) switchLeft = left;
           if(swapped){ renderGrid(); buildGrooveList(); } else renderSwitchUI();
@@ -1948,8 +1989,7 @@ function stepDuration(){
 }
 
 function scheduleVisual(idx, time){
-  const delay = Math.max(0, (time - audioCtx.currentTime) * 1000);
-  setTimeout(() => highlightStep(idx), delay);
+  setTimeout(() => highlightStep(idx), lightDelay(time));
 }
 
 function highlightStep(idx){
@@ -2531,7 +2571,7 @@ const FILLS = {
 };
 const STOP_HITS = ['B','.','.','.'];
 const SONGS = [
-  // Fully arranged: the band is a rendered song (audio/song-flannel.js), not the practice loop.
+  // Fully arranged: each band is a rendered song (audio/song-*.js), not the practice loop.
   { title:'Flannel Static', style:'pearljam', bpm:84, feel:'grunge · full band', audio:'flannel', sections:[
     { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',      bars:4 },
     { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',        bars:8 },
@@ -2545,36 +2585,36 @@ const SONGS = [
     { name:'Last chorus', sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
     { name:'Outro',       sub:'eighth',    groove:'Rock backbeat',        bars:4 }
   ]},
-  { title:'Sunday Paper', style:'beatles', bpm:96, feel:'bright pop-rock', sections:[
-    { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4, band:0.55 },
-    { name:'Verse 1',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, band:0.8, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8, band:1,   fill:true },
-    { name:'Verse 2',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, band:0.8, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8, band:1,   fill:true },
-    { name:'Bridge',      sub:'quarter',   groove:'With a rest',         bars:8, band:0.6, fill:true },
-    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
-    { name:'Outro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4, band:0.5 }
+  { title:'Sunday Paper', style:'beatles', bpm:96, feel:'bright pop-rock · full band', audio:'sunday', sections:[
+    { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8,   fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8,   fill:true },
+    { name:'Bridge',      sub:'quarter',   groove:'With a rest',         bars:8, fill:true },
+    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
+    { name:'Outro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4 }
   ]},
-  { title:'Iron Lantern', style:'zeppelin', bpm:88, feel:'heavy riff rock', sections:[
-    { name:'Intro riff',  sub:'eighth',    groove:'Bass-heavy backbeat', bars:4, band:0.7 },
-    { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',       bars:8, band:0.85, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
-    { name:'Verse 2',     sub:'eighth',    groove:'Bass-heavy backbeat', bars:8, band:0.85, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
-    { name:'Solo',        sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, band:1,  fill:true },
-    { name:'Breakdown',   sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:4, band:0.35 },
-    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8, band:1,   fill:true },
-    { name:'Outro',       sub:'eighth',    groove:'Bass-heavy backbeat', bars:4, band:0.7 }
+  { title:'Iron Lantern', style:'zeppelin', bpm:88, feel:'heavy riff rock · full band', audio:'iron', sections:[
+    { name:'Intro riff',  sub:'eighth',    groove:'Bass-heavy backbeat', bars:4 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',       bars:8, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Bass-heavy backbeat', bars:8, fill:true },
+    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
+    { name:'Solo',        sub:'sixteenth', groove:'Your pop-rock pocket', bars:8,  fill:true },
+    { name:'Breakdown',   sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:4 },
+    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
+    { name:'Outro',       sub:'eighth',    groove:'Bass-heavy backbeat', bars:4 }
   ]},
-  { title:'Slow Tide', style:'floyd', bpm:72, feel:'spacious, slow', sections:[
-    { name:'Intro',       sub:'quarter',   groove:'Double bass anchor',  bars:4, band:0.5 },
-    { name:'Verse 1',     sub:'eighth',    groove:'Half-time feel',      bars:8, band:0.75, fill:true },
-    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8, band:1,   fill:true },
-    { name:'Verse 2',     sub:'eighth',    groove:'Half-time feel',      bars:8, band:0.75, fill:true },
-    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8, band:1,   fill:true },
-    { name:'Drift',       sub:'quarter',   groove:'With a rest',         bars:8, band:0.45 },
-    { name:'Last chorus', sub:'sixteenth', groove:'Bossa feel',          bars:8, band:1,   fill:true },
-    { name:'Outro',       sub:'quarter',   groove:'Double bass anchor',  bars:4, band:0.45 }
+  { title:'Slow Tide', style:'floyd', bpm:72, feel:'spacious, slow · full band', audio:'tide', sections:[
+    { name:'Intro',       sub:'quarter',   groove:'Double bass anchor',  bars:4 },
+    { name:'Verse 1',     sub:'eighth',    groove:'Half-time feel',      bars:8, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8,   fill:true },
+    { name:'Verse 2',     sub:'eighth',    groove:'Half-time feel',      bars:8, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8,   fill:true },
+    { name:'Drift',       sub:'quarter',   groove:'With a rest',         bars:8 },
+    { name:'Last chorus', sub:'sixteenth', groove:'Bossa feel',          bars:8,   fill:true },
+    { name:'Outro',       sub:'quarter',   groove:'Double bass anchor',  bars:4 }
   ]},
 ];
 
@@ -2584,10 +2624,10 @@ var songBars = null;        // flattened bars of the playing song
 var songBarIdx = 0, songPos = 0, songStartBar = 0;
 var songEnded = false, songJustFinished = false, songPrevBpm = null, songShown = -1;
 var songBandAuto = false;
-// Rendered songs (band-renderer/song_*.py). The MP3 starts with `pad` samples of
+// Rendered songs (loop-renderer/songs.py, arranged from Apple Loops). The MP3 starts with `pad` samples of
 // silence; some decoders also keep the encoder's 1105-sample delay — detected
 // from the length, exactly like trackWindow() does for the loops.
-const SONG_AUDIO = { flannel: { samples:8310646, pad:4096, barS:240/84 } };
+const SONG_AUDIO = { flannel: { samples:8332696, pad:4096, barS:240/84 }, sunday: { samples:6442696, pad:4096, barS:240/96 }, iron: { samples:7485060, pad:4096, barS:240/88 }, tide: { samples:8544796, pad:4096, barS:240/72 } };
 const SONG_BUF = {};
 function songAudioKey(){ const s = songCur(); return s && s.audio && SONG_AUDIO[s.audio] ? s.audio : null; }
 const SONG_WAIT = {};
@@ -2681,7 +2721,7 @@ function songScheduler(){
     if(songBarIdx >= songBars.length){ songFinish(nextNoteTime); return; }
     const bar = songBars[songBarIdx];
     const step = (60 / bpm) / SPB[bar.sub];
-    const delay = Math.max(0, (nextNoteTime - audioCtx.currentTime) * 1000);
+    const delay = lightDelay(nextNoteTime);
     if(songPos === 0){
       lastBarTime = nextNoteTime;
       barDur = 4 * (60 / bpm);
@@ -2706,7 +2746,7 @@ function songFinish(t){
   playSlap(t, 0.9, 2200, 0.25);
   const arranged = !!songAudioKey() && songAudioReady() && musicEnabled;
   if(bandGain && !arranged){ bandGain.gain.cancelScheduledValues(t); bandGain.gain.setTargetAtTime(0.0001, t + 0.15, 0.7); }
-  const ms = Math.max(0, (t - audioCtx.currentTime) * 1000);
+  const ms = lightDelay(t);
   setTimeout(() => {
     if(!(isPlaying && playSource === 'song')) return;
     document.getElementById('songNowSec').innerHTML = 'The end';
