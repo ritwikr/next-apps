@@ -700,6 +700,25 @@
   :root[data-theme="dark"]{ --paper:#0E0E0E; --card:#1B1B1B; --ink:#F5F5F5; --muted:#A3A3A3; --line:#2E2E2E; --accent:#FDB913; --accent-ink:#111111; --teal:#3A3A3A; --teal-ink:#F5F5F5; --shadow:rgba(0,0,0,0.55); --chip-ring:rgba(255,255,255,0.24); --well:#141414; --bass:#F5F5F5; --slap:#F5F5F5; }
   .play-btn.playing{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
   .countin-overlay.one{ color:var(--ink); }
+
+  /* Timing check: mic listens, dots under the grid show early / late per step */
+  .timing-row{ margin-top:6px; height:14px; align-items:center; }
+  .timing-row .tdev{ position:relative; width:100%; max-width:44px; height:10px; margin:0 auto; border-radius:5px; background:color-mix(in srgb, var(--line) 80%, transparent); }
+  .timing-row .tdev::before{ content:''; position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; margin-left:-1px; background:var(--muted); opacity:.55; border-radius:1px; }
+  .timing-row .tdev i{ position:absolute; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%; transition:left .25s ease; }
+  .tdev i.good{ background:#2FB36F; } .tdev i.ok{ background:#F5A623; } .tdev i.off{ background:#E5484D; }
+  .timing-panel{ margin-top:12px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+  .timing-panel[hidden]{ display:none; }
+  .timing-main{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:1rem; color:var(--ink); }
+  .timing-sum.good{ color:#2FB36F; }
+  .timing-ear{ width:12px; height:12px; border-radius:50%; background:var(--line); flex-shrink:0; transition:background .05s ease, transform .05s ease; }
+  .timing-ear.on{ background:var(--accent); transform:scale(1.3); }
+  .timing-sub{ font-size:.8rem; color:var(--muted); margin-top:4px; min-height:1.1em; }
+  .timing-ctrls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; }
+  .timing-sens{ display:flex; align-items:center; gap:6px; font-size:.75rem; font-weight:700; color:var(--muted); }
+  .timing-sens input{ width:110px; }
+  .timing-status{ font-size:.78rem; color:var(--muted); }
+  .timing-help{ font-size:.72rem; color:var(--muted); margin-top:8px; }
 </style>
 </head>
 <body>
@@ -734,6 +753,7 @@
     <div class="stage">
       <div class="grid-row count-row" id="countRow"></div>
       <div class="grid-row hits" id="hitRow"></div>
+      <div class="grid-row timing-row" id="timingRow" hidden></div>
       <div class="grid-row next-row" id="nextRow" hidden></div>
       <div class="switch-tag" id="switchTag"></div>
     </div>
@@ -751,7 +771,19 @@
       <button class="timer-toggle" id="ghostToggle"><span class="timer-dot"></span>Ghost notes</button>
       <button class="timer-toggle" id="musicToggle"><span class="timer-dot"></span>Backing music</button>
       <button class="timer-toggle" id="timerToggle"><span class="timer-dot"></span>1 min timer</button>
+      <button class="timer-toggle" id="timingToggle" title="The mic listens and shows how early or late each hit is (T)"><span class="timer-dot"></span>🎤 Timing check</button>
       <span class="countdown" id="countdown"></span>
+    </div>
+    <div class="timing-panel" id="timingPanel" hidden>
+      <div class="timing-main"><span class="timing-ear" id="timingEar" title="Flashes each time the mic hears a hit"></span><span class="timing-sum" id="timingSum"></span></div>
+      <div class="timing-sub" id="timingSub"></div>
+      <div class="timing-ctrls">
+        <button class="timer-toggle" id="timingPhones" title="On: you hear the groove and band in your headphones. Off: only a soft click plays, so the mic hears just you."><span class="timer-dot"></span>🎧 Headphones</button>
+        <label class="timing-sens" title="Turn up if hits are missed, down if it hears hits you didn't play">Mic sensitivity <input type="range" id="timingSens" min="1" max="10" step="1"></label>
+        <button class="timer-toggle" id="timingCalBtn" title="Measures the sound delay once so the numbers are exact"><span class="timer-dot"></span>Calibrate</button>
+        <span class="timing-status" id="timingStatus"></span>
+      </div>
+      <div class="timing-help">Dots under the grid: <b>left = early</b>, <b>right = late</b>, the line = on the beat. Green within 30 ms, amber within 60 ms, red further off.</div>
     </div>
 
     <div class="mixer">
@@ -920,6 +952,7 @@
         <dt><kbd>G</kbd></dt><dd>Ghost notes on / off</dd>
         <dt><kbd>M</kbd></dt><dd>Band on / off</dd>
         <dt><kbd>S</kbd></dt><dd>Switch drill on / off (Practice)</dd>
+        <dt><kbd>T</kbd></dt><dd>Timing check on / off (Practice)</dd>
         <dt><kbd>?</kbd></dt><dd>Open these cheat codes · <kbd>Esc</kbd> closes them</dd>
       </dl>
     </section>
@@ -932,6 +965,7 @@
         <dt>Ghost notes</dt><dd>Every rest becomes a very soft slap — fills the gaps while the main hits stay loud.</dd>
         <dt>Backing music</dt><dd>A band plays along, locked to your groove.</dd>
         <dt>1 min timer</dt><dd>Stops the groove after one minute of playing — for “hold it without a mistake” drills.</dd>
+        <dt>🎤 Timing check</dt><dd>The mic listens while you play and puts a dot under each step: left = early, right = late, centre line = on the beat. The line above sums it up: % of hits within 30 ms, whether you rush or drag, and steadiness (how much your hits wobble — smaller is better). Without <b>🎧 Headphones</b> the groove and band go quiet and only a soft click plays, so the mic hears just you. Press <b>Calibrate</b> once (speakers: stay quiet; headphones: hit along with the clicks). Results are saved, so you can compare with last time.</dd>
         <dt>⇄ Switch</dt><dd>Alternates between the selected groove and a partner every 4, 2 or 1 bars, on beat 1, without stopping. Tap the small ⇄ on any groove to make it the partner (dashed outline). In the last bar before a change the next groove appears faintly under the grid.</dd>
         <dt>Light delay</dt><dd>Keeps the lit square in step with the sound. Some browsers (Safari especially) play sound a little late; the app corrects what it can by itself (“Auto”). If the square still lights up before you hear the hit, slide right until they match. Remembered on this device.</dd>
         <dt>Volume knobs</dt><dd>Groove = the cajon sounds, Music = the band. Keep the band just under you.</dd>
@@ -1234,7 +1268,7 @@ let clickBus = null;
 let countInTimers = [];
 
 function playClick(time, accent){
-  if(!clickBus){ clickBus = audioCtx.createGain(); clickBus.connect(grooveGain); }
+  if(!clickBus){ clickBus = audioCtx.createGain(); clickBus.connect(timingQuiet() ? masterGain : grooveGain); }
   const osc = audioCtx.createOscillator();
   const g = audioCtx.createGain();
   osc.type = 'triangle';
@@ -1806,8 +1840,9 @@ const grooveVolVal = document.getElementById('grooveVolVal');
 const musicVolVal = document.getElementById('musicVolVal');
 
 function applyVolumes(){
-  if(grooveGain) grooveGain.gain.value = (parseInt(grooveVol.value,10)/100) * GROOVE_SCALE;
-  if(musicGain)  musicGain.gain.value  = (parseInt(musicVol.value,10)/100) * MUSIC_SCALE;
+  const live = timingQuiet() ? 0 : 1;   // Timing check on speakers: the mic should hear only you
+  if(grooveGain) grooveGain.gain.value = (parseInt(grooveVol.value,10)/100) * GROOVE_SCALE * live;
+  if(musicGain)  musicGain.gain.value  = (parseInt(musicVol.value,10)/100) * MUSIC_SCALE * live;
 }
 grooveVol.addEventListener('input', () => { grooveVolVal.textContent = grooveVol.value; applyVolumes(); });
 musicVol.addEventListener('input', () => { musicVolVal.textContent = musicVol.value; applyVolumes(); });
@@ -1975,6 +2010,7 @@ function scheduler(){
       }
     }
     playHit(pattern[pos], nextNoteTime, secondsPerStep);
+    if(timingRun) timingExpect(pattern, pos, nextNoteTime, secondsPerStep);
     if(musicEnabled && !currentTrackReady() && pos === 0){
       playBackingBar(currentStyleKey(), nextNoteTime, barDuration, chordIdx);
       chordIdx++;
@@ -2094,6 +2130,7 @@ function start(source){
   // In practice mode, if a real track will play and we're not stretching, snap the
   // cajon to the loop's native tempo BEFORE we set the start time so both begin locked.
   if(playSource === 'practice') maybeSnapTempo();
+  timingBegin();                              // mic Timing check (before the count-in clicks)
   barDur = 4 * (60 / bpm);
   const t0 = audioCtx.currentTime + 0.12;
   const countIn = scheduleCountIn(t0);       // 0 when count-in is off
@@ -2117,6 +2154,7 @@ function start(source){
 
 function stop(){
   diaryEnd();
+  timingEnd();
   isPlaying = false;
   cancelCountIn();
   clearTimeout(timerId);
@@ -2341,6 +2379,7 @@ function renderGrid(){
   });
   fillHits(hitRow, hits, 'hit-');
   renderSwitchUI();
+  renderTiming();
 }
 
 function renderAll(){
@@ -2580,16 +2619,23 @@ const STOP_HITS = ['B','.','.','.'];
 const SONGS = [
   // Fully arranged: each band is a rendered song (audio/song-*.js), not the practice loop.
   { title:'Flannel Static', style:'pearljam', bpm:84, feel:'grunge · full band', audio:'flannel', sections:[
+    // Each fill is its own 1-bar section, so the bar before it shows "Next: Fill" as a heads-up.
     { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',      bars:4 },
     { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',        bars:8 },
-    { name:'Pre-chorus',  sub:'eighth',    groove:'Four-on-the-floor',    bars:4, fill:true },
-    { name:'Chorus',      sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
+    { name:'Pre-chorus',  sub:'eighth',    groove:'Four-on-the-floor',    bars:3 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Your pop-rock pocket', bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into verse 2', bars:1, fill:true },
     { name:'Verse 2',     sub:'eighth',    groove:'Offbeat push',         bars:8 },
-    { name:'Pre-chorus',  sub:'eighth',    groove:'Four-on-the-floor',    bars:4, fill:true },
-    { name:'Chorus',      sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
+    { name:'Pre-chorus',  sub:'eighth',    groove:'Four-on-the-floor',    bars:3 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',      sub:'sixteenth', groove:'Your pop-rock pocket', bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the bridge', bars:1, fill:true },
     { name:'Bridge',      sub:'eighth',    groove:'Half-time feel',       bars:4 },
-    { name:'Stops',       sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:4, fill:true },
-    { name:'Last chorus', sub:'sixteenth', groove:'Your pop-rock pocket', bars:8, fill:true },
+    { name:'Stops',       sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:3 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the last chorus', bars:1, fill:true },
+    { name:'Last chorus', sub:'sixteenth', groove:'Your pop-rock pocket', bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the outro', bars:1, fill:true },
     { name:'Outro',       sub:'eighth',    groove:'Rock backbeat',        bars:4 }
   ]},
   { title:'Sunday Paper', style:'beatles', bpm:96, feel:'bright pop-rock · full band', audio:'sunday', sections:[
@@ -2899,7 +2945,7 @@ function renderSongs(){
     el.setAttribute('role', 'button');
     el.title = 'Start from ' + sec.name;
     const left = document.createElement('div');
-    left.innerHTML = '<span class="sec-name">' + esc(sec.name) + '</span><span class="sec-groove">' + esc(secLabel(sec)) + (sec.fill ? ' + fill' : '') + '</span>';
+    left.innerHTML = '<span class="sec-name">' + esc(sec.name) + '</span><span class="sec-groove">' + esc(secLabel(sec)) + (sec.fill && sec.bars > 1 ? ' + fill' : '') + '</span>';
     const notes = document.createElement('div'); notes.className = 'sec-notes';
     const mini = document.createElement('div'); mini.className = 'mini';
     fillHits(mini, secHits(sec));
@@ -3001,8 +3047,368 @@ cheatEl.addEventListener('click', e => { if(e.target === cheatEl) closeCheat(); 
   sync();
 })();
 
+// ---------- Timing check (the mic listens and marks each hit early / late) ----------
+// While it's on, the mic listens as you play a Practice groove. Every hit it hears is
+// matched to the nearest step the app scheduled, and how far off it was (ms early or
+// late) shows as a dot under that step plus one summary line. Without headphones the
+// app plays only a soft, high beat click — the mic filters it out — so it hears just you.
+// "Calibrate" measures the delay from the app to the speaker to the mic once, so the
+// numbers mean "early/late against what you heard". All vars (not let/const) because
+// renderGrid() and applyVolumes() can run before this block does.
+var timingOn = false, timingErr = '', timingStream = null, timingNodes = null, timingPollId = null;
+var timingRun = null, timingLastRun = null, timingCal = null, timingBus = null, timingRenderT = 0;
+var timingExp = [], timingDevs = [], timingStep = {}, timingMissed = 0, timingExtra = 0;
+var TIMING_KEY = 'cajon.timing.v1', TIMING_LOG_KEY = 'cajon.timinglog.v1';
+var TIMING_ON_MS = 30, TIMING_CLOSE_MS = 60;
+var timingCfg = (function(){
+  var d = { rtSpk:null, rtPh:null, phones:false, sens:5 };
+  try{ return Object.assign(d, JSON.parse(localStorage.getItem(TIMING_KEY) || '{}')); }catch(e){ return d; }
+})();
+var timingLog = (function(){ try{ return JSON.parse(localStorage.getItem(TIMING_LOG_KEY) || '[]'); }catch(e){ return []; } })();
+function saveTimingCfg(){ try{ localStorage.setItem(TIMING_KEY, JSON.stringify(timingCfg)); }catch(e){} }
+
+// true while a check runs on speakers: groove + band go silent, a soft click keeps the beat
+function timingQuiet(){ return !!timingRun && !timingCfg.phones; }
+
+// seconds from "scheduled" to "the mic reports it" (speaker buffer + air + mic buffer)
+function timingRT(){
+  var v = timingCfg.phones ? timingCfg.rtPh : timingCfg.rtSpk;
+  if(v != null) return v / 1000;
+  var inLat = 0.02;
+  try{ var s = timingStream.getAudioTracks()[0].getSettings(); if(s.latency > 0 && s.latency < 0.5) inLat = s.latency; }catch(e){}
+  return browserLag() + inLat;
+}
+
+async function timingMicOn(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw { name:'NoMic' };
+  if(!timingStream || timingStream.getAudioTracks().every(function(t){ return t.readyState === 'ended'; })){
+    timingStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  }
+  timingGraph();
+}
+function timingMicOff(){
+  clearInterval(timingPollId); timingPollId = null;
+  if(timingNodes){ try{ timingNodes.src.disconnect(); timingNodes.sink.disconnect(); }catch(e){} }
+  timingNodes = null;
+  if(timingStream){ timingStream.getTracks().forEach(function(t){ t.stop(); }); timingStream = null; }
+}
+// mic -> two low-pass filters (700 Hz: keeps the cajon, removes the app's high click) -> analyser
+function timingGraph(){
+  if(!audioCtx || !timingStream) return;
+  if(timingNodes && timingNodes.ctx === audioCtx) return;
+  var ctx = audioCtx;
+  var src = ctx.createMediaStreamSource(timingStream);
+  var lp1 = ctx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 700; lp1.Q.value = 0.707;
+  var lp2 = ctx.createBiquadFilter(); lp2.type = 'lowpass'; lp2.frequency.value = 700; lp2.Q.value = 0.707;
+  var an = ctx.createAnalyser(); an.fftSize = 4096; an.smoothingTimeConstant = 0;
+  var sink = ctx.createGain(); sink.gain.value = 0;   // keeps the analyser running, silently
+  src.connect(lp1).connect(lp2).connect(an).connect(sink).connect(ctx.destination);
+  timingNodes = { ctx:ctx, src:src, sink:sink, an:an, buf:new Float32Array(an.fftSize), blk:new Float32Array(64),
+                  bN:0, lastEnd:ctx.currentTime, floor:0.003, peak:0, lastOnset:-1 };
+  clearInterval(timingPollId);
+  timingPollId = setInterval(timingPoll, 20);
+}
+// sensitivity 1..10 -> quietest level that counts as a hit (0.08 .. 0.004)
+function timingMinLevel(){
+  var s = Math.min(10, Math.max(1, timingCfg.sens || 5));
+  return 0.08 * Math.pow(0.004 / 0.08, (s - 1) / 9);
+}
+function timingPoll(){
+  if(!timingOn || !audioCtx) return;
+  if(!timingNodes || timingNodes.ctx !== audioCtx){ timingGraph(); return; }
+  var n = timingNodes, sr = audioCtx.sampleRate, tEnd = audioCtx.currentTime;
+  n.an.getFloatTimeDomainData(n.buf);
+  var N = n.buf.length, fresh = Math.round((tEnd - n.lastEnd) * sr);
+  n.lastEnd = tEnd;
+  if(fresh > 0){
+    if(fresh > N){ fresh = N; n.bN = 0; }          // the page was busy; skip the gap
+    var minL = timingMinLevel();
+    for(var i = N - fresh; i < N; i++){
+      n.blk[n.bN++] = Math.abs(n.buf[i]);
+      if(n.bN === 64){ timingBlock(n, tEnd - (N - 1 - i + 63) / sr, sr, minL); n.bN = 0; }
+    }
+  }
+  if(timingRun && performance.now() - timingRenderT > 300){ timingRenderT = performance.now(); renderTiming(); }
+}
+// one 64-sample block (~1.4 ms): a hit = a sudden jump well above the room noise and
+// above the fading ring of the previous hit, at least 70 ms after the last one
+function timingBlock(n, t0, sr, minL){
+  var mx = 0, j;
+  for(j = 0; j < 64; j++) if(n.blk[j] > mx) mx = n.blk[j];
+  var prev = n.peak;
+  n.peak = Math.max(prev * 0.9908, mx);            // ~100 ms half-life
+  if(mx < minL) n.floor += (mx - n.floor) * 0.01;
+  var thr = Math.max(minL, n.floor * 6, prev * 1.5);
+  if(mx <= thr || t0 - n.lastOnset < 0.07) return;
+  var half = Math.max(minL, mx * 0.5);
+  for(j = 0; j < 63 && n.blk[j] < half; j++);
+  n.lastOnset = t0 + j / sr;
+  timingOnset(n.lastOnset);
+}
+function timingOnset(tRaw){
+  var ear = document.getElementById('timingEar');
+  if(ear){ ear.classList.add('on'); setTimeout(function(){ ear.classList.remove('on'); }, 90); }
+  if(timingCal){ timingCal.hits.push(tRaw); return; }
+  if(!timingRun || !isPlaying || playSource !== 'practice') return;
+  var t = tRaw - timingRT(), best = null, bd = Infinity;
+  timingExp.forEach(function(e){ var d = Math.abs(t - e.s); if(d < bd){ bd = d; best = e; } });
+  if(!best || bd > best.step / 2) return;
+  if(best.hit === '.'){ if(!ghostEnabled) timingExtra++; return; }
+  if(best.got) return;                             // 2nd hit of a double, or a flam
+  best.got = true;
+  var dev = (t - best.s) * 1000;
+  timingDevs.push(dev);
+  var arr = timingStep[best.key] || (timingStep[best.key] = []);
+  arr.push(dev); if(arr.length > 8) arr.shift();
+}
+
+// called by the scheduler for every step it schedules
+function timingExpect(pattern, pos, s, step){
+  if(!timingRun) return;
+  var spb = Math.max(1, Math.round(pattern.length / 4));
+  if(timingQuiet() && pos % spb === 0) timingClick(s, pos === 0);
+  timingExp.push({ s:s, step:step, hit:pattern[pos], key:currentPattern().name + '|' + pos, got:false });
+  var old = audioCtx.currentTime - 1.5;
+  while(timingExp.length && timingExp[0].s < old){
+    var e = timingExp.shift();
+    if(e.hit !== '.' && !e.got) timingMissed++;
+  }
+}
+function timingLiveMissed(){
+  var cut = audioCtx.currentTime - timingRT() - 0.12;
+  return timingExp.filter(function(e){ return e.hit !== '.' && !e.got && e.s < cut; }).length;
+}
+// soft, high click (filtered out of the mic); follows the Groove volume knob
+function timingClick(t, accent){
+  if(!timingBus || timingBus.context !== audioCtx){ timingBus = audioCtx.createGain(); timingBus.connect(masterGain); }
+  timingBus.gain.value = 0.8 * (parseInt(grooveVol.value, 10) / 100);
+  var osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(accent ? 2400 : 1900, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(accent ? 0.35 : 0.22, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
+  osc.connect(g).connect(timingBus);
+  osc.start(t); osc.stop(t + 0.035);
+}
+// low "thump" the laptop speaker can play and the filtered mic can hear (calibration)
+function timingThump(t){
+  var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.05);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.9, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  o.connect(g).connect(masterGain);
+  o.start(t); o.stop(t + 0.1);
+}
+
+function timingPracticeName(){
+  return switchActive() ? currentPattern().name + ' ⇄ ' + GROOVES[currentSub].patterns[switchIdx].name : currentPattern().name;
+}
+function timingBegin(){
+  if(!timingOn || playSource !== 'practice' || !timingStream) return;
+  timingGraph();
+  timingRun = { t0:Date.now() };
+  timingExp = []; timingDevs = []; timingStep = {}; timingMissed = 0; timingExtra = 0; timingLastRun = null;
+  applyVolumes();
+  renderTiming();
+}
+function timingEnd(){
+  if(!timingRun) return;
+  if(audioCtx) timingMissed += timingLiveMissed();
+  var name = timingPracticeName();
+  var st = timingStats(timingDevs);
+  timingLastRun = { t:Date.now(), t0:timingRun.t0, name:name, st:st, missed:timingMissed, extra:timingExtra };
+  timingExp = [];
+  timingRun = null;
+  applyVolumes();
+  if(st && st.n >= 12){
+    timingLog.push({ t:timingLastRun.t, g:name, bpm:bpm, n:st.n, on:Math.round(st.on * 100), avg:Math.round(st.avg), sd:Math.round(st.sd) });
+    if(timingLog.length > 300) timingLog = timingLog.slice(-300);
+    try{ localStorage.setItem(TIMING_LOG_KEY, JSON.stringify(timingLog)); }catch(e){}
+  }
+  renderTiming();
+}
+
+function timingStats(d){
+  var n = d.length; if(!n) return null;
+  var avg = d.reduce(function(a, b){ return a + b; }, 0) / n;
+  var sd = Math.sqrt(d.reduce(function(a, b){ return a + (b - avg) * (b - avg); }, 0) / n);
+  var on = d.filter(function(x){ return Math.abs(x) <= TIMING_ON_MS; }).length / n;
+  return { n:n, avg:avg, sd:sd, on:on };
+}
+function timingFeel(avg, sd){
+  var a = Math.round(Math.abs(avg));
+  if(a < 8) return sd > 20 ? 'centred overall, but some steps early and some late' : 'right on the beat';
+  return 'mostly ' + a + ' ms ' + (avg < 0 ? 'early (rushing)' : 'late (dragging)');
+}
+function renderTimingRow(){
+  var row = document.getElementById('timingRow');
+  if(!row) return;
+  row.hidden = !timingOn;
+  if(!timingOn) return;
+  var p = currentPattern(), hits = p.hits;
+  row.style.setProperty('--steps', hits.length);
+  row.innerHTML = '';
+  hits.forEach(function(h, i){
+    var cell = document.createElement('div');
+    cell.className = 'cell';
+    if(h !== '.'){
+      var box = document.createElement('div');
+      box.className = 'tdev';
+      var d = timingStep[p.name + '|' + i];
+      if(d && d.length){
+        var st = timingStats(d), a = Math.abs(st.avg);
+        var dot = document.createElement('i');
+        dot.style.left = (50 + Math.max(-1, Math.min(1, st.avg / TIMING_CLOSE_MS)) * 42) + '%';
+        dot.className = a <= TIMING_ON_MS ? 'good' : (a <= TIMING_CLOSE_MS ? 'ok' : 'off');
+        box.appendChild(dot);
+        box.title = a < 3 ? 'On the beat' : Math.round(a) + ' ms ' + (st.avg < 0 ? 'early' : 'late') + ' (last ' + d.length + ' hits)';
+      } else box.title = 'Not heard yet';
+      cell.appendChild(box);
+    }
+    row.appendChild(cell);
+  });
+}
+function renderTiming(){
+  renderTimingRow();
+  var panel = document.getElementById('timingPanel');
+  if(!panel) return;
+  panel.hidden = !(timingOn || timingErr);
+  var sum = document.getElementById('timingSum'), sub = document.getElementById('timingSub');
+  if(timingErr){ sum.textContent = timingErr; sum.className = 'timing-sum'; sub.textContent = ''; return; }
+  if(!timingOn) return;
+  var st = null, missed = 0, extra = 0;
+  if(timingRun){ st = timingStats(timingDevs); missed = timingMissed + (audioCtx ? timingLiveMissed() : 0); extra = timingExtra; }
+  else if(timingLastRun){ st = timingLastRun.st; missed = timingLastRun.missed; extra = timingLastRun.extra; }
+  if(st){
+    sum.textContent = (timingRun ? '' : 'Last run: ') + Math.round(st.on * 100) + '% on time · ' + timingFeel(st.avg, st.sd) + ' · steadiness ±' + Math.round(st.sd) + ' ms';
+    sum.className = 'timing-sum' + (st.on >= 0.8 ? ' good' : '');
+  } else {
+    sum.textContent = timingRun ? 'Listening… the dot on the left flashes every time I hear a hit.'
+      : (timingLastRun ? 'I heard too few hits last run. Try turning Mic sensitivity up.' : (timingCfg.phones ? 'Ready. Press Play — your hits are scored after the count-in.' : 'Ready. Press Play — the band and groove stay quiet and a soft click keeps the beat, so the mic hears just you.'));
+    sum.className = 'timing-sum';
+  }
+  var parts = [];
+  if(st) parts.push(st.n + ' hits heard');
+  if(st || missed) parts.push(missed + ' missed');
+  if(extra) parts.push(extra + ' extra');
+  var name = timingRun || !timingLastRun ? timingPracticeName() : timingLastRun.name;
+  var before = timingRun ? timingRun.t0 : (timingLastRun ? timingLastRun.t0 : Infinity);
+  for(var k = timingLog.length - 1; k >= 0; k--){
+    var r = timingLog[k];
+    if(r.g === name && r.t < before){
+      parts.push('Before on this groove: ' + r.on + '% at ' + r.bpm + ' bpm (' + new Date(r.t).toLocaleDateString(undefined, { day:'numeric', month:'short' }) + ')');
+      break;
+    }
+  }
+  sub.textContent = parts.join(' · ');
+  timingCalStatus();
+}
+function timingCalStatus(msg){
+  var el = document.getElementById('timingStatus');
+  if(!el) return;
+  if(msg){ el.textContent = msg; return; }
+  if(timingCal) return;
+  var v = timingCfg.phones ? timingCfg.rtPh : timingCfg.rtSpk;
+  el.textContent = v != null ? 'Calibrated (' + (timingCfg.phones ? 'headphones' : 'speakers') + '): ' + v + ' ms'
+    : 'Not calibrated yet — press Calibrate once for exact numbers';
+}
+
+function timingMicError(e){
+  var nm = e && e.name;
+  if(nm === 'NoMic') return "This browser won't share the microphone with a page opened from a file. Use Chrome, or open the app from ritwikr.github.io/next-apps/cajon.";
+  if(nm === 'NotAllowedError' || nm === 'SecurityError') return 'The microphone was blocked. Allow it for this page (the icon at the left of the address bar) and press Timing check again.';
+  if(nm === 'NotFoundError') return 'No microphone found.';
+  return "Couldn't start the microphone (" + (nm || 'unknown error') + ').';
+}
+async function timingSetOn(on){
+  var btn = document.getElementById('timingToggle');
+  timingErr = '';
+  if(!on){
+    timingEnd();
+    timingOn = false; timingCal = null;
+    timingMicOff();
+    btn.classList.remove('active');
+    renderTiming();
+    return;
+  }
+  ensureAudio();
+  timingOn = true;
+  btn.classList.add('active');
+  renderTiming();
+  timingCalStatus('Asking for the microphone…');
+  try{
+    await timingMicOn();
+    timingCalStatus();
+    if(isPlaying && playSource === 'practice'){ stop(); start('practice'); }   // restart so this run is scored
+  }catch(e){
+    timingOn = false;
+    timingMicOff();
+    btn.classList.remove('active');
+    timingErr = timingMicError(e);
+    renderTiming();
+  }
+}
+
+// Calibrate. Speakers: the app plays 8 thumps and times how long the mic takes to hear
+// them (stay quiet). Headphones: the mic can't hear them, so you hit the cajon on each
+// of 8 clicks instead and the app learns the delay from that.
+function timingCalibrate(){
+  if(!timingOn || !timingNodes || timingCal) return;
+  if(isPlaying) stop();
+  ensureAudio();
+  timingGraph();
+  var phones = !!timingCfg.phones, N = 8, gap = phones ? 0.6 : 0.5;
+  var t0 = audioCtx.currentTime + 0.5, times = [];
+  for(var i = 0; i < N; i++){
+    var s = t0 + i * gap; times.push(s);
+    if(phones) timingClick(s, i === 0); else timingThump(s);
+  }
+  timingCal = { hits:[] };
+  timingCalStatus(phones ? 'Hit the cajon on each of the 8 clicks…' : 'Calibrating — stay quiet for 4 seconds…');
+  setTimeout(function(){
+    if(!timingCal) return;
+    var hits = timingCal.hits, offs = [];
+    timingCal = null;
+    times.forEach(function(s, i){
+      if(phones && i < 2) return;                  // first two clicks: still finding the beat
+      var lo = phones ? -0.15 : 0, hi = phones ? 0.5 : 0.4;
+      for(var k = 0; k < hits.length; k++){ var d = hits[k] - s; if(d > lo && d < hi){ offs.push(d); break; } }
+    });
+    var need = phones ? 4 : 5;
+    if(offs.length < need){
+      timingCalStatus(phones ? "Didn't catch enough hits — try again, hitting firmly on each click."
+        : "Couldn't hear the speaker clearly. Turn the volume up — or if you're on headphones, switch on 🎧 Headphones and calibrate again.");
+      return;
+    }
+    offs.sort(function(a, b){ return a - b; });
+    var ms = Math.max(0, Math.round(offs[Math.floor(offs.length / 2)] * 1000));
+    if(phones) timingCfg.rtPh = ms; else timingCfg.rtSpk = ms;
+    saveTimingCfg();
+    timingCalStatus();
+  }, (t0 + N * gap - audioCtx.currentTime + 0.6) * 1000);
+}
+
+(function(){
+  var btn = document.getElementById('timingToggle');
+  btn.addEventListener('click', function(){ timingSetOn(!timingOn); });
+  var ph = document.getElementById('timingPhones');
+  var syncPh = function(){ ph.classList.toggle('active', !!timingCfg.phones); };
+  ph.addEventListener('click', function(){
+    timingCfg.phones = !timingCfg.phones; saveTimingCfg(); syncPh(); applyVolumes(); timingCalStatus();
+  });
+  syncPh();
+  var sens = document.getElementById('timingSens');
+  sens.value = timingCfg.sens;
+  sens.addEventListener('input', function(){ timingCfg.sens = parseInt(sens.value, 10) || 5; saveTimingCfg(); });
+  document.getElementById('timingCalBtn').addEventListener('click', timingCalibrate);
+  window.addEventListener('pagehide', function(){ timingMicOff(); });
+})();
+
 // ---------- Keyboard shortcuts (play from the cajon) ----------
-// Practice: Space play/stop, ↑/↓ groove, ←/→ tempo chip, S switch drill.
+// Practice: Space play/stop, ↑/↓ groove, ←/→ tempo chip, S switch drill, T timing check.
 // Songs: Space play/pause, ↑/↓ song, ←/→ start from previous/next section.
 // Everywhere: G ghosts, C count-in, M band, ? cheat codes, Esc closes them.
 // Reuses the buttons' own click handlers so every side-effect stays in one place.
@@ -3070,6 +3476,7 @@ cheatEl.addEventListener('click', e => { if(e.target === cheatEl) closeCheat(); 
       return;
     }
     if(e.key.toLowerCase() === 's') press(document.getElementById('switchToggle'));
+    if(e.key.toLowerCase() === 't') press(document.getElementById('timingToggle'));
   });
 })();
 
