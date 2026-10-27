@@ -8,7 +8,7 @@ A practice partner for learning the cajon. It runs in the browser and works offl
 - **Backing band:** drumless backing tracks in four styles (Jangle Pop-Rock, Riff Hard Rock, Spacey Prog, Grunge), arranged from Apple Loops. The style follows the groove automatically, or you can pick one yourself.
 - **Switch drill:** alternate between two grooves every 4, 2 or 1 bars without stopping.
 - **Compose:** build your own grooves and save them.
-- **Songs:** play four full songs section by section from a groove sheet, each with its own arranged band.
+- **Songs:** play four full songs section by section from a groove sheet, each with its own arranged band. **Loop** repeats one section (or a run of sections) with the band until you stop.
 - **Practice diary:** minutes played and best tempo per groove, saved in your browser.
 
 All the cajon sounds are synthesised live with the Web Audio API. The backing music is arranged offline from Apple Loops by the Python code in `loop-renderer/` (see its README).
