@@ -719,6 +719,12 @@
   .timing-sens input{ width:110px; }
   .timing-status{ font-size:.78rem; color:var(--muted); }
   .timing-help{ font-size:.72rem; color:var(--muted); margin-top:8px; }
+  /* song loop */
+  .sec.inloop{ border-color:var(--accent); border-left:3px solid var(--accent); background:color-mix(in srgb, var(--accent) 9%, transparent); }
+  .sec.inloop.cur{ background:color-mix(in srgb, var(--accent) 16%, transparent); }
+  .loop-hint{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
+  .loop-hint b{ color:var(--ink); }
+  .loop-hint[hidden]{ display:none; }
 </style>
 </head>
 <body>
@@ -859,8 +865,10 @@
         <button class="timer-toggle" id="songCountInToggle"><span class="timer-dot"></span>Count-in</button>
         <button class="timer-toggle" id="songGhostToggle"><span class="timer-dot"></span>Ghost notes</button>
         <button class="timer-toggle" id="songBandToggle"><span class="timer-dot"></span>Band</button>
+        <button class="timer-toggle" id="songLoopToggle" title="Repeat a section over and over to practise it (L)"><span class="timer-dot"></span>🔁 Loop</button>
       </div>
 
+      <div class="loop-hint" id="songLoopHint" hidden></div>
       <div class="sheet" id="songSheet"></div>
 
       <div class="diary" id="diary">
@@ -951,6 +959,7 @@
         <dt><kbd>C</kbd></dt><dd>Count-in on / off</dd>
         <dt><kbd>G</kbd></dt><dd>Ghost notes on / off</dd>
         <dt><kbd>M</kbd></dt><dd>Band on / off</dd>
+        <dt><kbd>L</kbd></dt><dd>Loop a section on / off (Songs)</dd>
         <dt><kbd>S</kbd></dt><dd>Switch drill on / off (Practice)</dd>
         <dt><kbd>T</kbd></dt><dd>Timing check on / off (Practice)</dd>
         <dt><kbd>?</kbd></dt><dd>Open these cheat codes · <kbd>Esc</kbd> closes them</dd>
@@ -981,7 +990,8 @@
         <dt>Ghost notes</dt><dd>Same switch as in Practice: rests become whisper-soft slaps. Off unless you turn it on (here, in Practice, or with <kbd>G</kbd>).</dd>
         <dt>Play song</dt><dd>Plays the whole song start to finish with its band — intro, verses, choruses, breaks and an ending hit.</dd>
         <dt>The sheet</dt><dd>Every section with its groove. One dot per bar; the amber dot is a fill bar (a short burst that leads into the next section). The section playing now is outlined.</dd>
-        <dt>Tap a section</dt><dd>Starts the song from there — handy for drilling just the chorus.</dd>
+        <dt>Tap a section</dt><dd>Starts the song from there.</dd>
+        <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
         <dt>Next up</dt><dd>In the last bar of each section the next groove appears faintly under the grid.</dd>
         <dt>Full band</dt><dd>Flannel Static is fully arranged: the band plays its own part in every section — quiet verses, a pre-chorus that builds, big choruses with a melody, real stops, and a final chord. The other songs still use the practice band and just get quieter or louder per section.</dd>
       </dl>
@@ -2137,6 +2147,7 @@ function start(source){
   nextNoteTime = t0 + countIn;               // first groove hit lands right after "4"
   playStartTime = nextNoteTime;
   lastBarTime = nextNoteTime;
+  songAnchorT = playStartTime; songAnchorBar = songStartBar;
   setPlayingUI(true);
   scheduler();
   if(musicEnabled) startTrackAt(playStartTime, trackBarsAt(playStartTime)); // start the loop on the exact first downbeat
@@ -2679,6 +2690,13 @@ var songEnded = false, songJustFinished = false, songPrevBpm = null, songShown =
 var songBandAuto = false;
 var songPausedBar = null;   // Pause: the bar to carry on from (null = not paused)
 var songNowIdx = -1;        // the bar being heard right now
+// Loop: sections loopA..loopB repeat until stopped. The anchor says which song bar
+// is heard at audio time songAnchorT — it moves every time the loop jumps back.
+var songLoop = false, loopA = 0, loopB = 0, loopCount = 0, loopFresh = false;  // fresh: next tap picks, not stretches
+var songAnchorT = 0, songAnchorBar = 0;
+function loopStartBar(){ return secStartBar(songCur(), loopA); }
+function loopEndBar(){ return secStartBar(songCur(), loopB + 1); }
+function songBarAt(when){ return songAnchorBar + Math.max(0, Math.round((when - songAnchorT) / barDur)); }
 // Rendered songs (loop-renderer/songs.py, arranged from Apple Loops). The MP3 starts with `pad` samples of
 // silence; some decoders also keep the encoder's 1105-sample delay — detected
 // from the length, exactly like trackWindow() does for the loops.
@@ -2718,14 +2736,24 @@ function startSongAudio(when){
   if(!(buf && buf !== 'loading' && musicGain)) return;
   const extra = buf.length - m.samples;
   const lead = extra > 200 ? 1105 / 44100 : 0;
-  const bar = songStartBar + Math.max(0, Math.round((when - playStartTime) / barDur));
+  const bar = songBarAt(when);
   const off = m.pad / 44100 + lead + bar * m.barS;
   if(off >= buf.duration) return;
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
-  src.connect(musicGain);
+  const g = audioCtx.createGain();
+  src.connect(g); g.connect(musicGain); src._g = g;
   try{ src.start(when, off); }catch(e){ try{ src.start(0, off); }catch(e2){} }
   trackSource = src;
+}
+// Loop jump: fade the band out right at time t and start it again from the loop's first bar
+function songAudioJump(t){
+  const old = trackSource;
+  if(old){
+    trackSource = null;
+    try{ if(old._g){ old._g.gain.setValueAtTime(1, t); old._g.gain.linearRampToValueAtTime(0, t + 0.06); } old.stop(t + 0.08); }catch(e){ try{ old.stop(); }catch(e2){} }
+  }
+  if(musicEnabled && songAudioKey() && songAudioReady()) startSongAudio(t);
 }
 function songCur(){ return SONGS[songIdx]; }
 function secHits(sec){
@@ -2750,7 +2778,7 @@ function songTotalBars(song){ return secStartBar(song, song.sections.length); }
 function songLoopBar(i){ const s = songCur(); return ((16 - s.sections[0].bars % 16) % 16 + i) % 16; }
 function trackBarsAt(when){
   if(playSource !== 'song' || !songBars) return 0;
-  return songLoopBar(songStartBar + Math.max(0, Math.round((when - playStartTime) / barDur)));
+  return songLoopBar(songBarAt(when));
 }
 function setBandLevel(level, t){
   if(!bandGain) return;
@@ -2765,7 +2793,7 @@ function songPrepare(){
   if(songPausedBar != null){ songStartBar = Math.min(songPausedBar, songBars.length - 1); songPausedBar = null; }
   songNowIdx = -1;
   songBarIdx = songStartBar; songPos = 0;
-  songEnded = false; songJustFinished = false; songShown = -1;
+  songEnded = false; songJustFinished = false; songShown = -1; loopCount = 0;
   if(songPrevBpm == null) songPrevBpm = bpm;
   setBpm(song.bpm);
   chordIdx = songLoopBar(songStartBar);
@@ -2775,6 +2803,14 @@ function songPrepare(){
 
 function songScheduler(){
   while(isPlaying && !songEnded && nextNoteTime < audioCtx.currentTime + scheduleAhead){
+    if(songLoop && songPos === 0 && songBarIdx === loopEndBar()){
+      // end of the looped part: jump back to its first bar, band and all
+      songBarIdx = loopStartBar(); loopCount++;
+      songAnchorT = nextNoteTime; songAnchorBar = songBarIdx;
+      setBandLevel(songCur().sections[loopA].band ?? 1, nextNoteTime);
+      chordIdx = songLoopBar(songBarIdx);
+      songAudioJump(nextNoteTime);
+    }
     if(songBarIdx >= songBars.length){ songFinish(nextNoteTime); return; }
     const bar = songBars[songBarIdx];
     const step = (60 / bpm) / SPB[bar.sub];
@@ -2784,8 +2820,8 @@ function songScheduler(){
       barDur = 4 * (60 / bpm);
       if(bar.b === 0 && songBarIdx !== songStartBar && songCur().sections[bar.si].band != null) setBandLevel(songCur().sections[bar.si].band, nextNoteTime);
       if(musicEnabled && !currentTrackReady() && !songAudioKey()){ playBackingBar(currentStyleKey(), nextNoteTime, barDur, chordIdx); chordIdx++; }
-      const idx = songBarIdx;
-      setTimeout(() => { if(isPlaying && playSource === 'song') songShowBar(idx); }, delay);
+      const idx = songBarIdx, lc = loopCount;
+      setTimeout(() => { if(isPlaying && playSource === 'song') songShowBar(idx, lc); }, delay);
     }
     playHit(bar.hits[songPos], nextNoteTime, step);
     const pos = songPos;
@@ -2846,25 +2882,31 @@ function songMarkSheet(curSi, barInSec){
     const si = +el.dataset.si;
     el.classList.toggle('cur', si === curSi);
     el.classList.toggle('start', curSi < 0 && si === songStartSec);
+    el.classList.toggle('inloop', songLoop && si >= loopA && si <= loopB);
     el.querySelectorAll('.bdot').forEach((d, b) => {
       d.classList.toggle('done', curSi >= 0 && (si < curSi || (si === curSi && b < barInSec)));
       d.classList.toggle('now', si === curSi && b === barInSec);
     });
   });
 }
-function songShowBar(idx){
+function songShowBar(idx, lc){
   songNowIdx = idx;
   const song = songCur(), bar = songBars[idx], sec = song.sections[bar.si];
   document.getElementById('songNowSec').innerHTML = esc(sec.name) + '<small>' + esc(secLabel(sec)) + '</small>';
   const nb = document.getElementById('songNowBar');
-  nb.textContent = 'bar ' + (bar.b + 1) + ' / ' + sec.bars + (bar.fill ? ' · fill' : '');
+  nb.textContent = 'bar ' + (bar.b + 1) + ' / ' + sec.bars + (bar.fill ? ' · fill' : '') + (songLoop && bar.si >= loopA && bar.si <= loopB ? ' · time ' + ((lc || 0) + 1) : '');
   nb.classList.toggle('fill', bar.fill);
   const key = bar.sub + bar.hits.join('');
   if(songShown !== key){ songDrawBar(bar.hits, bar.sub); songShown = key; }
   // next-up preview in the last bar of a section
   const tag = document.getElementById('songNextTag'), next = document.getElementById('songNextRow');
   tag.classList.remove('soon'); next.hidden = true; tag.textContent = '';
-  if(bar.b === sec.bars - 1){
+  if(bar.b === sec.bars - 1 && songLoop && bar.si === loopB){
+    const ls = song.sections[loopA];
+    tag.textContent = '🔁 Back to: ' + ls.name + ' — ' + (ls.label || ls.groove);
+    fillHits(next, secHits(ls)); next.hidden = false;
+    tag.classList.add('soon');
+  } else if(bar.b === sec.bars - 1){
     const ns = song.sections[bar.si + 1];
     if(ns){
       tag.textContent = 'Next: ' + ns.name + ' — ' + (ns.label || ns.groove);
@@ -2882,7 +2924,7 @@ function songShowIdle(){
   songDrawBar(secHits(sec), sec.sub); songShown = -1;
   const tag = document.getElementById('songNextTag');
   tag.classList.remove('soon');
-  tag.textContent = songJustFinished ? '✓ Song complete' : (songStartSec > 0 ? 'Starts from ' + sec.name : '');
+  tag.textContent = songJustFinished ? '✓ Song complete' : songLoop ? '🔁 Loops ' + (loopA === loopB ? sec.name : sec.name + ' → ' + song.sections[loopB].name) : (songStartSec > 0 ? 'Starts from ' + sec.name : '');
   document.getElementById('songNextRow').hidden = true;
   songMarkSheet(-1, -1);
 }
@@ -2926,6 +2968,7 @@ function renderSongs(){
     b.addEventListener('click', () => {
       if(isPlaying) stop();
       songIdx = i; songStartSec = 0; songJustFinished = false; songClearPause();
+      loopA = loopB = 0; loopFresh = songLoop;
       renderSongs();
       decodeSongAudio(songAudioKey());
     });
@@ -2957,20 +3000,76 @@ function renderSongs(){
     }
     notes.appendChild(mini); notes.appendChild(dots);
     el.appendChild(left); el.appendChild(notes);
-    el.addEventListener('click', () => songStartFrom(si));
-    el.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); songStartFrom(si); } });
+    el.addEventListener('click', () => songSectionTap(si));
+    el.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); songSectionTap(si); } });
     sheet.appendChild(el);
   });
+  renderLoopHint();
   songShowIdle();
 }
 function songStartFrom(si){
   const wasPlaying = isPlaying && playSource === 'song';
   if(isPlaying) stop();
   songClearPause();
+  if(songLoop && (si < loopA || si > loopB)){ loopA = loopB = si; }
+  renderLoopHint();
   songStartSec = si; songJustFinished = false;
   if(wasPlaying){ ensureAudio(); start('song'); }
   else songShowIdle();
 }
+// ---- loop ----
+function renderLoopHint(){
+  const h = document.getElementById('songLoopHint');
+  document.getElementById('songLoopToggle').classList.toggle('active', songLoop);
+  document.querySelectorAll('#songSheet .sec').forEach(el => {
+    const si = +el.dataset.si;
+    el.classList.toggle('inloop', songLoop && si >= loopA && si <= loopB);
+    el.title = songLoop ? (!loopFresh && loopA === loopB && si !== loopA ? 'Stretch the loop to ' : 'Loop ') + songCur().sections[si].name : 'Start from ' + songCur().sections[si].name;
+  });
+  if(!songLoop){ h.hidden = true; return; }
+  const s = songCur(), bars = loopEndBar() - loopStartBar();
+  h.hidden = false;
+  h.innerHTML = '🔁 Looping <b>' + esc(s.sections[loopA].name) + (loopA !== loopB ? ' → ' + esc(s.sections[loopB].name) : '') + '</b> · ' + bars + ' bar' + (bars === 1 ? '' : 's') + ' · ' +
+    (loopFresh ? 'or tap any section to loop that one instead' : loopA === loopB ? 'tap another section to stretch the loop' : 'tap a section to loop just that one');
+}
+// the section being heard now (the scheduler runs a little ahead of the ear)
+function songHeardSection(){
+  if(isPlaying && playSource === 'song' && songBars && songNowIdx >= 0) return songBars[songNowIdx].si;
+  return songPlayingSection();
+}
+function songSectionTap(si){
+  if(!songLoop) return songStartFrom(si);
+  const playing = isPlaying && playSource === 'song';
+  const fresh = loopFresh; loopFresh = false;
+  if(!fresh && loopA === loopB && si !== loopA){
+    // second tap: stretch the loop to cover both sections
+    loopA = Math.min(loopA, si); loopB = Math.max(loopB, si);
+    if(playing){
+      const cur = songHeardSection();
+      if(cur < loopA || cur > loopB) return songStartFrom(loopA);
+      songStartSec = loopA;
+      renderLoopHint();
+      return;
+    }
+    songClearPause();
+    songStartSec = loopA; songJustFinished = false;
+    renderLoopHint(); songShowIdle();
+    return;
+  }
+  loopA = loopB = si;
+  songStartFrom(si);
+}
+document.getElementById('songLoopToggle').addEventListener('click', () => {
+  songLoop = !songLoop;
+  if(songLoop){
+    const si = songHeardSection();
+    loopA = loopB = si;
+    loopFresh = !(isPlaying && playSource === 'song');
+    if(!(isPlaying && playSource === 'song') && songPausedBar == null) songStartSec = si;
+  }
+  renderLoopHint();
+  if(!(isPlaying && playSource === 'song')) songShowIdle();
+});
 function songPlayingSection(){
   if(isPlaying && playSource === 'song' && songBars){
     const i = Math.min(songBarIdx, songBars.length - 1);
@@ -3445,6 +3544,7 @@ function timingCalibrate(){
     }
 
     if(inSongs){
+      if(e.key.toLowerCase() === 'l'){ press(document.getElementById('songLoopToggle')); return; }
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
         const items = document.querySelectorAll('#songPicker .song-pill'), n = items.length;
         press(items[(songIdx + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]);
