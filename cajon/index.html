@@ -989,11 +989,11 @@
       <dl class="cc-list">
         <dt>Ghost notes</dt><dd>Same switch as in Practice: rests become whisper-soft slaps. Off unless you turn it on (here, in Practice, or with <kbd>G</kbd>).</dd>
         <dt>Play song</dt><dd>Plays the whole song start to finish with its band — intro, verses, choruses, breaks and an ending hit.</dd>
-        <dt>The sheet</dt><dd>Every section with its groove. One dot per bar; the amber dot is a fill bar (a short burst that leads into the next section). The section playing now is outlined.</dd>
+        <dt>The sheet</dt><dd>Every section with its groove. One dot per bar. Each fill (a one-bar burst that leads into the next section) has its own row, so the bar before it warns you it’s coming. The section playing now is outlined.</dd>
         <dt>Tap a section</dt><dd>Starts the song from there.</dd>
         <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
         <dt>Next up</dt><dd>In the last bar of each section the next groove appears faintly under the grid.</dd>
-        <dt>Full band</dt><dd>Flannel Static is fully arranged: the band plays its own part in every section — quiet verses, a pre-chorus that builds, big choruses with a melody, real stops, and a final chord. The other songs still use the practice band and just get quieter or louder per section.</dd>
+        <dt>Full band</dt><dd>All four songs are fully arranged: the band plays its own part in every section — quieter verses, bigger choruses, solos, stops and a final chord.</dd>
       </dl>
     </section>
 
@@ -2650,35 +2650,55 @@ const SONGS = [
     { name:'Outro',       sub:'eighth',    groove:'Rock backbeat',        bars:4 }
   ]},
   { title:'Sunday Paper', style:'beatles', bpm:96, feel:'bright pop-rock · full band', audio:'sunday', sections:[
-    { name:'Intro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4 },
-    { name:'Verse 1',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8,   fill:true },
-    { name:'Verse 2',     sub:'eighth',    groove:'Classic pop / folk',  bars:8, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Rock backbeat',       bars:8,   fill:true },
-    { name:'Bridge',      sub:'quarter',   groove:'With a rest',         bars:8, fill:true },
-    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
-    { name:'Outro',       sub:'quarter',   groove:'Basic heartbeat',     bars:4 }
+    // Each fill is its own 1-bar section, so the bar before it shows "Next: Fill" as a heads-up.
+    { name:'Intro',        sub:'quarter',   groove:'Basic heartbeat',       bars:4 },
+    { name:'Verse 1',      sub:'eighth',    groove:'Classic pop / folk',    bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'eighth',    groove:'Rock backbeat',         bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into verse 2', bars:1, fill:true },
+    { name:'Verse 2',      sub:'eighth',    groove:'Classic pop / folk',    bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'eighth',    groove:'Rock backbeat',         bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the bridge', bars:1, fill:true },
+    { name:'Bridge',       sub:'quarter',   groove:'With a rest',           bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the last chorus', bars:1, fill:true },
+    { name:'Last chorus',  sub:'eighth',    groove:'Four-on-the-floor',     bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the outro', bars:1, fill:true },
+    { name:'Outro',        sub:'quarter',   groove:'Basic heartbeat',       bars:4 }
   ]},
   { title:'Iron Lantern', style:'zeppelin', bpm:88, feel:'heavy riff rock · full band', audio:'iron', sections:[
-    { name:'Intro riff',  sub:'eighth',    groove:'Bass-heavy backbeat', bars:4 },
-    { name:'Verse 1',     sub:'eighth',    groove:'Rock backbeat',       bars:8, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
-    { name:'Verse 2',     sub:'eighth',    groove:'Bass-heavy backbeat', bars:8, fill:true },
-    { name:'Chorus',      sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
-    { name:'Solo',        sub:'sixteenth', groove:'Your pop-rock pocket', bars:8,  fill:true },
+    // Each fill is its own 1-bar section, so the bar before it shows "Next: Fill" as a heads-up.
+    { name:'Intro riff',   sub:'eighth',    groove:'Bass-heavy backbeat',   bars:4 },
+    { name:'Verse 1',      sub:'eighth',    groove:'Rock backbeat',         bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'eighth',    groove:'Four-on-the-floor',     bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into verse 2', bars:1, fill:true },
+    { name:'Verse 2',      sub:'eighth',    groove:'Bass-heavy backbeat',   bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'eighth',    groove:'Four-on-the-floor',     bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the solo', bars:1, fill:true },
+    { name:'Solo',         sub:'sixteenth', groove:'Your pop-rock pocket',  bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the breakdown', bars:1, fill:true },
     { name:'Breakdown',   sub:'quarter',   hits:STOP_HITS, label:'Stop hits', bars:4 },
-    { name:'Last chorus', sub:'eighth',    groove:'Four-on-the-floor',   bars:8,   fill:true },
-    { name:'Outro',       sub:'eighth',    groove:'Bass-heavy backbeat', bars:4 }
+    { name:'Last chorus',  sub:'eighth',    groove:'Four-on-the-floor',     bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the outro', bars:1, fill:true },
+    { name:'Outro',        sub:'eighth',    groove:'Bass-heavy backbeat',   bars:4 }
   ]},
   { title:'Slow Tide', style:'floyd', bpm:72, feel:'spacious, slow · full band', audio:'tide', sections:[
-    { name:'Intro',       sub:'quarter',   groove:'Double bass anchor',  bars:4 },
-    { name:'Verse 1',     sub:'eighth',    groove:'Half-time feel',      bars:8, fill:true },
-    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8,   fill:true },
-    { name:'Verse 2',     sub:'eighth',    groove:'Half-time feel',      bars:8, fill:true },
-    { name:'Chorus',      sub:'sixteenth', groove:'Bossa feel',          bars:8,   fill:true },
-    { name:'Drift',       sub:'quarter',   groove:'With a rest',         bars:8 },
-    { name:'Last chorus', sub:'sixteenth', groove:'Bossa feel',          bars:8,   fill:true },
-    { name:'Outro',       sub:'quarter',   groove:'Double bass anchor',  bars:4 }
+    // Each fill is its own 1-bar section, so the bar before it shows "Next: Fill" as a heads-up.
+    { name:'Intro',        sub:'quarter',   groove:'Double bass anchor',    bars:4 },
+    { name:'Verse 1',      sub:'eighth',    groove:'Half-time feel',        bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'sixteenth', groove:'Bossa feel',            bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into verse 2', bars:1, fill:true },
+    { name:'Verse 2',      sub:'eighth',    groove:'Half-time feel',        bars:7 },
+    { name:'Fill',        sub:'eighth',    hits:FILLS.eighth, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'sixteenth', groove:'Bossa feel',            bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the drift', bars:1, fill:true },
+    { name:'Drift',        sub:'quarter',   groove:'With a rest',           bars:8 },
+    { name:'Last chorus',  sub:'sixteenth', groove:'Bossa feel',            bars:7 },
+    { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the outro', bars:1, fill:true },
+    { name:'Outro',        sub:'quarter',   groove:'Double bass anchor',    bars:4 }
   ]},
 ];
 
