@@ -725,6 +725,14 @@
   .loop-hint{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .loop-hint b{ color:var(--ink); }
   .loop-hint[hidden]{ display:none; }
+  /* difficulty dots on each groove */
+  .lvl{ display:inline-flex; gap:3px; flex-shrink:0; }
+  .lvl i{ width:7px; height:7px; border-radius:50%; border:1.5px solid var(--muted); opacity:.55; }
+  .lvl i.on{ background:var(--ink); border-color:var(--ink); opacity:1; }
+  .groove-btn.active .lvl i.on{ background:var(--accent); border-color:var(--accent); }
+  .cc-sym .lvl{ margin-right:6px; vertical-align:middle; }
+  /* written ghost note: always shown faint, a little stronger than the rest-ghosts */
+  .hit.ghost.written{ border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
 </style>
 </head>
 <body>
@@ -945,7 +953,8 @@
         <li><i class="swatch letter D">2</i><b>Double slap</b> — two quick slaps in one step.</li>
         <li><i class="swatch letter R">R</i><i class="swatch letter L">L</i><b>Right / left hand</b> — used in the rudiments.</li>
         <li><i class="swatch rest"></i><b>Rest</b> — play nothing, keep counting.</li>
-        <li><i class="swatch ghost"></i><b>Ghost note</b> — a whisper-soft slap (shown on rests when Ghost notes is on).</li>
+        <li><i class="swatch ghost"></i><b>Ghost note</b> — a whisper-soft slap. Some harder grooves have ghost notes written in; the Ghost notes switch also adds one on every rest.</li>
+        <li><span class="lvl"><i class="on"></i><i></i><i></i></span><b>Level</b> — one dot = starter, two = getting there, three = challenge. Each groove list runs from easy to hard. Move up a level once a groove feels easy: a full minute without stopping, mostly green on Timing check.</li>
         <li><span class="cc-count">1 &amp; 2 &amp;</span><b>Counts</b> — 1/4 = one step per beat, 1/8 = “1 &amp;”, 1/16 = “1 e &amp; a”. The ringed square is the step sounding now; the dot left of Play flashes on every step.</li>
       </ul>
     </section>
@@ -975,6 +984,7 @@
         <dt>Backing music</dt><dd>A band plays along, locked to your groove.</dd>
         <dt>1 min timer</dt><dd>Stops the groove after one minute of playing — for “hold it without a mistake” drills.</dd>
         <dt>🎤 Timing check</dt><dd>The mic listens while you play and puts a dot under each step: left = early, right = late, centre line = on the beat. The line above sums it up: % of hits within 30 ms, whether you rush or drag, and steadiness (how much your hits wobble — smaller is better). Without <b>🎧 Headphones</b> the groove and band go quiet and only a soft click plays, so the mic hears just you. Press <b>Calibrate</b> once (speakers: stay quiet; headphones: hit along with the clicks). Results are saved, so you can compare with last time.</dd>
+        <dt>Fills</dt><dd>Grooves named “Fill: …” are one-bar fills. Make one the ⇄ Switch partner of a groove (every 1 bar) to practise going into a fill and straight back out.</dd>
         <dt>⇄ Switch</dt><dd>Alternates between the selected groove and a partner every 4, 2 or 1 bars, on beat 1, without stopping. Tap the small ⇄ on any groove to make it the partner (dashed outline). In the last bar before a change the next groove appears faintly under the grid.</dd>
         <dt>Light delay</dt><dd>Keeps the lit square in step with the sound. Some browsers (Safari especially) play sound a little late; the app corrects what it can by itself (“Auto”). If the square still lights up before you hear the hit, slide right until they match. Remembered on this device.</dd>
         <dt>Volume knobs</dt><dd>Groove = the cajon sounds, Music = the band. Keep the band just under you.</dd>
@@ -1028,61 +1038,73 @@
 <script>
 // ---------- Groove data ----------
 const GROOVES = {
+  // lvl: 1 = starter, 2 = getting there, 3 = challenge. Each list runs easy → hard.
+  // 'g' = a written ghost note: a whisper-soft slap that is part of the groove.
   quarter: {
     label: '1/4',
     counts: ['1','2','3','4'],
     patterns: [
-      { name: 'Basic heartbeat', tag: 'foundation', hits: ['B','S','B','S'], style: 'beatles' },
-      { name: 'Bass-led', tag: 'weighted', hits: ['B','B','S','S'], style: 'beatles' },
-      { name: 'Slap-forward', tag: 'ear training', hits: ['S','B','S','B'], style: 'pearljam' },
-      { name: 'With a rest', tag: 'internalize pulse', hits: ['B','S','B','.'], style: 'floyd' },
-      { name: 'Double bass anchor', tag: 'ballad feel', hits: ['B','.','B','S'], style: 'floyd' },
+      { name: 'Basic heartbeat', tag: 'foundation', lvl:1, hits: ['B','S','B','S'], style: 'beatles' },
+      { name: 'Bass-led', tag: 'weighted', lvl:1, hits: ['B','B','S','S'], style: 'beatles' },
+      { name: 'Slap-forward', tag: 'ear training', lvl:1, hits: ['S','B','S','B'], style: 'pearljam' },
+      { name: 'With a rest', tag: 'internalize pulse', lvl:1, hits: ['B','S','B','.'], style: 'floyd' },
+      { name: 'Double bass anchor', tag: 'ballad feel', lvl:1, hits: ['B','.','B','S'], style: 'floyd' },
+      { name: 'Quick doubles', tag: 'two fast hits in one beat', lvl:2, hits: ['W','S','B','D'], style: 'pearljam' },
     ]
   },
   eighth: {
     label: '1/8',
     counts: ['1','&','2','&','3','&','4','&'],
     patterns: [
-      { name: 'Basic alternating', tag: 'warm-up', hits: ['B','B','S','S','B','B','S','S'], style: 'beatles' },
-      { name: 'Classic pop / folk', tag: 'kick-snare feel', hits: ['B','.','S','B','S','.','S','.'], style: 'beatles' },
-      { name: 'Rock backbeat', tag: 'kick & snare', hits: ['B','.','S','.','B','.','S','.'], style: 'pearljam' },
-      { name: 'Bass-heavy backbeat', tag: 'driving', hits: ['B','B','.','S','B','B','.','S'], style: 'zeppelin' },
-      { name: 'Four-on-the-floor', tag: 'dance pulse', hits: ['B','.','B','S','B','.','B','S'], style: 'zeppelin' },
-      { name: 'Offbeat push', tag: 'push & pull', hits: ['B','S','.','S','B','S','.','S'], style: 'pearljam' },
-      { name: 'Syncopated', tag: 'leave space', hits: ['B','.','.','S','B','.','S','.'], style: 'zeppelin' },
-      { name: 'Reggae lift', tag: 'space & lift', hits: ['.','.','B','S','.','.','B','S'], style: 'floyd' },
-      { name: 'Half-time feel', tag: 'laid back', hits: ['B','.','.','.','S','.','.','B'], style: 'floyd' },
-      { name: 'Funk ghost', tag: 'funky', hits: ['B','.','S','B','.','S','B','.'], style: 'zeppelin' },
-      { name: 'Latin (tresillo-ish)', tag: 'independence', hits: ['B','.','S','.','.','B','S','.'], style: 'zeppelin' },
+      { name: 'Basic alternating', tag: 'warm-up', lvl:1, hits: ['B','B','S','S','B','B','S','S'], style: 'beatles' },
+      { name: 'Rock backbeat', tag: 'kick & snare', lvl:1, hits: ['B','.','S','.','B','.','S','.'], style: 'pearljam' },
+      { name: 'Half-time feel', tag: 'laid back', lvl:1, hits: ['B','.','.','.','S','.','.','B'], style: 'floyd' },
+      { name: 'Classic pop / folk', tag: 'kick-snare feel', lvl:2, hits: ['B','.','S','B','S','.','S','.'], style: 'beatles' },
+      { name: 'Bass-heavy backbeat', tag: 'driving', lvl:2, hits: ['B','B','.','S','B','B','.','S'], style: 'zeppelin' },
+      { name: 'Four-on-the-floor', tag: 'dance pulse', lvl:2, hits: ['B','.','B','S','B','.','B','S'], style: 'zeppelin' },
+      { name: 'Offbeat push', tag: 'push & pull', lvl:2, hits: ['B','S','.','S','B','S','.','S'], style: 'pearljam' },
+      { name: 'Ghosted backbeat', tag: 'soft notes in between', lvl:2, hits: ['B','g','S','g','B','g','S','g'], style: 'pearljam' },
+      { name: 'Syncopated', tag: 'leave space', lvl:2, hits: ['B','.','.','S','B','.','S','.'], style: 'zeppelin' },
+      { name: 'Latin (tresillo-ish)', tag: 'independence', lvl:2, hits: ['B','.','S','.','.','B','S','.'], style: 'zeppelin' },
+      { name: 'Reggae lift', tag: 'space & lift', lvl:2, hits: ['.','.','B','S','.','.','B','S'], style: 'floyd' },
+      { name: 'Fill: 8th run', tag: 'fill · try it with ⇄ Switch', lvl:2, hits: ['B','.','S','.','S','S','S','S'], style: 'pearljam' },
+      { name: 'Funk ghost', tag: 'funky', lvl:3, hits: ['B','.','S','B','.','S','B','.'], style: 'zeppelin' },
+      { name: 'Bass on the “&”', tag: 'bass off the beat', lvl:3, hits: ['B','.','S','B','.','B','S','.'], style: 'pearljam' },
+      { name: 'Push into the 1', tag: 'bass on the last “&”', lvl:3, hits: ['.','S','B','S','.','S','.','B'], style: 'zeppelin' },
     ]
   },
   sixteenth: {
     label: '1/16',
     counts: ['1','e','&','a','2','e','&','a','3','e','&','a','4','e','&','a'],
     patterns: [
-      { name: 'Your pop-rock pocket', tag: 'backbeat + syncopated kick', hits: ['B','.','B','.','S','.','.','S','.','.','B','.','S','.','.','.'], style: 'pearljam' },
-      { name: 'Full mechanical drill', tag: 'technique', hits: ['B','B','S','S','B','B','S','S','B','B','S','S','B','B','S','S'], style: 'beatles' },
-      { name: '16th funk groove', tag: 'funk pocket', hits: ['B','.','S','.','.','S','B','.','B','.','S','.','.','S','B','.'], style: 'zeppelin' },
-      { name: 'Bossa feel', tag: 'smooth & even', hits: ['B','.','.','S','.','.','B','.','.','B','.','S','.','.','B','.'], style: 'floyd' },
-      { name: 'Rolling 16ths', tag: 'endurance', hits: ['B','S','S','S','B','S','S','S','B','S','S','S','B','S','S','S'], style: 'beatles' },
-      { name: 'Gallop', tag: 'driving', hits: ['B','.','B','S','B','.','B','S','B','.','B','S','B','.','B','S'], style: 'zeppelin' },
-      { name: 'Ghost-note groove', tag: 'ghost notes', hits: ['B','.','.','S','B','.','S','.','.','B','.','S','B','.','S','.'], style: 'pearljam' },
-      { name: 'Rumba clave feel', tag: 'clave', hits: ['B','.','.','S','.','.','B','.','.','B','.','.','S','.','S','.'], style: 'zeppelin' },
-      { name: 'Flamenco-style groove', tag: 'musical, with rests', hits: ['B','.','S','.','B','S','B','.','B','.','S','.','B','S','B','.'], style: 'pearljam' },
+      { name: 'Your pop-rock pocket', tag: 'backbeat + syncopated kick', lvl:2, hits: ['B','.','B','.','S','.','.','S','.','.','B','.','S','.','.','.'], style: 'pearljam' },
+      { name: 'Full mechanical drill', tag: 'technique', lvl:2, hits: ['B','B','S','S','B','B','S','S','B','B','S','S','B','B','S','S'], style: 'beatles' },
+      { name: 'Rolling 16ths', tag: 'endurance', lvl:2, hits: ['B','S','S','S','B','S','S','S','B','S','S','S','B','S','S','S'], style: 'beatles' },
+      { name: 'Gallop', tag: 'driving', lvl:2, hits: ['B','.','B','S','B','.','B','S','B','.','B','S','B','.','B','S'], style: 'zeppelin' },
+      { name: 'Bossa feel', tag: 'smooth & even', lvl:2, hits: ['B','.','.','S','.','.','B','.','.','B','.','S','.','.','B','.'], style: 'floyd' },
+      { name: '16th funk groove', tag: 'funk pocket', lvl:2, hits: ['B','.','S','.','.','S','B','.','B','.','S','.','.','S','B','.'], style: 'zeppelin' },
+      { name: 'Fill: bass drop', tag: 'fill · slaps, then two bass', lvl:2, hits: ['S','S','S','S','S','S','S','S','S','S','S','S','B','.','B','.'], style: 'pearljam' },
+      { name: 'Ghost-note groove', tag: 'ghost notes', lvl:3, hits: ['B','.','.','S','B','.','S','.','.','B','.','S','B','.','S','.'], style: 'pearljam' },
+      { name: 'Pocket with ghosts', tag: 'loud hits, whisper fills', lvl:3, hits: ['B','g','B','g','S','g','g','S','g','g','B','g','S','g','g','g'], style: 'pearljam' },
+      { name: 'Bass on “e” and “a”', tag: 'between the 8ths', lvl:3, hits: ['B','.','.','B','.','.','S','.','.','B','B','.','S','.','.','.'], style: 'zeppelin' },
+      { name: 'Rumba clave feel', tag: 'clave', lvl:3, hits: ['B','.','.','S','.','.','B','.','.','B','.','.','S','.','S','.'], style: 'zeppelin' },
+      { name: 'Flamenco-style groove', tag: 'musical, with rests', lvl:3, hits: ['B','.','S','.','B','S','B','.','B','.','S','.','B','S','B','.'], style: 'pearljam' },
+      { name: 'Fill: groups of three', tag: 'fill · 3s across the bar', lvl:3, hits: ['B','S','S','B','S','S','B','S','S','B','S','S','B','S','B','S'], style: 'zeppelin' },
     ]
   },
   rudiments: {
     label: 'Rudiments',
     counts: ['1','e','&','a','2','e','&','a','3','e','&','a','4','e','&','a'],
     patterns: [
-      { name: 'Single strokes', tag: 'both hands · R L R L', hits: ['R','L','R','L','R','L','R','L','R','L','R','L','R','L','R','L'], style: 'pearljam' },
-      { name: 'Left-hand lead', tag: 'weak hand · L R L R', hits: ['L','R','L','R','L','R','L','R','L','R','L','R','L','R','L','R'], style: 'pearljam' },
-      { name: 'Double stroke roll', tag: 'doubles · R R L L', hits: ['R','R','L','L','R','R','L','L','R','R','L','L','R','R','L','L'], style: 'zeppelin' },
-      { name: 'Single paradiddle', tag: 'R L R R · L R L L', hits: ['R','L','R','R','L','R','L','L','R','L','R','R','L','R','L','L'], style: 'pearljam' },
-      { name: 'Inverted paradiddle', tag: 'R R L R · L L R L', hits: ['R','R','L','R','L','L','R','L','R','R','L','R','L','L','R','L'], style: 'pearljam' },
-      { name: 'Paradiddle (left lead)', tag: 'L R L L · R L R R', hits: ['L','R','L','L','R','L','R','R','L','R','L','L','R','L','R','R'], style: 'pearljam' },
-      { name: 'Singles with doubles', tag: 'a fast double on each “&”', hits: ['R','L','D','L','R','L','D','L','R','L','D','L','R','L','D','L'], style: 'zeppelin' },
-      { name: 'Snare backbeat (hands)', tag: 'accent 2 & 4', hits: ['R','L','R','L','S','L','R','L','R','L','R','L','S','L','R','L'], style: 'pearljam' },
+      { name: 'Single strokes', tag: 'both hands · R L R L', lvl:1, hits: ['R','L','R','L','R','L','R','L','R','L','R','L','R','L','R','L'], style: 'pearljam' },
+      { name: 'Left-hand lead', tag: 'weak hand · L R L R', lvl:2, hits: ['L','R','L','R','L','R','L','R','L','R','L','R','L','R','L','R'], style: 'pearljam' },
+      { name: 'Double stroke roll', tag: 'doubles · R R L L', lvl:2, hits: ['R','R','L','L','R','R','L','L','R','R','L','L','R','R','L','L'], style: 'zeppelin' },
+      { name: 'Single paradiddle', tag: 'R L R R · L R L L', lvl:2, hits: ['R','L','R','R','L','R','L','L','R','L','R','R','L','R','L','L'], style: 'pearljam' },
+      { name: 'Snare backbeat (hands)', tag: 'accent 2 & 4', lvl:2, hits: ['R','L','R','L','S','L','R','L','R','L','R','L','S','L','R','L'], style: 'pearljam' },
+      { name: 'Inverted paradiddle', tag: 'R R L R · L L R L', lvl:3, hits: ['R','R','L','R','L','L','R','L','R','R','L','R','L','L','R','L'], style: 'pearljam' },
+      { name: 'Paradiddle (left lead)', tag: 'L R L L · R L R R', lvl:3, hits: ['L','R','L','L','R','L','R','R','L','R','L','L','R','L','R','R'], style: 'pearljam' },
+      { name: 'Singles with doubles', tag: 'a fast double on each “&”', lvl:3, hits: ['R','L','D','L','R','L','D','L','R','L','D','L','R','L','D','L'], style: 'zeppelin' },
+      { name: 'Paradiddle groove', tag: 'paradiddle with bass & slap', lvl:3, hits: ['B','L','R','R','S','R','L','L','B','L','R','R','S','R','L','L'], style: 'pearljam' },
     ]
   }
 };
@@ -1960,7 +1982,7 @@ function fillHits(container, hits, idPrefix){
     cell.className = 'cell';
     const inner = document.createElement('div');
     if(idPrefix) inner.id = idPrefix + i;
-    let cls = 'hit ' + (h === '.' ? 'rest' : h);
+    let cls = 'hit ' + (h === '.' ? 'rest' : h === 'g' ? 'ghost written' : h);
     if(h === '.' && ghostEnabled) cls += ' ghost';
     inner.className = cls;
     if(h === 'R' || h === 'L') inner.textContent = h;
@@ -1988,6 +2010,7 @@ function playHit(hit, t, step){
   else if(hit === 'L') playLeft(t);
   else if(hit === 'D') playDouble(t, step);
   else if(hit === 'W') playDoubleBass(t, step);
+  else if(hit === 'g') playSlap(t, 0.09, 1300, 0.045);   // written ghost note (a touch above the rest-ghosts)
   else if(ghostEnabled) playGhost(t); // rests become soft ghost slaps
 }
 
@@ -2347,6 +2370,11 @@ function buildTabs(){
   });
 }
 
+const LVL_NAME = ['', 'Starter', 'Getting there', 'Challenge'];
+function lvlDots(n){
+  if(!n) return '';
+  return `<span class="lvl" title="${LVL_NAME[n]}" aria-label="Level: ${LVL_NAME[n]}">${[1,2,3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
+}
 function buildGrooveList(){
   grooveListEl.innerHTML = '';
   if(switchOn) ensurePartner();
@@ -2356,7 +2384,7 @@ function buildGrooveList(){
     btn.className = 'groove-btn' + (i === currentPatternIdx ? ' active' : '') + (isPartner ? ' partner' : '');
     const chip = (switchOn && i !== currentPatternIdx)
       ? `<span class="partner-chip" title="Alternate with this groove">${isPartner ? '⇄ partner' : '⇄'}</span>` : '';
-    btn.innerHTML = `<span class="name">${p.name}</span><span class="gb-right"><span class="tag">${p.tag}</span>${chip}</span>`;
+    btn.innerHTML = `<span class="name">${p.name}</span><span class="gb-right"><span class="tag">${p.tag}</span>${lvlDots(p.lvl)}${chip}</span>`;
     btn.addEventListener('click', e => {
       if(e.target.closest && e.target.closest('.partner-chip')){
         switchIdx = i;            // pick the partner; never interrupts playback
@@ -2401,7 +2429,7 @@ function renderAll(){
 }
 
 const SUBLABEL = { quarter:'1/4', eighth:'1/8', sixteenth:'1/16', rudiments:'Rud' };
-const TOKEN_TITLE = { 'B':'Bass', 'S':'Slap', 'R':'Right slap', 'L':'Left slap', 'D':'Double slap (two quick hits)', 'W':'Double bass (two quick bass hits)', '.':'Rest' };
+const TOKEN_TITLE = { 'B':'Bass', 'S':'Slap', 'R':'Right slap', 'L':'Left slap', 'D':'Double slap (two quick hits)', 'W':'Double bass (two quick bass hits)', 'g':'Ghost note (whisper-soft slap)', '.':'Rest' };
 function patternIndexByName(sub, name){
   return GROOVES[sub].patterns.findIndex(p => p.name === name);
 }
@@ -2479,7 +2507,7 @@ function renderComposerGrid(){
     cell.className = 'cell';
     const inner = document.createElement('div');
     inner.id = 'chit-' + i;
-    let cls = 'hit ' + (h === '.' ? 'rest' : h);
+    let cls = 'hit ' + (h === '.' ? 'rest' : h === 'g' ? 'ghost written' : h);
     if(h === '.' && ghostEnabled) cls += ' ghost';
     inner.className = cls;
     if(h === 'D') inner.textContent = '2';
@@ -3272,7 +3300,7 @@ function timingOnset(tRaw){
   var t = tRaw - timingRT(), best = null, bd = Infinity;
   timingExp.forEach(function(e){ var d = Math.abs(t - e.s); if(d < bd){ bd = d; best = e; } });
   if(!best || bd > best.step / 2) return;
-  if(best.hit === '.'){ if(!ghostEnabled) timingExtra++; return; }
+  if(best.hit === '.' || best.hit === 'g'){ if(best.hit === '.' && !ghostEnabled) timingExtra++; return; }
   if(best.got) return;                             // 2nd hit of a double, or a flam
   best.got = true;
   var dev = (t - best.s) * 1000;
@@ -3290,12 +3318,12 @@ function timingExpect(pattern, pos, s, step){
   var old = audioCtx.currentTime - 1.5;
   while(timingExp.length && timingExp[0].s < old){
     var e = timingExp.shift();
-    if(e.hit !== '.' && !e.got) timingMissed++;
+    if(e.hit !== '.' && e.hit !== 'g' && !e.got) timingMissed++;
   }
 }
 function timingLiveMissed(){
   var cut = audioCtx.currentTime - timingRT() - 0.12;
-  return timingExp.filter(function(e){ return e.hit !== '.' && !e.got && e.s < cut; }).length;
+  return timingExp.filter(function(e){ return e.hit !== '.' && e.hit !== 'g' && !e.got && e.s < cut; }).length;
 }
 // soft, high click (filtered out of the mic); follows the Groove volume knob
 function timingClick(t, accent){
@@ -3373,7 +3401,7 @@ function renderTimingRow(){
   hits.forEach(function(h, i){
     var cell = document.createElement('div');
     cell.className = 'cell';
-    if(h !== '.'){
+    if(h !== '.' && h !== 'g'){
       var box = document.createElement('div');
       box.className = 'tdev';
       var d = timingStep[p.name + '|' + i];

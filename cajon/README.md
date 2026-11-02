@@ -4,7 +4,7 @@ A practice partner for learning the cajon. It runs in the browser and works offl
 
 **Live:** https://ritwikr.github.io/next-apps/cajon/
 
-- **Practice:** a groove sequencer with beat highlighting (● bass, ✕ slap, plus hand strokes and ghost notes), a tempo slider, count-in, a one-minute timer and keyboard shortcuts.
+- **Practice:** a groove sequencer with beat highlighting (● bass, ✕ slap, plus hand strokes and ghost notes), grooves marked by level (●○○ starter → ●●● challenge) and sorted easy to hard, including one-bar fills, a tempo slider, count-in, a one-minute timer and keyboard shortcuts.
 - **Backing band:** drumless backing tracks in four styles (Jangle Pop-Rock, Riff Hard Rock, Spacey Prog, Grunge), arranged from Apple Loops. The style follows the groove automatically, or you can pick one yourself.
 - **Switch drill:** alternate between two grooves every 4, 2 or 1 bars without stopping.
 - **Compose:** build your own grooves and save them.
