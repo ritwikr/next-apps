@@ -803,7 +803,7 @@
       <div class="timing-ctrls">
         <button class="timer-toggle" id="timingPhones" title="On: you hear the groove and band in your headphones. Off: only a soft click plays, so the mic hears just you."><span class="timer-dot"></span>🎧 Headphones</button>
         <label class="timing-sens" title="Turn up if hits are missed, down if it hears hits you didn't play">Mic sensitivity <input type="range" id="timingSens" min="1" max="10" step="1"></label>
-        <button class="timer-toggle" id="timingCalBtn" title="Measures the sound delay once so the numbers are exact"><span class="timer-dot"></span>Calibrate</button>
+        <button class="timer-toggle" id="timingCalBtn" title="Measures the sound delay once so the numbers are exact. Runs like a normal take: count-in, then 8 beats (press again to stop)"><span class="timer-dot"></span>Calibrate</button>
         <span class="timing-status" id="timingStatus"></span>
       </div>
       <div class="timing-help">Dots under the grid: <b>left = early</b>, <b>right = late</b>, the line = on the beat. Green within 30 ms, amber within 60 ms, red further off.</div>
@@ -2178,6 +2178,7 @@ function setPlayingUI(on){
 }
 
 function start(source){
+  if(timingCal) timingCalCancel('Calibration stopped — press Calibrate again when ready.');
   playSource = source || 'practice';
   isPlaying = true;
   stepIndex = 0;
@@ -3705,6 +3706,7 @@ async function timingSetOn(on){
   timingErr = '';
   if(!on){
     timingEnd();
+    timingCalCancel();
     timingOn = false; timingCal = null;
     timingMicOff();
     btn.classList.remove('active');
@@ -3729,43 +3731,110 @@ async function timingSetOn(on){
   }
 }
 
-// Calibrate. Speakers: the app plays 8 thumps and times how long the mic takes to hear
-// them (stay quiet). Headphones: the mic can't hear them, so you hit the cajon on each
-// of 8 clicks instead and the app learns the delay from that.
+// Calibrate — run like a normal take: one bar of count-in (big 1-2-3-4, as on Play), then
+// two bars on the grid with the squares lighting up.
+// Headphones: you hit the cajon on each of the 8 beats and the app learns the delay from that.
+// Speakers: you stay quiet; the app plays 8 thumps and times how long the mic takes to hear them.
+// The result is only saved if it is steady — a wobbly calibration would skew every score after it.
+var calTimers = [];
+function timingCalCancel(msg){
+  calTimers.forEach(function(id){ clearTimeout(id); }); calTimers = [];
+  if(!timingCal) return;
+  timingCal = null;
+  showCount(0);
+  document.getElementById('timingCalBtn').classList.remove('active');
+  renderGrid();
+  timingCalStatus(msg);
+}
 function timingCalibrate(){
-  if(!timingOn || !timingNodes || timingCal) return;
+  if(!timingOn || !timingNodes) return;
+  if(timingCal){ timingCalCancel('Calibration stopped.'); return; }
   if(isPlaying) stop();
   ensureAudio();
   timingGraph();
-  var phones = !!timingCfg.phones, N = 8, gap = phones ? 0.6 : 0.5;
-  var t0 = audioCtx.currentTime + 0.5, times = [];
-  for(var i = 0; i < N; i++){
-    var s = t0 + i * gap; times.push(s);
-    if(phones) timingClick(s, i === 0); else timingThump(s);
+  var phones = !!timingCfg.phones, N = 8;
+  var gap = 60 / Math.max(60, Math.min(100, bpm));       // the current tempo, kept between 60 and 100
+  var t0 = audioCtx.currentTime + 0.5, s0 = t0 + 4 * gap, times = [];
+  var later = function(fn, t){ calTimers.push(setTimeout(fn, Math.max(0, lightDelay(t)))); };
+
+  // the grid: one bar of four beats, like a 1/4 groove
+  fillCounts(countRow, 'quarter');
+  fillHits(hitRow, phones ? ['B','B','B','B'] : ['.','.','.','.'], 'calhit-');
+  var light = function(k){
+    hitRow.querySelectorAll('.hit.playing').forEach(function(el){ el.classList.remove('playing'); });
+    if(k < 0) return;
+    var c = document.getElementById('calhit-' + k); if(c) c.classList.add('playing');
+    var pulse = document.getElementById('pulse');
+    if(pulse){ pulse.classList.add('on'); setTimeout(function(){ pulse.classList.remove('on'); }, 90); }
+  };
+
+  // count-in: four clicks with the big numbers
+  for(var i = 0; i < 4; i++){
+    var t = t0 + i * gap;
+    timingClick(t, i === 0);
+    (function(n, t){ later(function(){ showCount(n); timingCalStatus(phones ? 'Get ready — hit on every beat after “4”' : 'Get ready — stay quiet after “4”'); }, t); })(i + 1, t);
   }
-  timingCal = { hits:[] };
-  timingCalStatus(phones ? 'Hit the cajon on each of the 8 clicks…' : 'Calibrating — stay quiet for 4 seconds…');
-  setTimeout(function(){
-    if(!timingCal) return;
-    var hits = timingCal.hits, offs = [];
-    timingCal = null;
-    times.forEach(function(s, i){
-      if(phones && i < 2) return;                  // first two clicks: still finding the beat
-      var lo = phones ? -0.15 : 0, hi = phones ? 0.5 : 0.4;
-      for(var k = 0; k < hits.length; k++){ var d = hits[k] - s; if(d > lo && d < hi){ offs.push(d); break; } }
+  later(function(){ showCount(0); }, s0);
+
+  // 8 beats: clicks (headphones) or thumps (speakers), lit on the grid
+  for(var j = 0; j < N; j++){
+    var sj = s0 + j * gap; times.push(sj);
+    if(phones) timingClick(sj, j % 4 === 0); else timingThump(sj);
+    (function(j, sj){
+      later(function(){ light(j % 4); }, sj);
+      // a moment after each beat: say how many hits have been heard so far
+      calTimers.push(setTimeout(function(){
+        if(!timingCal) return;
+        var got = match(times.slice(0, j + 1)).length;
+        timingCalStatus(phones ? 'Beat ' + (j + 1) + ' of 8 · heard ' + got + ' hit' + (got === 1 ? '' : 's')
+                               : 'Stay quiet… ' + (j + 1) + ' of 8');
+      }, Math.max(0, (sj - audioCtx.currentTime + 0.35) * 1000)));
+    })(j, sj);
+  }
+  var lo = phones ? -0.2 : 0, hi = phones ? Math.min(0.45, gap * 0.6) : 0.4;
+  function match(ts){
+    var hits = timingCal ? timingCal.hits : [], offs = [];
+    ts.forEach(function(sx){
+      for(var k = 0; k < hits.length; k++){ var d = hits[k] - sx; if(d > lo && d < hi){ offs.push(d); break; } }
     });
-    var need = phones ? 4 : 5;
+    return offs;
+  }
+
+  timingCal = { hits:[] };
+  document.getElementById('timingCalBtn').classList.add('active');
+  var trow = document.getElementById('timingRow'); if(trow) trow.hidden = true;
+  var sum = document.getElementById('timingSum'); if(sum) sum.textContent = phones ? 'Calibrating — after the count-in, hit the cajon on each of the 8 lit beats' : 'Calibrating — after the count-in, stay quiet while the app plays 8 thumps';
+  var sub = document.getElementById('timingSub'); if(sub) sub.textContent = '';
+  timingCalStatus('Count-in…');
+
+  calTimers.push(setTimeout(function(){
+    if(!timingCal) return;
+    var offs = match(times);
+    timingCal = null; calTimers = [];
+    light(-1);
+    document.getElementById('timingCalBtn').classList.remove('active');
+    renderGrid();
+    var need = phones ? 6 : 5;
     if(offs.length < need){
-      timingCalStatus(phones ? "Didn't catch enough hits — try again, hitting firmly on each click."
-        : "Couldn't hear the speaker clearly. Turn the volume up — or if you're on headphones, switch on 🎧 Headphones and calibrate again.");
+      timingCalStatus(phones ? 'Heard only ' + offs.length + ' of 8 hits — nothing saved. Try again, hitting firmly on every beat (or turn Mic sensitivity up).'
+        : "Couldn't hear the speaker clearly — nothing saved. Turn the volume up, or if you're on headphones switch on 🎧 Headphones first.");
       return;
     }
     offs.sort(function(a, b){ return a - b; });
-    var ms = Math.max(0, Math.round(offs[Math.floor(offs.length / 2)] * 1000));
+    var med = offs[Math.floor(offs.length / 2)];
+    var spread = offs.map(function(d){ return Math.abs(d - med); }).sort(function(a, b){ return a - b; });
+    var wob = Math.round(spread[Math.floor(spread.length / 2)] * 1000);   // typical distance from the middle, in ms
+    var ms = Math.max(0, Math.round(med * 1000));
+    var limit = phones ? 30 : 15;
+    if(wob > limit){
+      timingCalStatus((phones ? 'Your hits were uneven (±' + wob + ' ms)' : 'The mic heard the thumps unevenly (±' + wob + ' ms)') +
+        ' — nothing saved, so your old setting stays. Try once more' + (phones ? ', keeping it relaxed and steady.' : ' in a quieter room.'));
+      return;
+    }
     if(phones) timingCfg.rtPh = ms; else timingCfg.rtSpk = ms;
     saveTimingCfg();
-    timingCalStatus();
-  }, (t0 + N * gap - audioCtx.currentTime + 0.6) * 1000);
+    timingCalStatus('Calibrated (' + (phones ? 'headphones' : 'speakers') + '): ' + ms + ' ms · steady ✓ (±' + wob + ' ms, ' + offs.length + ' of 8 hits)');
+  }, (s0 + N * gap - audioCtx.currentTime + 0.7) * 1000));
 }
 
 (function(){
