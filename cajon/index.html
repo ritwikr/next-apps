@@ -733,6 +733,15 @@
   .cc-sym .lvl{ margin-right:6px; vertical-align:middle; }
   /* written ghost note: always shown faint, a little stronger than the rest-ghosts */
   .hit.ghost.written{ border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+  /* YouTube play-along */
+  .yt-wrap{ position:relative; width:100%; max-width:560px; aspect-ratio:16/9; margin:0 auto 12px; border-radius:12px; overflow:hidden; background:#000; }
+  .yt-wrap[hidden], .yt-sync[hidden]{ display:none; }
+  .yt-wrap iframe, .yt-wrap #ytPlayer{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .yt-sync{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 14px; }
+  .yt-lbl{ font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-right:2px; }
+  .yt-off{ font-family:var(--font-sans); font-size:12.5px; color:var(--ink); min-width:74px; text-align:center; }
+  .yt-note{ font-family:var(--font-sans); font-size:12px; color:var(--muted); flex-basis:100%; }
+  .yt-note:empty{ display:none; }
 </style>
 </head>
 <body>
@@ -855,6 +864,18 @@
         <span class="song-meta" id="songMeta"></span>
       </div>
 
+      <div class="yt-wrap" id="ytWrap" hidden><div id="ytPlayer"></div></div>
+      <div class="yt-sync" id="ytSync" hidden>
+        <span class="yt-lbl">Line up</span>
+        <button class="sw-bar" data-yt="-bar" title="The grooves change a bar too late: move everything a bar earlier">−1 bar</button>
+        <button class="sw-bar" data-yt="-0.05" title="The lit squares are late: nudge earlier">−</button>
+        <span class="yt-off" id="ytOffVal"></span>
+        <button class="sw-bar" data-yt="0.05" title="The lit squares are early: nudge later">+</button>
+        <button class="sw-bar" data-yt="bar" title="The grooves change a bar too early: move everything a bar later">+1 bar</button>
+        <button class="timer-toggle" id="ytTap" title="While the song plays, tap on every “1” — four taps lines it up">Tap on the 1</button>
+        <button class="timer-toggle active" id="ytGuide" title="Hear the app's cajon along with the video"><span class="timer-dot"></span>Guide cajon</button>
+        <span class="yt-note" id="ytNote"></span>
+      </div>
       <div class="stage song-stage reserve">
         <div class="now-line">
           <span class="now-sec" id="songNowSec"></span>
@@ -1001,6 +1022,7 @@
         <dt>Play song</dt><dd>Plays the whole song start to finish with its band — intro, verses, choruses, breaks and an ending hit.</dd>
         <dt>The sheet</dt><dd>Every section with its groove. One dot per bar. Each fill (a one-bar burst that leads into the next section) has its own row, so the bar before it warns you it’s coming. The section playing now is outlined.</dd>
         <dt>Tap a section</dt><dd>Starts the song from there.</dd>
+        <dt>Pasoori (YouTube)</dt><dd>Play along with the real song: the video is the band and the sheet follows it. Play, Pause, Loop and tapping a section all move the video too (so does its own play button). If the lit squares run early or late, nudge with − / +; if the grooves change in the wrong place, move a whole bar. Or tap <b>Tap on the 1</b> four times on the first beat of bars while it plays. <b>Guide cajon</b> plays the transcription quietly along with you. Needs the internet.</dd>
         <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
         <dt>Next up</dt><dd>In the last bar of each section the next groove appears faintly under the grid.</dd>
         <dt>Full band</dt><dd>All four songs are fully arranged: the band plays its own part in every section — quieter verses, bigger choruses, solos, stops and a final chord.</dd>
@@ -1083,12 +1105,15 @@ const GROOVES = {
       { name: 'Gallop', tag: 'driving', lvl:2, hits: ['B','.','B','S','B','.','B','S','B','.','B','S','B','.','B','S'], style: 'zeppelin' },
       { name: 'Bossa feel', tag: 'smooth & even', lvl:2, hits: ['B','.','.','S','.','.','B','.','.','B','.','S','.','.','B','.'], style: 'floyd' },
       { name: '16th funk groove', tag: 'funk pocket', lvl:2, hits: ['B','.','S','.','.','S','B','.','B','.','S','.','.','S','B','.'], style: 'zeppelin' },
+      { name: 'Pasoori A', tag: 'Pasoori · groove A', lvl:2, hits: ['B','.','.','B','.','.','B','.','.','.','B','.','S','.','.','.'], style: 'pearljam' },
+      { name: 'Pasoori C', tag: 'Pasoori · 3-3-2 bounce', lvl:2, hits: ['B','.','.','B','.','.','S','.','B','.','.','B','.','.','S','.'], style: 'pearljam' },
       { name: 'Fill: bass drop', tag: 'fill · slaps, then two bass', lvl:2, hits: ['S','S','S','S','S','S','S','S','S','S','S','S','B','.','B','.'], style: 'pearljam' },
       { name: 'Ghost-note groove', tag: 'ghost notes', lvl:3, hits: ['B','.','.','S','B','.','S','.','.','B','.','S','B','.','S','.'], style: 'pearljam' },
       { name: 'Pocket with ghosts', tag: 'loud hits, whisper fills', lvl:3, hits: ['B','g','B','g','S','g','g','S','g','g','B','g','S','g','g','g'], style: 'pearljam' },
       { name: 'Bass on “e” and “a”', tag: 'between the 8ths', lvl:3, hits: ['B','.','.','B','.','.','S','.','.','B','B','.','S','.','.','.'], style: 'zeppelin' },
       { name: 'Rumba clave feel', tag: 'clave', lvl:3, hits: ['B','.','.','S','.','.','B','.','.','B','.','.','S','.','S','.'], style: 'zeppelin' },
       { name: 'Flamenco-style groove', tag: 'musical, with rests', lvl:3, hits: ['B','.','S','.','B','S','B','.','B','.','S','.','B','S','B','.'], style: 'pearljam' },
+      { name: 'Pasoori B', tag: 'Pasoori · busy groove', lvl:3, hits: ['B','.','S','S','.','.','S','.','B','.','S','S','.','S','S','.'], style: 'pearljam' },
       { name: 'Fill: groups of three', tag: 'fill · 3s across the bar', lvl:3, hits: ['B','S','S','B','S','S','B','S','S','B','S','S','B','S','B','S'], style: 'zeppelin' },
     ]
   },
@@ -1810,6 +1835,7 @@ function trackWindow(key, buf){
 // `bars` bars into the loop (0 = from the top)
 function startTrackAt(when, bars){
   stopTrackSource();
+  if(playSource === 'song' && songCur().youtube) return;   // the video is the band
   if(playSource === 'song' && songAudioKey()) return startSongAudio(when);
   const key = currentStyleKey();
   const t = TRACKS[key];
@@ -2204,6 +2230,8 @@ function stop(){
   switchLeft = null;
   renderSwitchUI();
   if(bandGain){ bandGain.gain.cancelScheduledValues(0); bandGain.gain.setValueAtTime(1, audioCtx.currentTime); }
+  clearInterval(ytResyncId); clearInterval(ytGoId); ytHold = false; ytTaps = [];
+  if(playSource === 'song' && yt && ytReady && songCur().youtube){ try{ yt.pauseVideo(); }catch(e){} }
   if(playSource === 'song') songStopped();
 }
 
@@ -2728,6 +2756,21 @@ const SONGS = [
     { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the outro', bars:1, fill:true },
     { name:'Outro',        sub:'quarter',   groove:'Double bass anchor',    bars:4 }
   ]},
+  // Played along with the real song on YouTube: the video is the band, the app is the sheet.
+  // Transcribed from a cajon cover (92 bpm). ytOffset = where bar 1 starts in the video;
+  // learners can line it up with the sync controls (saved on the device).
+  { title:'Pasoori', style:'pearljam', bpm:92, feel:'Ali Sethi × Shae Gill · YouTube', youtube:'5Eqb_-j3FDA', ytOffset:0.65, sections:[
+    { name:'Intro',      sub:'quarter',   hits:['.','.','.','.'], label:'Listen — come in on bar 4', bars:3 },
+    { name:'Groove A',   sub:'sixteenth', groove:'Pasoori A', bars:8 },
+    { name:'Build',      sub:'sixteenth', hits:['B','.','S','.','S','S','.','S','S','S','.','S','S','.','S','.'], label:'Slap build', bars:2 },
+    { name:'Lead-in',    sub:'sixteenth', hits:['B','.','.','S','.','.','S','.','B','.','.','S','B','.','S','S'], label:'Into groove B', bars:1 },
+    { name:'Groove B',   sub:'sixteenth', groove:'Pasoori B', bars:7 },
+    { name:'Stop',       sub:'sixteenth', hits:['B','.','.','.','.','.','.','.','B','S','.','.','.','.','.','.'], label:'Two hits, then space', bars:1 },
+    { name:'Groove A',   sub:'sixteenth', groove:'Pasoori A', bars:8 },
+    { name:'Fill',       sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the break', bars:1, fill:true },
+    { name:'Break',      sub:'sixteenth', hits:['S','.','.','S','B','.','.','.','.','.','.','.','.','.','S','.'], label:'Almost silent', bars:1 },
+    { name:'Groove C',   sub:'sixteenth', groove:'Pasoori C', bars:7 }
+  ]},
 ];
 
 var songIdx = 0;            // var: currentStyleKey() may ask before this line runs
@@ -2850,7 +2893,15 @@ function songPrepare(){
 }
 
 function songScheduler(){
+  if(ytHold) return;   // waiting for the video to get to the right place
   while(isPlaying && !songEnded && nextNoteTime < audioCtx.currentTime + scheduleAhead){
+    if(songLoop && songPos === 0 && songBarIdx === loopEndBar() && songCur().youtube){
+      // YouTube loop: when the looped part ends, send the video back and follow it again
+      const at = nextNoteTime, back = loopStartBar();
+      loopCount++; ytHold = true;
+      setTimeout(() => { if(isPlaying && playSource === 'song') ytGo(ytOffset + back * barDur, back, 0); }, Math.max(0, (at - audioCtx.currentTime) * 1000));
+      return;
+    }
     if(songLoop && songPos === 0 && songBarIdx === loopEndBar()){
       // end of the looped part: jump back to its first bar, band and all
       songBarIdx = loopStartBar(); loopCount++;
@@ -2859,7 +2910,7 @@ function songScheduler(){
       chordIdx = songLoopBar(songBarIdx);
       songAudioJump(nextNoteTime);
     }
-    if(songBarIdx >= songBars.length){ songFinish(nextNoteTime); return; }
+    if(songBarIdx >= songBars.length){ if(songCur().youtube) ytEnd(nextNoteTime); else songFinish(nextNoteTime); return; }
     const bar = songBars[songBarIdx];
     const step = (60 / bpm) / SPB[bar.sub];
     const delay = lightDelay(nextNoteTime);
@@ -2867,11 +2918,11 @@ function songScheduler(){
       lastBarTime = nextNoteTime;
       barDur = 4 * (60 / bpm);
       if(bar.b === 0 && songBarIdx !== songStartBar && songCur().sections[bar.si].band != null) setBandLevel(songCur().sections[bar.si].band, nextNoteTime);
-      if(musicEnabled && !currentTrackReady() && !songAudioKey()){ playBackingBar(currentStyleKey(), nextNoteTime, barDur, chordIdx); chordIdx++; }
+      if(musicEnabled && !currentTrackReady() && !songAudioKey() && !songCur().youtube){ playBackingBar(currentStyleKey(), nextNoteTime, barDur, chordIdx); chordIdx++; }
       const idx = songBarIdx, lc = loopCount;
       setTimeout(() => { if(isPlaying && playSource === 'song') songShowBar(idx, lc); }, delay);
     }
-    playHit(bar.hits[songPos], nextNoteTime, step);
+    if(!(songCur().youtube && !ytGuide)) playHit(bar.hits[songPos], nextNoteTime, step);
     const pos = songPos;
     setTimeout(() => { if(isPlaying && playSource === 'song') songHighlight(pos); }, delay);
     nextNoteTime += step;
@@ -3023,9 +3074,10 @@ function renderSongs(){
     picker.appendChild(b);
   });
   const song = songCur(), bars = songTotalBars(song);
+  if(typeof ytShowUI === 'function') ytShowUI();
   document.getElementById('songTitle').textContent = song.title;
   document.getElementById('songMeta').textContent =
-    (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / song.bpm);
+    song.youtube ? 'YouTube · ' + song.bpm + ' bpm · ' + bars + ' bars transcribed · ' + fmtDur(bars * 240 / song.bpm) : (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / song.bpm);
   const sheet = document.getElementById('songSheet');
   sheet.innerHTML = '';
   song.sections.forEach((sec, si) => {
@@ -3062,7 +3114,7 @@ function songStartFrom(si){
   if(songLoop && (si < loopA || si > loopB)){ loopA = loopB = si; }
   renderLoopHint();
   songStartSec = si; songJustFinished = false;
-  if(wasPlaying){ ensureAudio(); start('song'); }
+  if(wasPlaying){ ensureAudio(); if(songCur().youtube) ytPlay(); else start('song'); }
   else songShowIdle();
 }
 // ---- loop ----
@@ -3144,6 +3196,7 @@ var songLoading = false;
 document.getElementById('songPlayBtn').addEventListener('click', () => {
   ensureAudio();
   if(isPlaying && playSource === 'song'){ songPause(); return; }
+  if(songCur().youtube){ ytPlay(); return; }
   if(isPlaying) stop();
   const key = songAudioKey();
   if(key && musicEnabled && !songAudioReady()){
@@ -3171,6 +3224,183 @@ document.getElementById('songBandToggle').addEventListener('click', () => {
   syncSongBand();
   if(!musicEnabled){ fadeOutChord(); stopAllTracks(); }
   updateBacking();
+  ytApplyMute();
+});
+document.getElementById('songBandToggle').addEventListener('click', () => ytApplyMute());
+
+// ================= YouTube play-along =================
+// The video is the clock. When it is playing we read its time, put the next bar of the
+// sheet on the audio clock at the matching moment, and keep checking for drift.
+var yt = null, ytReady = false, ytVid = null, ytQ = [], ytApiQ = [], ytApiState = 0;
+var ytHold = false, ytResyncId = null, ytGoId = null, ytGuide = true, ytTaps = [];
+var ytOffset = 0;
+function ytSong(){ const s = songCur(); return s && s.youtube ? s : null; }
+function ytNote(msg){ document.getElementById('ytNote').textContent = msg || ''; }
+function ytKey(s){ return 'cajon-yt-offset-' + s.youtube; }
+function ytLoadOffset(s){ try{ const v = parseFloat(localStorage.getItem(ytKey(s))); return isFinite(v) ? v : s.ytOffset || 0; }catch(e){ return s.ytOffset || 0; } }
+function ytSaveOffset(){ const s = ytSong(); if(s) try{ localStorage.setItem(ytKey(s), ytOffset.toFixed(3)); }catch(e){} }
+function ytShowOffset(){
+  const a = Math.abs(ytOffset), m = Math.floor(a / 60), sec = (a - m * 60).toFixed(2).padStart(5, '0');
+  document.getElementById('ytOffVal').textContent = 'bar 1 at ' + (ytOffset < 0 ? '−' : '') + m + ':' + sec;
+}
+function ytLoadApi(cb){
+  if(window.YT && window.YT.Player){ cb(); return; }
+  ytApiQ.push(cb);
+  if(ytApiState) return;
+  ytApiState = 1;
+  const prev = window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady = () => { if(prev) try{ prev(); }catch(e){} ytApiQ.splice(0).forEach(f => f()); };
+  const sc = document.createElement('script');
+  sc.src = 'https://www.youtube.com/iframe_api';
+  sc.onerror = () => { ytApiState = 0; ytNote('Couldn’t reach YouTube — this song needs the internet.'); };
+  document.head.appendChild(sc);
+}
+function ytEnsure(cb){
+  const s = ytSong(); if(!s) return;
+  if(yt && ytReady){
+    if(ytVid !== s.youtube){ ytVid = s.youtube; try{ yt.cueVideoById(s.youtube); }catch(e){} }
+    if(cb) cb();
+    return;
+  }
+  if(cb) ytQ.push(cb);
+  if(yt) return;            // already being made
+  ytLoadApi(() => {
+    if(yt) return;
+    ytVid = s.youtube;
+    yt = new YT.Player('ytPlayer', {
+      videoId: s.youtube, width: '100%', height: '100%',
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      events: {
+        onReady: () => { ytReady = true; ytApplyMute(); ytQ.splice(0).forEach(f => f()); },
+        onStateChange: ytState,
+        onError: e => ytNote('YouTube won’t play this video here (error ' + e.data + ').')
+      }
+    });
+  });
+}
+function ytApplyMute(){
+  if(!(yt && ytReady && ytSong())) return;
+  try{ musicEnabled ? yt.unMute() : yt.mute(); }catch(e){}
+}
+function ytShowUI(){
+  const s = ytSong();
+  document.getElementById('ytWrap').hidden = !s;
+  document.getElementById('ytSync').hidden = !s;
+  if(!s) return;
+  ytOffset = ytLoadOffset(s);
+  ytShowOffset(); ytNote('');
+  ytEnsure();
+}
+// start (or resume, or jump to a section) from our own Play button
+function ytPlay(){
+  ensureAudio();
+  ytNote(yt && ytReady ? '' : 'Loading the video…');
+  ytEnsure(() => {
+    ytNote('');
+    if(isPlaying) stop();
+    ytBegin();
+    const lead = songStartBar > 0 ? barDur : 0;   // mid-song: hear one bar of the song first
+    ytGo(ytOffset + songStartBar * barDur, songStartBar, lead);
+  });
+}
+function ytBegin(){
+  playSource = 'song';
+  songPrepare();
+  barDur = 240 / bpm;
+  isPlaying = true; stepIndex = 0; ytHold = true;
+  setPlayingUI(true);
+  diaryBegin();
+  ytApplyMute();
+  clearTimeout(timerId); scheduler();
+  clearInterval(ytResyncId); ytResyncId = setInterval(ytResync, 400);
+}
+// seek the video to just before bar `bar` (starting at video time vb) and follow it from there
+function ytGo(vb, bar, lead){
+  ytHold = true;
+  const seekT = Math.max(0, vb - (lead || 0) - 0.25);
+  try{ yt.seekTo(seekT, true); if(yt.getPlayerState() !== 1) yt.playVideo(); }catch(e){}
+  const t0 = performance.now();
+  clearInterval(ytGoId);
+  ytGoId = setInterval(() => {
+    if(!(isPlaying && playSource === 'song')){ clearInterval(ytGoId); return; }
+    let st, t; try{ st = yt.getPlayerState(); t = yt.getCurrentTime(); }catch(e){ return; }
+    if(st === 1 && t >= seekT - 0.05 && t < vb + 0.5){ clearInterval(ytGoId); ytAnchor(bar); }
+    else if(performance.now() - t0 > 10000){ clearInterval(ytGoId); ytNote('The video didn’t start — tap play on the video itself.'); }
+  }, 30);
+}
+// line the sheet up with where the video is now: the next bar line gets the next bar
+function ytAnchor(forceBar){
+  let t, now = audioCtx.currentTime;
+  try{ t = yt.getCurrentTime(); }catch(e){ return; }
+  let b = (forceBar != null && ytOffset + forceBar * barDur >= t - 0.02) ? forceBar : Math.ceil((t + 0.1 - ytOffset) / barDur);
+  if(b < 0) b = 0;
+  if(b >= songBars.length){ ytHold = false; ytEnd(now); return; }
+  const vb = ytOffset + b * barDur;
+  nextNoteTime = now + (vb - t);
+  songBarIdx = b; songPos = 0; songEnded = false;
+  lastBarTime = nextNoteTime; playStartTime = nextNoteTime;
+  songAnchorT = nextNoteTime; songAnchorBar = b;
+  ytHold = false;
+}
+function ytResync(){
+  if(!(isPlaying && playSource === 'song' && yt && ytReady && !ytHold && !songEnded)) return;
+  let t, st; try{ st = yt.getPlayerState(); t = yt.getCurrentTime(); }catch(e){ return; }
+  if(st !== 1) return;
+  const now = audioCtx.currentTime;
+  const drift = t - (ytOffset + songAnchorBar * barDur + (now - songAnchorT));
+  if(Math.abs(drift) > 0.35){ ytHold = true; ytAnchor(); return; }     // the video was scrubbed, or the line-up moved
+  if(Math.abs(drift) > 0.03){ nextNoteTime -= drift; songAnchorT -= drift; lastBarTime -= drift; }
+}
+function ytEnd(t){
+  songEnded = true;
+  setTimeout(() => {
+    if(!(isPlaying && playSource === 'song')) return;
+    document.getElementById('songNowSec').innerHTML = 'End of the transcription';
+    document.getElementById('songNowBar').textContent = 'keep going by ear';
+    const tag = document.getElementById('songNextTag'); tag.textContent = ''; tag.classList.remove('soon');
+    document.getElementById('songNextRow').hidden = true;
+    songHighlight(-1);
+  }, lightDelay(t));
+}
+function ytState(e){
+  if(!ytSong()) return;
+  const st = e.data;
+  if(st === 1){
+    if(!(isPlaying && playSource === 'song')){
+      // started from the video's own play button: follow it
+      ensureAudio();
+      if(songPausedBar == null) songStartSec = 0;
+      ytBegin();
+      ytAnchor();
+    }
+  } else if(st === 2){
+    if(isPlaying && playSource === 'song' && !ytHold) songPause();
+  } else if(st === 0){
+    if(isPlaying && playSource === 'song') stop();
+  }
+}
+document.querySelectorAll('#ytSync [data-yt]').forEach(b => b.addEventListener('click', () => {
+  const d = b.dataset.yt, bar = 240 / songCur().bpm;
+  ytOffset += d === 'bar' ? bar : d === '-bar' ? -bar : parseFloat(d);
+  ytOffset = Math.round(ytOffset * 1000) / 1000;
+  ytSaveOffset(); ytShowOffset(); ytNote('');
+}));
+document.getElementById('ytGuide').addEventListener('click', e => {
+  ytGuide = !ytGuide;
+  e.currentTarget.classList.toggle('active', ytGuide);
+});
+document.getElementById('ytTap').addEventListener('click', () => {
+  if(!(isPlaying && playSource === 'song' && yt && ytReady && !ytHold)){ ytNote('Play the song first, then tap on the first beat of four bars in a row.'); return; }
+  let t; try{ t = yt.getCurrentTime(); }catch(e){ return; }
+  const bar = 240 / songCur().bpm;
+  let dev = ((t - ytOffset) % bar + bar) % bar; if(dev > bar / 2) dev -= bar;
+  ytTaps.push(dev);
+  if(ytTaps.length < 4){ ytNote('Tap ' + ytTaps.length + ' of 4…'); return; }
+  const avg = ytTaps.reduce((a, b) => a + b, 0) / ytTaps.length;
+  ytTaps = [];
+  ytOffset = Math.round((ytOffset + avg) * 1000) / 1000;
+  ytSaveOffset(); ytShowOffset();
+  ytNote('Lined up — moved ' + (avg >= 0 ? 'later' : 'earlier') + ' by ' + Math.abs(avg).toFixed(2) + ' s. If the grooves change in the wrong place, use ±1 bar.');
 });
 renderSongs();
 
