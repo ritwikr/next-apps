@@ -725,6 +725,19 @@
   .loop-hint{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .loop-hint b{ color:var(--ink); }
   .loop-hint[hidden]{ display:none; }
+  /* recorded takes (Songs) */
+  .takes{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
+  .takes[hidden]{ display:none; }
+  .take-note:empty{ display:none; }
+  .take-list{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+  .take-list:empty{ display:none; }
+  .take{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--well); border:1px solid var(--line); border-radius:12px; padding:6px 10px; }
+  .take-lbl{ color:var(--ink); flex:1 1 160px; }
+  .take audio{ height:32px; flex:1 1 220px; max-width:100%; }
+  .take-save{ color:var(--ink); text-decoration:none; font-weight:700; white-space:nowrap; }
+  .take-save:hover{ text-decoration:underline; }
+  #songRecToggle.recording .timer-dot{ background:var(--bass); animation:recPulse 1s ease-in-out infinite; }
+  @keyframes recPulse{ 50%{ opacity:.3; } }
   /* difficulty dots on each groove */
   .lvl{ display:inline-flex; gap:3px; flex-shrink:0; }
   .lvl i{ width:7px; height:7px; border-radius:50%; border:1.5px solid var(--muted); opacity:.55; }
@@ -895,9 +908,11 @@
         <button class="timer-toggle" id="songGhostToggle"><span class="timer-dot"></span>Ghost notes</button>
         <button class="timer-toggle" id="songBandToggle"><span class="timer-dot"></span>Band</button>
         <button class="timer-toggle" id="songLoopToggle" title="Repeat a section over and over to practise it (L)"><span class="timer-dot"></span>🔁 Loop</button>
+        <button class="timer-toggle" id="songRecToggle" title="Record yourself with the band, then listen back or save the take (R)"><span class="timer-dot"></span>⏺ Record</button>
       </div>
 
       <div class="loop-hint" id="songLoopHint" hidden></div>
+      <div class="takes" id="songTakes" hidden aria-live="polite"><div class="take-note"></div><div class="take-list"></div></div>
       <div class="sheet" id="songSheet"></div>
 
       <div class="diary" id="diary">
@@ -1024,8 +1039,9 @@
         <dt>Tap a section</dt><dd>Starts the song from there.</dd>
         <dt>Pasoori (YouTube)</dt><dd>Play along with the real song: the video is the band and the sheet follows it. Play, Pause, Loop and tapping a section all move the video too (so does its own play button). If the lit squares run early or late, nudge with − / +; if the grooves change in the wrong place, move a whole bar. Or tap <b>Tap on the 1</b> four times on the first beat of bars while it plays. <b>Guide cajon</b> plays the transcription quietly along with you. Needs the internet.</dd>
         <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
+        <dt>⏺ Record</dt><dd>Records you playing with the band, so you can hear how it really sounds. Turn it on (or press <kbd>R</kbd>) and allow the mic once. Everything from Play until you pause or stop becomes one take, and works with 🔁 Loop too. Each take appears under the buttons with a player and <b>⤓ Save</b>. The last five stay until you close the page. Nothing is uploaded. Headphones give the cleanest take; on speakers the mic hears the band as well. The band in the take is lined up with your hits using the Timing check calibration. With Pasoori the take is mic only.</dd>
         <dt>Next up</dt><dd>In the last bar of each section the next groove appears faintly under the grid.</dd>
-        <dt>Full band</dt><dd>All four songs are fully arranged: the band plays its own part in every section — quieter verses, bigger choruses, solos, stops and a final chord.</dd>
+        <dt>Full band</dt><dd>All six of our own songs are fully arranged: the band plays its own part in every section — quieter verses, bigger choruses, solos, stops and a final chord.</dd>
       </dl>
     </section>
 
@@ -1107,6 +1123,7 @@ const GROOVES = {
       { name: '16th funk groove', tag: 'funk pocket', lvl:2, hits: ['B','.','S','.','.','S','B','.','B','.','S','.','.','S','B','.'], style: 'zeppelin' },
       { name: 'Pasoori A', tag: 'Pasoori · groove A', lvl:2, hits: ['B','.','.','B','.','.','B','.','.','.','B','.','S','.','.','.'], style: 'pearljam' },
       { name: 'Pasoori C', tag: 'Pasoori · 3-3-2 bounce', lvl:2, hits: ['B','.','.','B','.','.','S','.','B','.','.','B','.','.','S','.'], style: 'pearljam' },
+      { name: 'Tumbao', tag: 'Calle Sol · the conga pattern, on cajon', lvl:2, hits: ['B','.','g','.','S','.','g','.','g','.','g','.','B','.','B','.'], style: 'beatles' },
       { name: 'Fill: bass drop', tag: 'fill · slaps, then two bass', lvl:2, hits: ['S','S','S','S','S','S','S','S','S','S','S','S','B','.','B','.'], style: 'pearljam' },
       { name: 'Ghost-note groove', tag: 'ghost notes', lvl:3, hits: ['B','.','.','S','B','.','S','.','.','B','.','S','B','.','S','.'], style: 'pearljam' },
       { name: 'Pocket with ghosts', tag: 'loud hits, whisper fills', lvl:3, hits: ['B','g','B','g','S','g','g','S','g','g','B','g','S','g','g','g'], style: 'pearljam' },
@@ -1114,6 +1131,9 @@ const GROOVES = {
       { name: 'Rumba clave feel', tag: 'clave', lvl:3, hits: ['B','.','.','S','.','.','B','.','.','B','.','.','S','.','S','.'], style: 'zeppelin' },
       { name: 'Flamenco-style groove', tag: 'musical, with rests', lvl:3, hits: ['B','.','S','.','B','S','B','.','B','.','S','.','B','S','B','.'], style: 'pearljam' },
       { name: 'Pasoori B', tag: 'Pasoori · busy groove', lvl:3, hits: ['B','.','S','S','.','.','S','.','B','.','S','S','.','S','S','.'], style: 'pearljam' },
+      { name: 'Freight chorus', tag: 'Night Freight · driving bass, slap pickups', lvl:3, hits: ['B','.','B','.','S','.','.','B','B','.','B','.','S','.','S','S'], style: 'zeppelin' },
+      { name: 'Freight verse', tag: 'Night Freight · bass on the “a”, ghosts between', lvl:3, hits: ['B','.','g','B','S','g','.','g','.','g','B','.','S','g','B','g'], style: 'zeppelin' },
+      { name: 'Son clave 3-2', tag: 'Calle Sol · slaps on the clave', lvl:3, hits: ['B','g','g','S','g','g','S','g','B','g','S','g','S','g','B','g'], style: 'beatles' },
       { name: 'Fill: groups of three', tag: 'fill · 3s across the bar', lvl:3, hits: ['B','S','S','B','S','S','B','S','S','B','S','S','B','S','B','S'], style: 'zeppelin' },
     ]
   },
@@ -2191,6 +2211,7 @@ function start(source){
   // cajon to the loop's native tempo BEFORE we set the start time so both begin locked.
   if(playSource === 'practice') maybeSnapTempo();
   timingBegin();                              // mic Timing check (before the count-in clicks)
+  if(playSource === 'song') recBegin();       // ⏺ Record a take (count-in included, so the first hit is never cut)
   barDur = 4 * (60 / bpm);
   const t0 = audioCtx.currentTime + 0.12;
   const countIn = scheduleCountIn(t0);       // 0 when count-in is off
@@ -2214,6 +2235,7 @@ function start(source){
 }
 
 function stop(){
+  recEnd();
   diaryEnd();
   timingEnd();
   isPlaying = false;
@@ -2684,6 +2706,14 @@ const FILLS = {
   sixteenth: ['B','.','.','S','.','.','B','.','S','.','S','.','S','S','S','S']
 };
 const STOP_HITS = ['B','.','.','.'];
+// Night Freight: a two-bar fill, the band hits (1, the "a" of 1, the "&" of 2) and a bar alone.
+const FILL2 = [['B','.','S','S','B','.','S','S','B','.','S','S','B','S','S','S'],
+               ['S','S','B','S','S','B','S','S','B','S','B','S','S','S','S','S']];
+const BAND_HITS = ['B','.','.','S','.','.','S','.','.','.','.','.','.','.','S','S'];
+const BREAK_BAR = ['B','S','S','B','S','S','B','S','S','B','S','S','B','S','B','S'];
+// Calle Sol: a Latin fill that lands on 4 and the "&" of 4, and a solo idea for the descarga.
+const SOL_FILL = ['B','.','S','S','.','S','S','.','S','S','.','S','B','.','B','.'];
+const SOL_SOLO = ['B','.','S','S','.','S','S','.','B','.','S','S','.','S','B','B'];
 const SONGS = [
   // Fully arranged: each band is a rendered song (audio/song-*.js), not the practice loop.
   { title:'Flannel Static', style:'pearljam', bpm:84, feel:'grunge · full band', audio:'flannel', sections:[
@@ -2757,6 +2787,53 @@ const SONGS = [
     { name:'Fill',        sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the outro', bars:1, fill:true },
     { name:'Outro',        sub:'quarter',   groove:'Double bass anchor',    bars:4 }
   ]},
+  { title:'Night Freight', style:'zeppelin', bpm:100, feel:'harder, fuller rock · full band', audio:'freight', sections:[
+    // Harder: 16th grooves with ghost notes, two-bar fills, band hits to land with, a bar on your own.
+    { name:'Intro riff',   sub:'eighth',    groove:'Bass-heavy backbeat',   bars:4 },
+    { name:'Verse 1',      sub:'sixteenth', groove:'Freight verse',         bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the pre-chorus', bars:1, fill:true },
+    { name:'Pre-chorus',   sub:'sixteenth', groove:'Gallop',                bars:2 },
+    { name:'Fill 1/2',     sub:'sixteenth', hits:FILL2[0], label:'Two-bar fill, part 1', bars:1, fill:true },
+    { name:'Fill 2/2',     sub:'sixteenth', hits:FILL2[1], label:'Two-bar fill, part 2 · into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'sixteenth', groove:'Freight chorus',        bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:FILLS.sixteenth, label:'Into verse 2', bars:1, fill:true },
+    { name:'Verse 2',      sub:'sixteenth', groove:'Freight verse',         bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the pre-chorus', bars:1, fill:true },
+    { name:'Pre-chorus',   sub:'sixteenth', groove:'Gallop',                bars:2 },
+    { name:'Fill 1/2',     sub:'sixteenth', hits:FILL2[0], label:'Two-bar fill, part 1', bars:1, fill:true },
+    { name:'Fill 2/2',     sub:'sixteenth', hits:FILL2[1], label:'Two-bar fill, part 2 · into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'sixteenth', groove:'Freight chorus',        bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the band hits', bars:1, fill:true },
+    { name:'Band hits',    sub:'sixteenth', hits:BAND_HITS, label:'Hit with the band: 1, “a”, “&” of 2', bars:3 },
+    { name:'Break',        sub:'sixteenth', hits:BREAK_BAR, label:'Band stops: your bar alone', bars:1, fill:true },
+    { name:'Solo',         sub:'sixteenth', groove:'Pocket with ghosts',    bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the build', bars:1, fill:true },
+    { name:'Build',        sub:'sixteenth', groove:'Rolling 16ths',         bars:2 },
+    { name:'Fill 1/2',     sub:'sixteenth', hits:FILL2[0], label:'Two-bar fill, part 1', bars:1, fill:true },
+    { name:'Fill 2/2',     sub:'sixteenth', hits:FILL2[1], label:'Two-bar fill, part 2 · into the last chorus', bars:1, fill:true },
+    { name:'Last chorus',  sub:'sixteenth', groove:'Freight chorus',        bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:FILLS.sixteenth, label:'Into the outro', bars:1, fill:true },
+    { name:'Outro',        sub:'eighth',    groove:'Bass-heavy backbeat',   bars:4 }
+  ]},
+  { title:'Calle Sol', style:'beatles', bpm:104, feel:'Latin acoustic · cajon at home', audio:'sol', sections:[
+    // Nylon guitar, Cuban bass and horns, clave: the cajon's own kind of music.
+    { name:'Intro',        sub:'eighth',    groove:'Latin (tresillo-ish)',  bars:4 },
+    { name:'Verse 1',      sub:'sixteenth', groove:'Tumbao',                bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'sixteenth', groove:'Son clave 3-2',         bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into verse 2', bars:1, fill:true },
+    { name:'Verse 2',      sub:'sixteenth', groove:'Tumbao',                bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into the chorus', bars:1, fill:true },
+    { name:'Chorus',       sub:'sixteenth', groove:'Son clave 3-2',         bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into the bridge', bars:1, fill:true },
+    { name:'Bridge',       sub:'sixteenth', groove:'Bossa feel',            bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into your solo', bars:1, fill:true },
+    { name:'Descarga',     sub:'sixteenth', hits:SOL_SOLO, label:'Your solo: play this, or make it up', bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into the last chorus', bars:1, fill:true },
+    { name:'Last chorus',  sub:'sixteenth', groove:'Son clave 3-2',         bars:7 },
+    { name:'Fill',         sub:'sixteenth', hits:SOL_FILL, label:'Into the outro', bars:1, fill:true },
+    { name:'Outro',        sub:'sixteenth', groove:'Tumbao',                bars:4 }
+  ]},
   // Played along with the real song on YouTube: the video is the band, the app is the sheet.
   // Transcribed from a cajon cover (92 bpm). ytOffset = where bar 1 starts in the video;
   // learners can line it up with the sync controls (saved on the device).
@@ -2792,7 +2869,7 @@ function songBarAt(when){ return songAnchorBar + Math.max(0, Math.round((when - 
 // Rendered songs (loop-renderer/songs.py, arranged from Apple Loops). The MP3 starts with `pad` samples of
 // silence; some decoders also keep the encoder's 1105-sample delay — detected
 // from the length, exactly like trackWindow() does for the loops.
-const SONG_AUDIO = { flannel: { samples:8332696, pad:4096, barS:240/84 }, sunday: { samples:6442696, pad:4096, barS:240/96 }, iron: { samples:7485060, pad:4096, barS:240/88 }, tide: { samples:8544796, pad:4096, barS:240/72 } };
+const SONG_AUDIO = { flannel: { samples:8332696, pad:4096, barS:240/84 }, sunday: { samples:6442696, pad:4096, barS:240/96 }, iron: { samples:7485060, pad:4096, barS:240/88 }, tide: { samples:8544796, pad:4096, barS:240/72 }, freight: { samples:7889176, pad:4096, barS:240/100 }, sol: { samples:6781927, pad:4096, barS:240/104 } };
 const SONG_BUF = {};
 function songAudioKey(){ const s = songCur(); return s && s.audio && SONG_AUDIO[s.audio] ? s.audio : null; }
 const SONG_WAIT = {};
@@ -3229,6 +3306,119 @@ document.getElementById('songBandToggle').addEventListener('click', () => {
 });
 document.getElementById('songBandToggle').addEventListener('click', () => ytApplyMute());
 
+// ================= Record a take =================
+// ⏺ Record (R) in Songs: while a song plays, record the mic mixed with the band, then
+// listen back or save. The band is delayed by the speaker → mic round trip (timingRT, from
+// Timing check calibration) so your hits line up with it. Takes stay in memory on this
+// device (last five); nothing is uploaded.
+var recArmed = false, recStream = null, recRun = null, recTakes = [];
+const recBtn = document.getElementById('songRecToggle');
+const recBox = document.getElementById('songTakes');
+function recNote(msg){
+  recBox.querySelector('.take-note').textContent = msg || '';
+  recBox.hidden = !(msg || recTakes.length);
+}
+async function recMicOn(){
+  if(!window.MediaRecorder || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw { name:'NoRec' };
+  if(!recStream || recStream.getAudioTracks().every(t => t.readyState === 'ended')){
+    recStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  }
+}
+function recMicOff(){ if(recStream){ recStream.getTracks().forEach(t => t.stop()); recStream = null; } }
+function recReadyMsg(){
+  return 'Ready. Press Play — the take records until you pause or stop.' + (timingCfg.phones ? '' : ' Headphones give the cleanest take.');
+}
+recBtn.addEventListener('click', async () => {
+  if(recArmed){
+    recArmed = false; recBtn.classList.remove('active');
+    if(recRun) recEnd(); else recNote('');
+    recMicOff();
+    return;
+  }
+  recArmed = true; recBtn.classList.add('active');
+  recNote('Asking for the mic…');
+  try{
+    await recMicOn();
+    if(!recArmed){ recMicOff(); return; }
+    recNote(isPlaying && playSource === 'song' ? 'Mic ready — recording starts the next time you press Play.' : recReadyMsg());
+  }catch(e){
+    recArmed = false; recBtn.classList.remove('active');
+    recNote(e && e.name === 'NoRec' ? 'This browser can’t record audio.' : 'No mic — allow microphone access for this page, then try ⏺ Record again.');
+  }
+});
+function recLag(){
+  var v = 0;
+  try{ v = timingRT(); }catch(e){ try{ v = browserLag() + 0.02; }catch(e2){} }
+  return (v >= 0 && v < 0.9) ? v : 0.1;
+}
+function recBegin(){
+  if(!recArmed || recRun || !audioCtx) return;
+  if(!recStream || recStream.getAudioTracks().every(t => t.readyState === 'ended')){ recNote('The mic was switched off — turn ⏺ Record off and on again.'); return; }
+  const isYt = !!songCur().youtube;
+  try{
+    const dest = audioCtx.createMediaStreamDestination();
+    const mic = audioCtx.createMediaStreamSource(recStream);
+    mic.connect(dest);
+    let dly = null, bandG = null;
+    if(!isYt && musicGain){
+      dly = audioCtx.createDelay(1); dly.delayTime.value = recLag();
+      bandG = audioCtx.createGain(); bandG.gain.value = timingCfg.phones ? 0.9 : 0.5;  // speakers: the mic already hears some band
+      musicGain.connect(dly); dly.connect(bandG); bandG.connect(dest);
+    }
+    const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+    const mr = new MediaRecorder(dest.stream, type ? { mimeType:type } : {});
+    const run = { mr:mr, chunks:[], mic:mic, dly:dly, bandG:bandG, t0:Date.now(), song:songCur().title, yt:isYt };
+    mr.ondataavailable = e => { if(e.data && e.data.size) run.chunks.push(e.data); };
+    mr.onstop = () => recSave(run);
+    mr.start(250);
+    recRun = run;
+    recBtn.classList.add('recording');
+    recNote(isYt ? '⏺ Recording — mic only (the YouTube video can’t be recorded).' : '⏺ Recording…');
+  }catch(e){
+    recRun = null; recBtn.classList.remove('recording');
+    recNote('Couldn’t start recording in this browser.');
+  }
+}
+function recEnd(){
+  const run = recRun; if(!run) return;
+  recRun = null; recBtn.classList.remove('recording');
+  try{ if(run.mr.state !== 'inactive') run.mr.stop(); }catch(e){ recSave(run); }
+  setTimeout(() => {   // let the last chunk flush before unplugging
+    try{ run.mic.disconnect(); }catch(e){}
+    try{ if(run.dly){ musicGain.disconnect(run.dly); run.dly.disconnect(); run.bandG.disconnect(); } }catch(e){}
+  }, 300);
+}
+function recSave(run){
+  if(run.saved) return; run.saved = true;
+  const secs = (Date.now() - run.t0) / 1000;
+  if(secs < 2 || !run.chunks.length){ recNote(recArmed ? 'That take was too short to keep. Press Play to record again.' : ''); return; }
+  const type = run.mr.mimeType || run.chunks[0].type || 'audio/webm';
+  const blob = new Blob(run.chunks, { type:type });
+  const ext = /mp4|aac/.test(type) ? 'm4a' : /ogg/.test(type) ? 'ogg' : 'webm';
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const hm = pad(d.getHours()) + '.' + pad(d.getMinutes());
+  recTakes.unshift({ url:URL.createObjectURL(blob), secs:secs, song:run.song, yt:run.yt, at:hm.replace('.', ':'),
+                     name:'cajon take - ' + run.song + ' - ' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + hm + '.' + ext });
+  while(recTakes.length > 5) URL.revokeObjectURL(recTakes.pop().url);
+  renderTakes();
+  recNote(recArmed ? 'Take saved below. Press Play to record another.' : '');
+}
+function renderTakes(){
+  const list = recBox.querySelector('.take-list');
+  list.innerHTML = '';
+  recTakes.forEach((t, i) => {
+    const row = document.createElement('div'); row.className = 'take';
+    const lbl = document.createElement('span'); lbl.className = 'take-lbl';
+    lbl.textContent = (i === 0 ? 'Latest · ' : '') + t.song + ' · ' + fmtDur(t.secs) + ' · ' + t.at + (t.yt ? ' · mic only' : '');
+    const au = document.createElement('audio'); au.controls = true; au.preload = 'metadata'; au.src = t.url;
+    const dl = document.createElement('a'); dl.className = 'take-save'; dl.href = t.url; dl.download = t.name;
+    dl.textContent = '⤓ Save'; dl.title = 'Save this take as an audio file';
+    row.append(lbl, au, dl); list.appendChild(row);
+  });
+  recBox.hidden = !(recTakes.length || recBox.querySelector('.take-note').textContent);
+}
+window.addEventListener('pagehide', () => { recMicOff(); });
+
 // ================= YouTube play-along =================
 // The video is the clock. When it is playing we read its time, put the next bar of the
 // sheet on the audio clock at the matching moment, and keep checking for drift.
@@ -3311,6 +3501,7 @@ function ytBegin(){
   isPlaying = true; stepIndex = 0; ytHold = true;
   setPlayingUI(true);
   diaryBegin();
+  recBegin();
   ytApplyMute();
   clearTimeout(timerId); scheduler();
   clearInterval(ytResyncId); ytResyncId = setInterval(ytResync, 400);
@@ -3892,6 +4083,7 @@ function timingCalibrate(){
 
     if(inSongs){
       if(e.key.toLowerCase() === 'l'){ press(document.getElementById('songLoopToggle')); return; }
+      if(e.key.toLowerCase() === 'r'){ press(document.getElementById('songRecToggle')); return; }
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
         const items = document.querySelectorAll('#songPicker .song-pill'), n = items.length;
         press(items[(songIdx + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]);

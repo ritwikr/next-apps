@@ -1,11 +1,11 @@
-"""The four Songs-tab songs and four practice loops, arranged from Apple Loops.
+"""The six Songs-tab songs and four practice loops, arranged from Apple Loops.
 
 Each song follows the section plan in the app's SONGS list exactly (same bars, same tempo),
 so bar N of the audio is bar N of the groove sheet. Loops are layered only where they
 were checked to agree harmonically (fit.py); different sections can use
-different loop families. All four songs are in E, so loops are pitch-shifted to E.
+different loop families. Five songs are in E and Calle Sol is in A minor; loops are pitch-shifted to the song key.
 
-  python3 songs.py iron flannel sunday tide     # full songs
+  python3 songs.py iron flannel sunday tide freight sol   # full songs
   python3 songs.py loops                        # the four 16-bar practice loops
 
 Then turn each MP3 into an app audio file (from the cajon folder):
@@ -281,7 +281,128 @@ def tide_loop():
     return s, dict(t60=2.6, ret=0.55, predelay=0.03)
 
 
-SONGS = dict(iron=(IRON, iron), flannel=(FLANNEL, flannel), sunday=(SUNDAY, sunday), tide=(TIDE, tide))
+# ------------------------------------------------------------------ Night Freight
+# Harder, fuller riff rock, 100 bpm, E minor. Gearbox and Streamlined kits (tight kit basses),
+# Dark and Heavy riff for the intro / outro. Band hits that you play with, a one-bar cajon
+# break, a guitar solo and a build that swells into the last chorus.
+FREIGHT = dict(key='freight', title='Night Freight', bpm=100, style='zeppelin',
+               sections=[('Intro riff', 4), ('Verse 1', 8), ('Pre-chorus', 4), ('Chorus', 8), ('Verse 2', 8),
+                         ('Pre-chorus', 4), ('Chorus', 8), ('Band hits', 4), ('Solo', 8), ('Build', 4),
+                         ('Last chorus', 8), ('Outro', 4)])
+# Band hits land on the 1, the "a" of 1 and the "&" of 2 (in beats from the bar line).
+FREIGHT_HITS = [0.0, 0.75, 1.5]
+
+
+def freight_parts():
+    edgy = L('bass', 'Streamlined Bass Guitar', gain=-2)   # tight, same kit as the chorus guitar
+    chorus = [L('gtrL', 'Streamlined Rhythm Guitar', gain=-1, pan=-0.55), L('gtrR', 'Gearbox Rhythm Guitar', gain=-2, pan=0.55),
+              edgy, L('perc', 'Tambourine 02', gain=-14, pan=0.45, transients='crisp')]
+    return dict(
+        riff=[L('gtrC', 'Dark and Heavy Riff 04', gain=-1, pan=-0.15)],
+        riffbass=[L('bass', 'Razor Rock Bass Guitar 04', gain=-4)],
+        verse=[L('gtrL', 'Gearbox Muted Guitar', gain=-1, pan=-0.45), L('bass', 'Gearbox Bass Guitar', gain=-2)],
+        verse2=[L('gtrL', 'Gearbox Muted Guitar', gain=-1, pan=-0.45), L('bass', 'Gearbox Bass Guitar', gain=-2),
+                L('gtrR', 'Hot Rod Rhythm Guitar', gain=-8, pan=0.6)],
+        pre=[L('gtrC', 'Hot Rod Rhythm Guitar', gain=-1, pan=-0.35), L('gtrR', 'Razor Rock Rhythm Guitar 03', gain=-7, pan=0.55),
+             L('bass', 'Razor Rock Bass Guitar 04', gain=-2)],
+        chorus=chorus,
+        chorus2=chorus + [L('lead', 'Gearbox Lead Guitar', gain=-5, pan=0.1)],
+        solo=[L('gtrR', 'Gearbox Rhythm Guitar', gain=-2, pan=0.5), edgy, L('lead', 'Gearbox Lead Guitar', gain=0, pan=0.05)],
+        hit=[L('gtrC', 'Razor Rock Rhythm Guitar 03', gain=-1, pan=-0.2), L('gtrR', 'Razor Rock Rhythm Guitar 03', gain=-4, pan=0.5),
+             L('bass', 'Razor Rock Bass Guitar 04', gain=-1)],
+        end=[L('gtrC', 'Dark and Heavy Riff 04', gain=-1, pan=-0.15), L('gtrR', 'Razor Rock Rhythm Guitar 03', gain=-4, pan=0.5),
+             L('bass', 'Razor Rock Bass Guitar 04', gain=-3)],
+    )
+
+
+FR_TR = dict(gtrL=dict(send=0.12, hp=90), gtrR=dict(send=0.12, hp=90), gtrC=dict(send=0.12, hp=90),
+             lead=dict(send=0.3, hp=150), bass=dict(send=0.02, lp=4000), perc=dict(send=0.08, hp=300))
+
+
+def freight():
+    P = freight_parts(); s = Song(100, 72)
+    tracks_setup(s, FR_TR)
+    lay(s, 0, 4, P['riff']); lay(s, 2, 2, P['riffbass'])
+    lay(s, 4, 8, P['verse'])
+    lay(s, 12, 4, P['pre'])
+    lay(s, 16, 8, P['chorus'])
+    lay(s, 24, 8, P['verse2'])
+    lay(s, 32, 4, P['pre'])
+    lay(s, 36, 8, P['chorus2'])
+    for b in range(44, 47):                    # three bars of band hits; bar 47 is the cajon's alone
+        for beat in FREIGHT_HITS:
+            for l in P['hit']:
+                s.hit(l['track'], l['loop'], l['shift'], b, beat, 0.4, 0.5 if beat < 1.5 else 1.2, l['gain'], l['pan'],
+                      src_beat=0.06)   # skip the loop's soft lead-in so the stab lands on the grid
+    lay(s, 48, 8, P['solo'])
+    lay(s, 56, 4, P['pre'] + [L('gtrL', 'Streamlined Rhythm Guitar', gain=-4, pan=-0.6)])
+    s.automate('gtrC', [(0, 0), (56, 0), (56.01, -9), (60, 0), (200, 0)])     # the build swells up
+    s.automate('gtrL', [(0, 0), (56, 0), (56.01, -12), (60, 0), (200, 0)])
+    lay(s, 60, 8, P['chorus2'])
+    lay(s, 68, 4, P['riff'] + P['riffbass'])
+    ending(s, 72, P['end'])
+    return s, dict(t60=1.4, ret=0.4)
+
+
+# ------------------------------------------------------------------ Calle Sol
+# Latin acoustic, 104 bpm, A minor: the cajon at home. Nylon-string Brazilian guitar, Cuban
+# timba bass, Cuban horns in the choruses, Greek nylon guitar and violin colour, clave,
+# guiro and shaker (small hand percussion only: the cajon is the drummer). A bright bridge
+# in A major, then the band drops to guitar and bass for your solo (the descarga).
+SOL = dict(key='sol', title='Calle Sol', bpm=104, style='beatles',
+           sections=[('Intro', 4), ('Verse 1', 8), ('Chorus', 8), ('Verse 2', 8), ('Chorus', 8),
+                     ('Bridge', 8), ('Descarga', 8), ('Last chorus', 8), ('Outro', 4)])
+
+
+def sol_parts():
+    gtr = L('gtrL', 'Brazilian Sun Guitar 02', gain=-1, pan=-0.3)
+    bass = L('bass', 'Cuban Timba Bass 11', shift=-5, gain=-3)
+    shaker = L('perc', 'Shaker 05', gain=-14, pan=0.45, transients='crisp')
+    clave = L('perc2', 'Clave 03', gain=-15, pan=-0.5, transients='crisp')
+    guiro = L('perc3', 'Latin Day Guiro 04', gain=-16, pan=0.55, transients='crisp')
+    greek = L('gtrR', 'Greek Sirtos Guitar 01', gain=-8, pan=0.45)
+    chorus = [gtr, bass, L('horns', 'Cuban Fun Horn 05', gain=-3, pan=0.15), clave, guiro, L('gtrR', 'Greek Sirtos Guitar 01', gain=-10, pan=0.5)]
+    return dict(
+        intro=[L('gtrL', 'Brazilian Sun Guitar 02', gain=-1, pan=-0.15)],
+        introclave=[clave],
+        verse=[gtr, bass, greek, shaker],
+        verse2=[gtr, bass, greek, shaker, L('vibes', 'Lounge Vibes 06', gain=-11, pan=0.2)],
+        chorus=chorus,
+        chorus2=[gtr, bass, L('horns', 'Cuban Fun Horn 04', gain=-3, pan=0.15), clave, guiro,
+                 L('gtrR', 'Greek Sirtos Guitar 01', gain=-10, pan=0.5)],
+        bridge=[L('gtrL', 'Brazilian Sun Guitar 04', gain=-1, pan=-0.3), L('bass', 'Latin Fire Bass 01', shift=-3, gain=-4),
+                L('str', 'Greek Sirtos Violin 02', gain=-5, pan=0.3), L('vibes', 'Lounge Vibes 06', gain=-9, pan=-0.1), shaker],
+        descarga=[L('gtrL', 'Brazilian Sun Guitar 02', gain=-4, pan=-0.3), L('bass', 'Cuban Timba Bass 11', shift=-5, gain=-5), clave],
+        last=chorus + [L('vibes', 'Lounge Vibes 06', gain=-11, pan=-0.2), shaker],
+        outro=[gtr, bass, shaker],
+        end=[L('gtrL', 'Brazilian Sun Guitar 02', gain=-1, pan=-0.3), L('bass', 'Cuban Timba Bass 11', shift=-5, gain=-3),
+             L('horns', 'Cuban Fun Horn 05', gain=-3, pan=0.15)],
+    )
+
+
+SOL_TR = dict(gtrL=dict(send=0.14, hp=80), gtrR=dict(send=0.18, hp=120), bass=dict(send=0.02, lp=3500),
+              horns=dict(send=0.22, hp=150), str=dict(send=0.3, hp=180), vibes=dict(send=0.3, hp=150),
+              perc=dict(send=0.08, hp=300), perc2=dict(send=0.1, hp=300), perc3=dict(send=0.1, hp=300))
+
+
+def sol():
+    P = sol_parts(); s = Song(104, 64)
+    tracks_setup(s, SOL_TR)
+    lay(s, 0, 4, P['intro']); lay(s, 2, 2, P['introclave'])
+    lay(s, 4, 8, P['verse'])
+    lay(s, 12, 8, P['chorus'])
+    lay(s, 20, 8, P['verse2'])
+    lay(s, 28, 8, P['chorus2'])
+    lay(s, 36, 8, P['bridge'])
+    lay(s, 44, 8, P['descarga'])
+    lay(s, 52, 8, P['last'])
+    lay(s, 60, 4, P['outro'])
+    ending(s, 64, P['end'], take=1.0, ring=3.0)
+    return s, dict(t60=1.5, ret=0.42)
+
+
+SONGS = dict(iron=(IRON, iron), flannel=(FLANNEL, flannel), sunday=(SUNDAY, sunday), tide=(TIDE, tide),
+             freight=(FREIGHT, freight), sol=(SOL, sol))
 LOOPS = dict(zeppelin=(88, iron_loop), pearljam=(84, flannel_loop), beatles=(96, sunday_loop), floyd=(72, tide_loop))
 
 

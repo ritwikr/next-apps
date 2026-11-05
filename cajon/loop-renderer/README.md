@@ -12,9 +12,11 @@ It replaced `band-renderer/` (synthesised instruments) in October 2026. `band-re
 | `song_flannel` | Flannel Static, grunge | 84 | Classic Attitude Rock, Nitro Power, Kick Start, Combustion |
 | `song_sunday` | Sunday Paper, acoustic pop-rock | 96 | Alt Pop Acoustic, Cheerful Mandolin, Indie Rock Riffing, Bright Tone Bass, Front Porch Dobro, shaker, tambourine |
 | `song_tide` | Slow Tide, slow and spacious | 72 | Abstract Atmosphere, Courier Strings, Metro, Upbeat Electric Piano, Rock Bass, Downtempo Funky Guitar, Delta Blues Solo |
+| `song_freight` | Night Freight, harder and fuller riff rock (band hits, a bar alone, two-bar fills) | 100 | Gearbox and Streamlined kits, Hot Rod, Razor Rock, Dark and Heavy Riff, tambourine |
+| `song_sol` | Calle Sol, Latin acoustic (the cajon's home ground) | 104 | Brazilian Sun nylon guitar, Cuban Timba bass, Cuban Fun horns, Greek Sirtos guitar and violin, Latin Fire bass, Lounge Vibes, clave, guiro, shaker |
 | `beatles` `zeppelin` `floyd` `pearljam` | 16-bar practice loops (verse + chorus of the songs above) | 96 / 88 / 72 / 84 | same |
 
-Each song follows its section plan in the app's `SONGS` list bar for bar, so the music changes exactly where the groove sheet does. All four are in E.
+Each song follows its section plan in the app's `SONGS` list bar for bar, so the music changes exactly where the groove sheet does. The first five are in E; Calle Sol is in A minor. Calle Sol uses loops from the Jam Pack World Music pack and Night Freight uses the main GarageBand library. Run `prepare.py` on each loop folder you need (the catalogue is rebuilt each run, so copy the loops you want into one folder first).
 
 ## How to rebuild
 
