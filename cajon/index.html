@@ -746,6 +746,48 @@
   .cc-sym .lvl{ margin-right:6px; vertical-align:middle; }
   /* written ghost note: always shown faint, a little stronger than the rest-ghosts */
   .hit.ghost.written{ border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+  /* Songs: song chooser (dropdown) */
+  .song-chooser{ display:flex; align-items:stretch; gap:8px; margin-bottom:14px; }
+  .song-dd{ position:relative; flex:1 1 auto; min-width:0; }
+  .song-trigger{ width:100%; height:100%; display:flex; align-items:center; gap:12px; text-align:left; font:inherit; color:var(--ink); background:var(--well); border:2px solid var(--line); border-radius:14px; padding:10px 14px; cursor:pointer; }
+  .song-trigger:hover, .song-trigger[aria-expanded="true"]{ border-color:var(--accent); }
+  .st-icon{ font-size:30px; line-height:1; flex-shrink:0; display:inline-block; }
+  .st-icon.pop{ animation:stPop .35s ease; }
+  @keyframes stPop{ 40%{ transform:scale(1.35) rotate(-10deg); } }
+  .st-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .song-trigger .song-title{ font-size:22px; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .song-trigger .song-meta{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .st-caret{ font-size:18px; color:var(--muted); transition:transform .15s ease; }
+  .song-trigger[aria-expanded="true"] .st-caret{ transform:rotate(180deg); color:var(--accent); }
+  .song-step{ flex:0 0 auto; width:48px; font-size:24px; font-weight:900; line-height:1; color:var(--ink); background:transparent; border:2px solid var(--line); border-radius:14px; cursor:pointer; padding:0; }
+  .song-step:hover{ border-color:var(--muted); }
+  .song-step.dice{ font-size:22px; }
+  .song-step.dice.roll{ animation:diceRoll .45s ease; }
+  @keyframes diceRoll{ to{ transform:rotate(360deg); } }
+  .song-menu{ position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:30; background:var(--card); border:2px solid var(--line); border-radius:14px; padding:6px; box-shadow:0 18px 40px -16px var(--shadow); max-height:min(60vh, 460px); overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+  .song-menu[hidden]{ display:none; }
+  .song-opt{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; font:inherit; color:var(--ink); background:transparent; border:2px solid transparent; border-radius:10px; padding:9px 10px; cursor:pointer; }
+  .song-opt:hover, .song-opt:focus-visible{ background:var(--well); border-color:var(--line); outline:none; }
+  .song-opt.active{ border-color:var(--accent); }
+  .so-icon{ font-size:24px; line-height:1; width:30px; text-align:center; flex-shrink:0; }
+  .so-text{ flex:1; min-width:0; }
+  .so-title{ display:block; font-weight:800; font-size:.95rem; }
+  .so-feel{ display:block; font-size:.74rem; color:var(--muted); }
+  .so-info{ font-size:.74rem; color:var(--muted); white-space:nowrap; text-align:right; }
+  .song-opt.active .so-title::after{ content:' ♪'; color:var(--accent); }
+  /* Songs: big Play/Resume + Stop on one line, the rest neatly below */
+  .song-transport{ display:flex; flex-direction:column; gap:12px; }
+  .st-main{ display:flex; align-items:center; gap:12px; }
+  .st-main .play-btn, .st-main .stop-btn{ flex:1 1 0; justify-content:center; min-height:76px; font-size:1.6rem; border-radius:18px; padding:14px 18px; }
+  .st-main .stop-btn{ flex:0.75 1 0; }
+  .st-main .pulse{ width:18px; height:18px; }
+  .st-toggles{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  @media (max-width:640px){ .st-toggles{ grid-template-columns:repeat(6, 1fr); } .st-toggles .timer-toggle{ grid-column:span 2; } .st-toggles .timer-toggle:nth-child(n+4){ grid-column:span 3; } .st-toggles .timer-toggle{ font-size:.76rem; padding:0 4px; } }
+  .st-toggles .timer-toggle{ height:46px; justify-content:center; font-size:.85rem; white-space:nowrap; padding:0 8px; gap:6px; min-width:0; }
+  .song-mixer{ margin-top:2px; }
+  #songGrooveVol::-webkit-slider-thumb, #songMusicVol::-webkit-slider-thumb{ background:var(--accent); }
+  #songGrooveVol::-moz-range-thumb, #songMusicVol::-moz-range-thumb{ background:var(--accent); }
+  @media (max-width:520px){ .song-step{ width:40px; } .song-step.dice{ display:none; } .song-trigger{ gap:8px; padding:8px 10px; } .st-icon{ font-size:22px; } .song-trigger .song-title{ font-size:17px; } .st-main .play-btn, .st-main .stop-btn{ min-height:64px; font-size:1.3rem; } }
   /* YouTube play-along */
   .yt-wrap{ position:relative; width:100%; max-width:560px; aspect-ratio:16/9; margin:0 auto 12px; border-radius:12px; overflow:hidden; background:#000; }
   .yt-wrap[hidden], .yt-sync[hidden]{ display:none; }
@@ -871,10 +913,18 @@
 
   <div id="songsView" hidden>
     <div class="panel">
-      <div class="song-picker" id="songPicker"></div>
-      <div class="song-head">
-        <h2 class="song-title" id="songTitle"></h2>
-        <span class="song-meta" id="songMeta"></span>
+      <div class="song-chooser">
+        <button class="song-step" id="songPrev" title="Previous song (↑)" aria-label="Previous song">‹</button>
+        <div class="song-dd" id="songDD">
+          <button class="song-trigger" id="songTrigger" aria-haspopup="listbox" aria-expanded="false" title="Pick a song">
+            <span class="st-icon" id="songIcon"></span>
+            <span class="st-text"><span class="song-title" id="songTitle"></span><span class="song-meta" id="songMeta"></span></span>
+            <span class="st-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="song-menu" id="songPicker" role="listbox" hidden></div>
+        </div>
+        <button class="song-step" id="songNext" title="Next song (↓)" aria-label="Next song">›</button>
+        <button class="song-step dice" id="songShuffle" title="Surprise me!" aria-label="Pick a random song">🎲</button>
       </div>
 
       <div class="yt-wrap" id="ytWrap" hidden><div id="ytPlayer"></div></div>
@@ -900,15 +950,35 @@
         <div class="switch-tag" id="songNextTag"></div>
       </div>
 
-      <div class="transport">
-        <div class="pulse" id="songPulse"></div>
-        <button class="play-btn" id="songPlayBtn">▶ Play song</button>
-        <button class="stop-btn" id="songStopBtn" hidden>■ Stop</button>
-        <button class="timer-toggle" id="songCountInToggle"><span class="timer-dot"></span>Count-in</button>
-        <button class="timer-toggle" id="songGhostToggle"><span class="timer-dot"></span>Ghost notes</button>
-        <button class="timer-toggle" id="songBandToggle"><span class="timer-dot"></span>Band</button>
-        <button class="timer-toggle" id="songLoopToggle" title="Repeat a section over and over to practise it (L)"><span class="timer-dot"></span>🔁 Loop</button>
-        <button class="timer-toggle" id="songRecToggle" title="Record yourself with the band, then listen back or save the take (R)"><span class="timer-dot"></span>⏺ Record</button>
+      <div class="song-transport">
+        <div class="st-main">
+          <div class="pulse" id="songPulse"></div>
+          <button class="play-btn" id="songPlayBtn">▶ Play song</button>
+          <button class="stop-btn" id="songStopBtn" hidden>■ Stop</button>
+        </div>
+        <div class="st-toggles">
+          <button class="timer-toggle" id="songCountInToggle"><span class="timer-dot"></span>Count-in</button>
+          <button class="timer-toggle" id="songGhostToggle"><span class="timer-dot"></span>Ghost notes</button>
+          <button class="timer-toggle" id="songBandToggle"><span class="timer-dot"></span>Band</button>
+          <button class="timer-toggle" id="songLoopToggle" title="Repeat a section over and over to practise it (L)"><span class="timer-dot"></span>🔁 Loop</button>
+          <button class="timer-toggle" id="songRecToggle" title="Record yourself with the band, then listen back or save the take (R)"><span class="timer-dot"></span>⏺ Record</button>
+        </div>
+        <div class="mixer song-mixer">
+          <div class="mix-ch">
+            <div class="mix-row">
+              <span class="bpm-label">🥁 Percussion</span>
+              <span class="mix-val"><span id="songGrooveVolVal">85</span>%</span>
+            </div>
+            <input type="range" id="songGrooveVol" min="0" max="100" value="85" aria-label="Percussion volume">
+          </div>
+          <div class="mix-ch">
+            <div class="mix-row">
+              <span class="bpm-label">🎸 Music</span>
+              <span class="mix-val"><span id="songMusicVolVal">85</span>%</span>
+            </div>
+            <input type="range" id="songMusicVol" min="0" max="100" value="85" aria-label="Music volume">
+          </div>
+        </div>
       </div>
 
       <div class="loop-hint" id="songLoopHint" hidden></div>
@@ -1036,6 +1106,8 @@
         <dt>Ghost notes</dt><dd>Same switch as in Practice: rests become whisper-soft slaps. Off unless you turn it on (here, in Practice, or with <kbd>G</kbd>).</dd>
         <dt>Play song</dt><dd>Plays the whole song start to finish with its band — intro, verses, choruses, breaks and an ending hit.</dd>
         <dt>The sheet</dt><dd>Every section with its groove. One dot per bar. Each fill (a one-bar burst that leads into the next section) has its own row, so the bar before it warns you it’s coming. The section playing now is outlined.</dd>
+        <dt>Pick a song</dt><dd>Tap the song name for the list of songs, or use <b>‹ ›</b> to step through them. <b>🎲</b> picks one at random.</dd>
+        <dt>Percussion / Music</dt><dd>Volume sliders under the buttons: make the cajon louder than the band (or the other way round). Same setting as Practice’s Groove and Music volume, and remembered on this device. On Pasoori, Music is the video’s volume.</dd>
         <dt>Tap a section</dt><dd>Starts the song from there.</dd>
         <dt>Pasoori (YouTube)</dt><dd>Play along with the real song: the video is the band and the sheet follows it. Play, Pause, Loop and tapping a section all move the video too (so does its own play button). If the lit squares run early or late, nudge with − / +; if the grooves change in the wrong place, move a whole bar. Or tap <b>Tap on the 1</b> four times on the first beat of bars while it plays. <b>Guide cajon</b> plays the transcription quietly along with you. Needs the internet.</dd>
         <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
@@ -1922,8 +1994,23 @@ function applyVolumes(){
   if(grooveGain) grooveGain.gain.value = (parseInt(grooveVol.value,10)/100) * GROOVE_SCALE * live;
   if(musicGain)  musicGain.gain.value  = (parseInt(musicVol.value,10)/100) * MUSIC_SCALE * live;
 }
-grooveVol.addEventListener('input', () => { grooveVolVal.textContent = grooveVol.value; applyVolumes(); });
-musicVol.addEventListener('input', () => { musicVolVal.textContent = musicVol.value; applyVolumes(); });
+// Songs has its own Percussion / Music sliders; they're the same setting as Practice's
+// Groove / Music volume (move one, the other follows) and are remembered on this device.
+const VOL_KEY = 'cajon.vol.v1';
+const VOL_PAIRS = { groove: [grooveVol, document.getElementById('songGrooveVol')], music: [musicVol, document.getElementById('songMusicVol')] };
+const VOL_LABELS = { groove: [grooveVolVal, document.getElementById('songGrooveVolVal')], music: [musicVolVal, document.getElementById('songMusicVolVal')] };
+function setVol(kind, v, save){
+  v = String(Math.max(0, Math.min(100, parseInt(v, 10) || 0)));
+  VOL_PAIRS[kind].forEach(el => { if(el && el.value !== v) el.value = v; });
+  VOL_LABELS[kind].forEach(el => { if(el) el.textContent = v; });
+  applyVolumes();
+  if(kind === 'music' && typeof ytApplyVolume === 'function') ytApplyVolume();
+  if(save) try{ localStorage.setItem(VOL_KEY, JSON.stringify({ groove: +grooveVol.value, music: +musicVol.value })); }catch(e){}
+}
+Object.keys(VOL_PAIRS).forEach(kind => VOL_PAIRS[kind].forEach(el => {
+  if(el) el.addEventListener('input', () => setVol(kind, el.value, true));
+}));
+(function(){ try{ const v = JSON.parse(localStorage.getItem(VOL_KEY) || 'null'); if(v){ if(isFinite(v.groove)) setVol('groove', v.groove); if(isFinite(v.music)) setVol('music', v.music); } }catch(e){} })();
 
 // ---------- Sound/light sync ----------
 // The browser plays a sound a little after the time we schedule it (speaker buffers,
@@ -3135,24 +3222,71 @@ function songClearPause(){
 function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function fmtDur(sec){ sec = Math.round(sec); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
 
+// ---- Song chooser: a dropdown (the list keeps growing), ‹ › to step, 🎲 for a surprise ----
+const SONG_ICONS = { 'Flannel Static':'📻', 'Sunday Paper':'📰', 'Iron Lantern':'🏮', 'Slow Tide':'🌊', 'Night Freight':'🚂', 'Calle Sol':'☀️', 'Pasoori':'🎬' };
+function songIcon(s){ return s.icon || SONG_ICONS[s.title] || (s.youtube ? '🎬' : '🎵'); }
+const songTrigger = document.getElementById('songTrigger');
+const songMenu = document.getElementById('songPicker');
+function songMenuOpen(){ return !songMenu.hidden; }
+function openSongMenu(){
+  songMenu.hidden = false; songTrigger.setAttribute('aria-expanded', 'true');
+  const a = songMenu.querySelector('.song-opt.active') || songMenu.firstElementChild;
+  if(a){ a.scrollIntoView({ block:'nearest' }); a.focus({ preventScroll:true }); }
+}
+function closeSongMenu(focusBack){
+  if(songMenu.hidden) return;
+  songMenu.hidden = true; songTrigger.setAttribute('aria-expanded', 'false');
+  if(focusBack) songTrigger.focus();
+}
+function selectSong(i){
+  closeSongMenu();
+  if(i === songIdx) return;
+  if(isPlaying) stop();
+  songIdx = i; songStartSec = 0; songJustFinished = false; songClearPause();
+  loopA = loopB = 0; loopFresh = songLoop;
+  renderSongs();
+  decodeSongAudio(songAudioKey());
+  const ic = document.getElementById('songIcon');
+  ic.classList.remove('pop'); void ic.offsetWidth; ic.classList.add('pop');
+}
+function stepSong(d){ const n = SONGS.length; selectSong((songIdx + d + n) % n); }
+songTrigger.addEventListener('click', () => songMenuOpen() ? closeSongMenu() : openSongMenu());
+document.getElementById('songPrev').addEventListener('click', () => stepSong(-1));
+document.getElementById('songNext').addEventListener('click', () => stepSong(1));
+document.getElementById('songShuffle').addEventListener('click', e => {
+  const btn = e.currentTarget;
+  btn.classList.remove('roll'); void btn.offsetWidth; btn.classList.add('roll');
+  if(SONGS.length < 2) return;
+  let i; do { i = Math.floor(Math.random() * SONGS.length); } while(i === songIdx);
+  selectSong(i);
+});
+document.addEventListener('pointerdown', e => { if(songMenuOpen() && !document.getElementById('songDD').contains(e.target)) closeSongMenu(); });
+songMenu.addEventListener('keydown', e => {
+  const items = [...songMenu.querySelectorAll('.song-opt')], k = items.indexOf(document.activeElement);
+  if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); closeSongMenu(true); }
+  else if((e.key === 'Enter' || e.key === ' ') && k >= 0){ e.preventDefault(); e.stopPropagation(); items[k].click(); }
+  else if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault(); e.stopPropagation();
+    const n = items.length; items[((k < 0 ? 0 : k) + (e.key === 'ArrowDown' ? 1 : -1) + n) % n].focus();
+  }
+});
+
 function renderSongs(){
   const picker = document.getElementById('songPicker');
   picker.innerHTML = '';
   SONGS.forEach((s, i) => {
     const b = document.createElement('button');
-    b.className = 'song-pill' + (i === songIdx ? ' active' : '');
-    b.innerHTML = esc(s.title) + '<small>' + esc(s.feel) + '</small>';
-    b.addEventListener('click', () => {
-      if(isPlaying) stop();
-      songIdx = i; songStartSec = 0; songJustFinished = false; songClearPause();
-      loopA = loopB = 0; loopFresh = songLoop;
-      renderSongs();
-      decodeSongAudio(songAudioKey());
-    });
+    const nb = songTotalBars(s);
+    b.className = 'song-opt' + (i === songIdx ? ' active' : '');
+    b.setAttribute('role', 'option');
+    b.setAttribute('aria-selected', i === songIdx ? 'true' : 'false');
+    b.innerHTML = '<span class="so-icon">' + songIcon(s) + '</span><span class="so-text"><span class="so-title">' + esc(s.title) + '</span><span class="so-feel">' + esc(s.feel) + '</span></span><span class="so-info">' + s.bpm + ' bpm<br>' + fmtDur(nb * 240 / s.bpm) + '</span>';
+    b.addEventListener('click', () => selectSong(i));
     picker.appendChild(b);
   });
   const song = songCur(), bars = songTotalBars(song);
   if(typeof ytShowUI === 'function') ytShowUI();
+  document.getElementById('songIcon').textContent = songIcon(song);
   document.getElementById('songTitle').textContent = song.title;
   document.getElementById('songMeta').textContent =
     song.youtube ? 'YouTube · ' + song.bpm + ' bpm · ' + bars + ' bars transcribed · ' + fmtDur(bars * 240 / song.bpm) : (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / song.bpm);
@@ -3472,6 +3606,11 @@ function ytEnsure(cb){
 function ytApplyMute(){
   if(!(yt && ytReady && ytSong())) return;
   try{ musicEnabled ? yt.unMute() : yt.mute(); }catch(e){}
+  ytApplyVolume();
+}
+function ytApplyVolume(){   // the Music slider is the video's volume
+  if(!(yt && ytReady)) return;
+  try{ yt.setVolume(parseInt(musicVol.value, 10)); }catch(e){}
 }
 function ytShowUI(){
   const s = ytSong();
@@ -4085,8 +4224,8 @@ function timingCalibrate(){
       if(e.key.toLowerCase() === 'l'){ press(document.getElementById('songLoopToggle')); return; }
       if(e.key.toLowerCase() === 'r'){ press(document.getElementById('songRecToggle')); return; }
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
-        const items = document.querySelectorAll('#songPicker .song-pill'), n = items.length;
-        press(items[(songIdx + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]);
+        e.preventDefault();
+        stepSong(e.key === 'ArrowDown' ? 1 : -1);
       } else if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
         const n = songCur().sections.length;
         const si = songPlayingSection() + (e.key === 'ArrowRight' ? 1 : -1);
