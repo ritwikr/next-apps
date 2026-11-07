@@ -725,6 +725,15 @@
   .loop-hint{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .loop-hint b{ color:var(--ink); }
   .loop-hint[hidden]{ display:none; }
+  /* song speed (Songs) */
+  .song-speed{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:10px; font-family:var(--font-sans); font-size:12px; color:var(--muted); }
+  .song-speed[hidden]{ display:none; }
+  .rate-chip{ font-family:var(--font-sans); font-size:12px; font-weight:600; background:transparent; color:var(--muted);
+    border:1px solid var(--line); border-radius:999px; padding:6px 12px; cursor:pointer; transition:all .12s ease; }
+  .rate-chip:hover{ color:var(--ink); border-color:var(--muted); }
+  .rate-chip.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .rate-chip:disabled{ opacity:.45; cursor:not-allowed; }
+  .song-speed .ss-note{ margin-left:4px; }
   /* recorded takes (Songs) */
   .takes{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .takes[hidden]{ display:none; }
@@ -778,7 +787,7 @@
   /* Songs: big Play/Resume + Stop on one line, the rest neatly below */
   .song-transport{ display:flex; flex-direction:column; gap:12px; }
   .st-main{ display:flex; align-items:center; gap:12px; }
-  .st-main .play-btn, .st-main .stop-btn{ flex:1 1 0; justify-content:center; min-height:76px; font-size:1.6rem; border-radius:18px; padding:14px 18px; }
+  .st-main .play-btn, .st-main .stop-btn{ flex:1 1 0; justify-content:center; min-height:54px; font-size:1.2rem; border-radius:14px; padding:8px 16px; }
   .st-main .stop-btn{ flex:0.75 1 0; }
   .st-main .pulse{ width:18px; height:18px; }
   .st-toggles{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
@@ -787,7 +796,7 @@
   .song-mixer{ margin-top:2px; }
   #songGrooveVol::-webkit-slider-thumb, #songMusicVol::-webkit-slider-thumb{ background:var(--accent); }
   #songGrooveVol::-moz-range-thumb, #songMusicVol::-moz-range-thumb{ background:var(--accent); }
-  @media (max-width:520px){ .song-step{ width:40px; } .song-step.dice{ display:none; } .song-trigger{ gap:8px; padding:8px 10px; } .st-icon{ font-size:22px; } .song-trigger .song-title{ font-size:17px; } .st-main .play-btn, .st-main .stop-btn{ min-height:64px; font-size:1.3rem; } }
+  @media (max-width:520px){ .song-step{ width:40px; } .song-step.dice{ display:none; } .song-trigger{ gap:8px; padding:8px 10px; } .st-icon{ font-size:22px; } .song-trigger .song-title{ font-size:17px; } .st-main .play-btn, .st-main .stop-btn{ min-height:50px; font-size:1.1rem; } }
   /* YouTube play-along */
   .yt-wrap{ position:relative; width:100%; max-width:560px; aspect-ratio:16/9; margin:0 auto 12px; border-radius:12px; overflow:hidden; background:#000; }
   .yt-wrap[hidden], .yt-sync[hidden]{ display:none; }
@@ -981,6 +990,13 @@
         </div>
       </div>
 
+      <div class="song-speed" id="songSpeed" role="group" aria-label="Song speed">
+        <span class="bpm-label">🐢 Speed</span>
+        <button class="rate-chip" data-rate="0.8" title="Play the whole song at 80% speed (band, sheet and lights)">80%</button>
+        <button class="rate-chip" data-rate="0.9" title="Play the whole song at 90% speed">90%</button>
+        <button class="rate-chip" data-rate="1" title="The band’s own tempo">100%</button>
+        <span class="ss-note" id="songSpeedNote"></span>
+      </div>
       <div class="loop-hint" id="songLoopHint" hidden></div>
       <div class="takes" id="songTakes" hidden aria-live="polite"><div class="take-note"></div><div class="take-list"></div></div>
       <div class="sheet" id="songSheet"></div>
@@ -1111,6 +1127,7 @@
         <dt>Tap a section</dt><dd>Starts the song from there.</dd>
         <dt>Pasoori (YouTube)</dt><dd>Play along with the real song: the video is the band and the sheet follows it. Play, Pause, Loop and tapping a section all move the video too (so does its own play button). If the lit squares run early or late, nudge with − / +; if the grooves change in the wrong place, move a whole bar. Or tap <b>Tap on the 1</b> four times on the first beat of bars while it plays. <b>Guide cajon</b> plays the transcription quietly along with you. Needs the internet.</dd>
         <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
+        <dt>🐢 Speed</dt><dd>Plays the whole song slower — band, groove sheet and lights together — so you can learn a fast song (Night Freight, Calle Sol) before you can play it at full speed. 80% → 90% → 100%. The band sounds a little lower when slowed; that’s normal. Each song remembers its speed. Change it while stopped or paused. Not for Pasoori (the video sets the tempo).</dd>
         <dt>⏺ Record</dt><dd>Records you playing with the band, so you can hear how it really sounds. Turn it on (or press <kbd>R</kbd>) and allow the mic once. Everything from Play until you pause or stop becomes one take, and works with 🔁 Loop too. Each take appears under the buttons with a player and <b>⤓ Save</b>. The last five stay until you close the page. Nothing is uploaded. Headphones give the cleanest take; on speakers the mic hears the band as well. The band in the take is lined up with your hits using the Timing check calibration. With Pasoori the take is mic only.</dd>
         <dt>Next up</dt><dd>In the last bar of each section the next groove appears faintly under the grid.</dd>
         <dt>Full band</dt><dd>All six of our own songs are fully arranged: the band plays its own part in every section — quieter verses, bigger choruses, solos, stops and a final chord.</dd>
@@ -2282,6 +2299,7 @@ function setPlayingUI(on){
   });
   const sb = document.getElementById('songStopBtn');
   if(sb) sb.hidden = !((on && playSource === 'song') || songPausedBar != null);
+  if(typeof songSpeedUI === 'function') songSpeedUI();
 }
 
 function start(source){
@@ -2945,6 +2963,13 @@ var songBarIdx = 0, songPos = 0, songStartBar = 0;
 var songEnded = false, songJustFinished = false, songPrevBpm = null, songShown = -1;
 var songBandAuto = false;
 var songPausedBar = null;   // Pause: the bar to carry on from (null = not paused)
+// 🐢 Song speed: the rendered band plays at songRateReal (pitch drops a little; the cajon has no pitch
+// to clash with). The bpm is rounded first and the audio rate taken from it, so sound and lights stay in step.
+const SONG_RATE_KEY = 'cajon-song-speed';
+var songRates = (function(){ try{ return JSON.parse(localStorage.getItem(SONG_RATE_KEY) || '{}') || {}; }catch(e){ return {}; } })();
+var songRateReal = 1;
+function songRateFor(s){ if(!s || s.youtube || !s.audio) return 1; const r = +(songRates || {})[s.title]; return (r === 0.8 || r === 0.9) ? r : 1; }
+function songTargetBpm(s){ return Math.round(s.bpm * songRateFor(s)); }
 var songNowIdx = -1;        // the bar being heard right now
 // Loop: sections loopA..loopB repeat until stopped. The anchor says which song bar
 // is heard at audio time songAnchorT — it moves every time the loop jumps back.
@@ -2997,6 +3022,7 @@ function startSongAudio(when){
   if(off >= buf.duration) return;
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
+  src.playbackRate.value = songRateReal || 1;
   const g = audioCtx.createGain();
   src.connect(g); g.connect(musicGain); src._g = g;
   try{ src.start(when, off); }catch(e){ try{ src.start(0, off); }catch(e2){} }
@@ -3051,7 +3077,9 @@ function songPrepare(){
   songBarIdx = songStartBar; songPos = 0;
   songEnded = false; songJustFinished = false; songShown = -1; loopCount = 0;
   if(songPrevBpm == null) songPrevBpm = bpm;
-  setBpm(song.bpm);
+  const tb = songTargetBpm(song);
+  songRateReal = tb / song.bpm;
+  setBpm(tb);
   chordIdx = songLoopBar(songStartBar);
   if(bandGain){ bandGain.gain.cancelScheduledValues(0); bandGain.gain.setValueAtTime(song.sections[songBars[songStartBar].si].band ?? 1, audioCtx.currentTime); }
   decodeSongAudio(songAudioKey());
@@ -3289,7 +3317,8 @@ function renderSongs(){
   document.getElementById('songIcon').textContent = songIcon(song);
   document.getElementById('songTitle').textContent = song.title;
   document.getElementById('songMeta').textContent =
-    song.youtube ? 'YouTube · ' + song.bpm + ' bpm · ' + bars + ' bars transcribed · ' + fmtDur(bars * 240 / song.bpm) : (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / song.bpm);
+    song.youtube ? 'YouTube · ' + song.bpm + ' bpm · ' + bars + ' bars transcribed · ' + fmtDur(bars * 240 / song.bpm) : (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + (songRateFor(song) < 1 ? '🐢 ' + songTargetBpm(song) + ' of ' : '') + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / songTargetBpm(song));
+  songSpeedUI();
   const sheet = document.getElementById('songSheet');
   sheet.innerHTML = '';
   song.sections.forEach((sec, si) => {
@@ -3439,6 +3468,25 @@ document.getElementById('songBandToggle').addEventListener('click', () => {
   ytApplyMute();
 });
 document.getElementById('songBandToggle').addEventListener('click', () => ytApplyMute());
+
+// ================= Song speed =================
+function songSpeedUI(){
+  const box = document.getElementById('songSpeed'); if(!box) return;
+  const s = songCur(), r = songRateFor(s), on = isPlaying && playSource === 'song';
+  box.hidden = !!s.youtube || !s.audio;
+  box.querySelectorAll('.rate-chip').forEach(c => {
+    c.classList.toggle('active', +c.dataset.rate === r);
+    c.disabled = on;
+  });
+  document.getElementById('songSpeedNote').textContent = on ? 'Stop or pause to change speed.' : (r < 1 ? songTargetBpm(s) + ' bpm instead of ' + s.bpm + ' · the band sounds a little lower' : '');
+}
+document.querySelectorAll('#songSpeed .rate-chip').forEach(c => c.addEventListener('click', () => {
+  if(isPlaying && playSource === 'song') return;
+  const s = songCur(), r = +c.dataset.rate;
+  if(r === 1) delete songRates[s.title]; else songRates[s.title] = r;
+  try{ localStorage.setItem(SONG_RATE_KEY, JSON.stringify(songRates)); }catch(e){}
+  renderSongs();
+}));
 
 // ================= Record a take =================
 // ⏺ Record (R) in Songs: while a song plays, record the mic mixed with the band, then
