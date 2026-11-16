@@ -750,6 +750,23 @@
   .sec.upnext{ border-left-color:color-mix(in srgb, var(--accent) 60%, transparent); }
   .sec.done{ opacity:.5; }
   .sec.done:hover{ opacity:.85; }
+  /* Songs: the up-next row is easy to read, not greyed out */
+  #songNextRow{ opacity:.9; }
+  #songNextRow .hit:not(.rest):not(.ghost){ border-color:var(--accent); }
+  /* Songs: length + progress */
+  .song-progress{ display:flex; align-items:center; gap:10px; margin:0 0 12px; font-family:var(--font-sans); font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .sp-time{ flex:0 0 auto; min-width:3.2em; }
+  .sp-time.now{ color:var(--ink); font-weight:800; text-align:right; }
+  .sp-track{ position:relative; flex:1 1 auto; height:14px; border-radius:7px; background:var(--well); border:1px solid var(--line); overflow:hidden; cursor:pointer; }
+  .sp-fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:var(--accent); transition:width .12s linear; }
+  .sp-seg{ position:absolute; top:0; bottom:0; border-left:1px solid color-mix(in srgb, var(--ink) 22%, transparent); }
+  .sp-seg:first-child{ border-left:none; }
+  .sp-seg.cur{ background:color-mix(in srgb, var(--accent) 22%, transparent); }
+  .sp-left{ flex:0 0 auto; }
+  /* Songs: every section on one shared grid, so beats line up down the sheet */
+  .mini.aligned{ max-width:none; }
+  .mini.aligned .cell{ grid-row:1; }
+  .mini.aligned .beat-guide{ grid-row:1; align-self:stretch; border-left:1px solid color-mix(in srgb, var(--ink) 10%, transparent); margin-left:-2px; pointer-events:none; }
   .loop-hint{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .loop-hint b{ color:var(--ink); }
   .loop-hint[hidden]{ display:none; }
@@ -966,6 +983,12 @@
         <button class="song-step dice" id="songShuffle" title="Surprise me!" aria-label="Pick a random song">🎲</button>
       </div>
 
+      <div class="song-progress" id="songProg">
+        <span class="sp-time now" id="songProgNow">0:00</span>
+        <div class="sp-track" id="songProgTrack" title="Tap to start from that section"><div class="sp-fill" id="songProgFill"></div><div id="songProgSegs"></div></div>
+        <span class="sp-time" id="songProgTotal">0:00</span>
+        <span class="sp-left" id="songProgBars"></span>
+      </div>
       <div class="yt-wrap" id="ytWrap" hidden><div id="ytPlayer"></div></div>
       <div class="yt-sync" id="ytSync" hidden>
         <span class="yt-lbl">Line up</span>
@@ -3207,8 +3230,62 @@ function songHighlight(pos){
   const cm = document.querySelector('#songSheet .sec.cur .mini');
   const mc = cm && cm.children[pos];
   if(mc && mc.firstChild) mc.firstChild.classList.add('playing');
+  if(songBars && songNowIdx >= 0){ const n = songBars[songNowIdx].hits.length || 1; songProgress(songNowIdx + (pos + 1) / n); }
   const pulse = document.getElementById('songPulse');
   if(pulse){ pulse.classList.add('on'); setTimeout(() => pulse.classList.remove('on'), 90); }
+}
+// ---- song length + progress (time, bar, and a bar split into the song's sections) ----
+function songBarSecs(){ const s = songCur(); return 240 / (s.youtube ? s.bpm : songTargetBpm(s)); }
+function songProgress(barPos){
+  const song = songCur(), total = songTotalBars(song), spb = songBarSecs();
+  barPos = Math.max(0, Math.min(total, barPos));
+  document.getElementById('songProgNow').textContent = fmtDur(Math.floor(barPos * spb));
+  document.getElementById('songProgTotal').textContent = fmtDur(total * spb);
+  document.getElementById('songProgFill').style.width = (100 * barPos / total) + '%';
+  document.getElementById('songProgBars').textContent = 'bar ' + Math.min(total, Math.floor(barPos) + 1) + ' / ' + total;
+  const si = songBarList(song)[Math.min(total - 1, Math.floor(barPos))].si;
+  document.querySelectorAll('#songProgSegs .sp-seg').forEach(el => el.classList.toggle('cur', +el.dataset.si === si));
+}
+function songProgressSegs(){
+  const song = songCur(), total = songTotalBars(song), box = document.getElementById('songProgSegs');
+  box.innerHTML = '';
+  song.sections.forEach((sec, si) => {
+    const d = document.createElement('div');
+    d.className = 'sp-seg'; d.dataset.si = si;
+    d.style.left = (100 * secStartBar(song, si) / total) + '%';
+    d.style.width = (100 * sec.bars / total) + '%';
+    d.title = sec.name;
+    box.appendChild(d);
+  });
+}
+document.getElementById('songProgTrack').addEventListener('click', e => {
+  const r = e.currentTarget.getBoundingClientRect(), song = songCur();
+  const bar = Math.floor((e.clientX - r.left) / r.width * songTotalBars(song));
+  const b = songBarList(song)[Math.max(0, Math.min(songTotalBars(song) - 1, bar))];
+  songSectionTap(b.si);
+});
+// the sheet's little grids all use the song's finest step (usually 1/16): each hit sits on its
+// real place in the bar, so beat 2 is in the same column in every section
+function songGridSteps(song){
+  const gcd = (a, b) => b ? gcd(b, a % b) : a;
+  let g = 1;
+  songBarList(song).forEach(b => { const n = b.hits.length; g = g * n / gcd(g, n); });
+  return g > 48 ? 16 : g;
+}
+function fillMini(mini, hits, G){
+  fillHits(mini, hits);
+  const n = hits.length;
+  if(!G || G % n){ return; }
+  const k = G / n;
+  mini.classList.add('aligned');
+  mini.style.setProperty('--steps', G);
+  [...mini.children].forEach((c, i) => { c.style.gridColumn = (i * k + 1) + ' / span 1'; });
+  // faint line at each beat, so the four beats read down the page
+  for(let q = 1; q < 4; q++){
+    const g = document.createElement('span'); g.className = 'beat-guide';
+    g.style.gridColumn = (q * G / 4 + 1) + ' / span 1';
+    mini.appendChild(g);
+  }
 }
 function songDrawBar(hits, sub){
   fillCounts(document.getElementById('songCountRow'), sub);
@@ -3307,6 +3384,7 @@ function songShowBar(idx, lc){
     tag.classList.add('soon');
   }
   songMarkSheet(bar.si, bar.b);
+  songProgress(idx);
 }
 function songShowIdle(){
   if(songPausedBar != null) return songShowPaused();
@@ -3319,6 +3397,7 @@ function songShowIdle(){
   tag.textContent = songJustFinished ? '✓ Song complete' : songLoop ? '🔁 Loops ' + (loopA === loopB ? sec.name : sec.name + ' → ' + song.sections[loopB].name) : (songStartSec > 0 ? 'Starts from ' + sec.name : '');
   document.getElementById('songNextRow').hidden = true;
   songMarkSheet(-1, -1);
+  songProgress(songJustFinished ? songTotalBars(song) : secStartBar(song, songStartSec));
 }
 function songShowPaused(){
   const song = songCur(), bars = songBarList(song);
@@ -3331,6 +3410,7 @@ function songShowPaused(){
   tag.textContent = 'Paused — Resume carries on from this bar';
   document.getElementById('songNextRow').hidden = true;
   songMarkSheet(bar.si, bar.b);
+  songProgress(Math.min(songPausedBar, bars.length - 1));
 }
 function songPause(){
   if(!(isPlaying && playSource === 'song')) return;
@@ -3421,6 +3501,8 @@ function renderSongs(){
   songSpeedUI();
   const sheet = document.getElementById('songSheet');
   sheet.innerHTML = ''; sheet.scrollTop = 0; songFollowSi = -1;
+  const G = songGridSteps(song);
+  songProgressSegs();
   song.sections.forEach((sec, si) => {
     const el = document.createElement('div');
     el.className = 'sec';
@@ -3432,7 +3514,7 @@ function renderSongs(){
     left.innerHTML = '<span class="sec-name">' + esc(sec.name) + '</span><span class="sec-groove">' + esc(secLabel(sec)) + (sec.fill && sec.bars > 1 ? ' + fill' : '') + '</span>';
     const notes = document.createElement('div'); notes.className = 'sec-notes';
     const mini = document.createElement('div'); mini.className = 'mini';
-    fillHits(mini, secHits(sec));
+    fillMini(mini, secHits(sec), G);
     const dots = document.createElement('div'); dots.className = 'bars';
     for(let b = 0; b < sec.bars; b++){
       const d = document.createElement('span');
