@@ -722,6 +722,34 @@
   /* song loop */
   .sec.inloop{ border-color:var(--accent); border-left:3px solid var(--accent); background:color-mix(in srgb, var(--accent) 9%, transparent); }
   .sec.inloop.cur{ background:color-mix(in srgb, var(--accent) 16%, transparent); }
+  /* Songs: two columns — controls on the left, the song sheet on the right, following the music */
+  body.songs-wide .wrap{ max-width:1240px; }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:18px; }
+  .sheet-title{ font-family:var(--font-sans); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+  .song-side .sheet{ margin-top:10px; max-height:70vh; overflow-y:auto; overscroll-behavior:contain; padding:2px 6px 12px 2px; }
+  @media (min-width:760px){
+    .song-cols{ display:grid; grid-template-columns:minmax(320px, 1fr) minmax(320px, 1.05fr); gap:24px; align-items:start; }
+    .song-main{ position:sticky; top:var(--song-top, 64px); min-width:0; }
+    .song-side{ position:sticky; top:var(--song-top, 64px); display:flex; flex-direction:column; max-height:calc(100vh - var(--song-top, 64px) - 12px); min-width:0; }
+    .song-cols{ scroll-margin-top:var(--song-top, 64px); }
+  }
+  @media (min-width:760px) and (max-width:1023px){
+    /* narrower two columns (iPad upright): toggles go 3 + 2, no dice */
+    .song-main .st-toggles{ grid-template-columns:repeat(6, 1fr); }
+    .song-main .st-toggles .timer-toggle{ grid-column:span 2; }
+    .song-main .st-toggles .timer-toggle:nth-child(n+4){ grid-column:span 3; }
+    .song-main .song-step.dice{ display:none; }
+    .song-main .song-step{ width:40px; }
+    .song-side .sheet-head{ margin-top:0; }
+    .song-side .sheet{ max-height:none; flex:1 1 auto; min-height:0; }
+  }
+  /* highlight: the section you're playing lights up in Next yellow; played ones fade */
+  .sec{ transition:opacity .25s ease, background .2s ease, border-color .2s ease; }
+  .sec.cur, .sec.inloop.cur{ border-color:var(--accent); border-left:6px solid var(--accent); background:color-mix(in srgb, var(--accent) 14%, var(--card)); box-shadow:0 0 0 1px var(--accent); }
+  .sec.cur .sec-name{ font-size:16px; font-weight:800; }
+  .sec.upnext{ border-left-color:color-mix(in srgb, var(--accent) 60%, transparent); }
+  .sec.done{ opacity:.5; }
+  .sec.done:hover{ opacity:.85; }
   .loop-hint{ font-family:var(--font-sans); font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .loop-hint b{ color:var(--ink); }
   .loop-hint[hidden]{ display:none; }
@@ -921,7 +949,9 @@
   </div><!-- /practiceView -->
 
   <div id="songsView" hidden>
-    <div class="panel">
+    <div class="panel song-panel">
+     <div class="song-cols">
+     <div class="song-main">
       <div class="song-chooser">
         <button class="song-step" id="songPrev" title="Previous song (↑)" aria-label="Previous song">‹</button>
         <div class="song-dd" id="songDD">
@@ -999,7 +1029,15 @@
       </div>
       <div class="loop-hint" id="songLoopHint" hidden></div>
       <div class="takes" id="songTakes" hidden aria-live="polite"><div class="take-note"></div><div class="take-list"></div></div>
+     </div><!-- /song-main -->
+     <div class="song-side">
+      <div class="sheet-head">
+        <span class="sheet-title">Song sheet</span>
+        <button class="timer-toggle active" id="songFollowToggle" title="Keep the section you're playing in view and lit up (F)"><span class="timer-dot"></span>⇣ Follow</button>
+      </div>
       <div class="sheet" id="songSheet"></div>
+     </div><!-- /song-side -->
+     </div><!-- /song-cols -->
 
       <div class="diary" id="diary">
         <div class="diary-head">
@@ -1091,6 +1129,7 @@
         <dt><kbd>G</kbd></dt><dd>Ghost notes on / off</dd>
         <dt><kbd>M</kbd></dt><dd>Band on / off</dd>
         <dt><kbd>L</kbd></dt><dd>Loop a section on / off (Songs)</dd>
+        <dt><kbd>F</kbd></dt><dd>Follow on / off — the song sheet scrolls along as you play (Songs)</dd>
         <dt><kbd>S</kbd></dt><dd>Switch drill on / off (Practice)</dd>
         <dt><kbd>T</kbd></dt><dd>Timing check on / off (Practice)</dd>
         <dt><kbd>?</kbd></dt><dd>Open these cheat codes · <kbd>Esc</kbd> closes them</dd>
@@ -1125,6 +1164,7 @@
         <dt>Pick a song</dt><dd>Tap the song name for the list of songs, or use <b>‹ ›</b> to step through them. <b>🎲</b> picks one at random.</dd>
         <dt>Percussion / Music</dt><dd>Volume sliders under the buttons: make the cajon louder than the band (or the other way round). Same setting as Practice’s Groove and Music volume, and remembered on this device. On Pasoori, Music is the video’s volume.</dd>
         <dt>Tap a section</dt><dd>Starts the song from there.</dd>
+        <dt>⇣ Follow</dt><dd>On a wide screen (iPad, laptop) the controls sit on the left and the song sheet on the right. While you play, the section you’re on lights up yellow, its squares light up with the beat, finished sections fade, and the sheet scrolls by itself so you can always see what’s now and what’s next. Scroll the sheet yourself and it waits a few seconds before following again. Turn Follow off to scroll freely (<kbd>F</kbd>).</dd>
         <dt>Pasoori (YouTube)</dt><dd>Play along with the real song: the video is the band and the sheet follows it. Play, Pause, Loop and tapping a section all move the video too (so does its own play button). If the lit squares run early or late, nudge with − / +; if the grooves change in the wrong place, move a whole bar. Or tap <b>Tap on the 1</b> four times on the first beat of bars while it plays. <b>Guide cajon</b> plays the transcription quietly along with you. Needs the internet.</dd>
         <dt>🔁 Loop</dt><dd>Repeats one part of the song again and again, with the band, until you stop. Turn it on and the section you’re on loops. Tap a second section to stretch the loop from one to the other (say Pre-chorus → Chorus); tap again to go back to a single section. The looped part is shaded yellow and the bar counter shows which time round you’re on.</dd>
         <dt>🐢 Speed</dt><dd>Plays the whole song slower — band, groove sheet and lights together — so you can learn a fast song (Night Freight, Calle Sol) before you can play it at full speed. 80% → 90% → 100%. The band sounds a little lower when slowed; that’s normal. Each song remembers its speed. Change it while stopped or paused. Not for Pasoori (the video sets the tempo).</dd>
@@ -2599,6 +2639,7 @@ function showView(name){
   if(isPlaying) stop();
   practiceView.hidden  = name !== 'practice';
   songsView.hidden    = name !== 'songs';
+  document.body.classList.toggle('songs-wide', name === 'songs');
   composerView.hidden  = name !== 'compose';
   document.querySelectorAll('.viewtab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   if(name === 'compose') syncComposerControls();
@@ -3162,6 +3203,10 @@ function songHighlight(pos){
   if(pos < 0) return;
   const cell = document.getElementById('shit-' + pos);
   if(cell) cell.classList.add('playing');
+  document.querySelectorAll('#songSheet .mini .hit.playing').forEach(el => el.classList.remove('playing'));
+  const cm = document.querySelector('#songSheet .sec.cur .mini');
+  const mc = cm && cm.children[pos];
+  if(mc && mc.firstChild) mc.firstChild.classList.add('playing');
   const pulse = document.getElementById('songPulse');
   if(pulse){ pulse.classList.add('on'); setTimeout(() => pulse.classList.remove('on'), 90); }
 }
@@ -3175,12 +3220,67 @@ function songMarkSheet(curSi, barInSec){
     el.classList.toggle('cur', si === curSi);
     el.classList.toggle('start', curSi < 0 && si === songStartSec);
     el.classList.toggle('inloop', songLoop && si >= loopA && si <= loopB);
+    el.classList.toggle('done', curSi >= 0 && si < curSi && !(songLoop && si >= loopA && si <= loopB));
+    el.classList.toggle('upnext', curSi >= 0 && si === curSi + 1);
     el.querySelectorAll('.bdot').forEach((d, b) => {
       d.classList.toggle('done', curSi >= 0 && (si < curSi || (si === curSi && b < barInSec)));
       d.classList.toggle('now', si === curSi && b === barInSec);
     });
   });
+  songFollowCheck(curSi);
 }
+// ---- ⇣ Follow: the song sheet scrolls by itself to keep the section you're playing in view ----
+const SONG_FOLLOW_KEY = 'cajon-song-follow';
+var songFollow = (function(){ try{ return localStorage.getItem(SONG_FOLLOW_KEY) !== '0'; }catch(e){ return true; } })();
+var songFollowSi = -1, songFollowHold = 0;
+function songFollowUI(){ const b = document.getElementById('songFollowToggle'); if(b) b.classList.toggle('active', songFollow); }
+function songTwoCols(){ return window.matchMedia('(min-width:760px)').matches; }
+// the columns stick just under the top bar
+function songTopGap(){
+  const bar = document.querySelector('.topbar'), gap = (bar ? bar.offsetHeight : 52) + 12;
+  document.documentElement.style.setProperty('--song-top', gap + 'px');
+  return gap;
+}
+window.addEventListener('resize', songTopGap);
+function songFollowTo(si, onlyIfHidden){
+  const sheet = document.getElementById('songSheet');
+  const el = sheet && sheet.querySelector('.sec[data-si="' + si + '"]');
+  if(!el) return;
+  const sr = sheet.getBoundingClientRect(), er = el.getBoundingClientRect();
+  if(onlyIfHidden && er.top >= sr.top && er.bottom <= sr.bottom) return;
+  // put the section a little below the top, so the one before is still peeking in
+  const top = sheet.scrollTop + (er.top - sr.top) - Math.min(sr.height * 0.2, 110);
+  sheet.scrollTo({ top: Math.max(0, top), behavior: onlyIfHidden ? 'auto' : 'smooth' });
+}
+function songFollowCheck(curSi){
+  if(curSi === songFollowSi) return;
+  const starting = songFollowSi < 0 && curSi >= 0;
+  songFollowSi = curSi;
+  if(!songFollow || songsView.hidden) return;
+  if(starting && songTwoCols()){
+    // when the song starts, line the page up so the controls and the whole sheet fit on screen
+    const cols = document.querySelector('.song-cols'), r = cols && cols.getBoundingClientRect();
+    const top = songTopGap();
+    if(r && Math.abs(r.top - top) > 6) window.scrollTo({ top: window.scrollY + r.top - top, behavior: 'smooth' });
+  }
+  if(curSi < 0) return songFollowTo(songStartSec, true);
+  if(Date.now() < songFollowHold) return;    // you just scrolled the sheet yourself: leave it for a moment
+  songFollowTo(curSi, false);
+}
+(function(){
+  const sheet = document.getElementById('songSheet');
+  const hold = () => { songFollowHold = Date.now() + 4000; };
+  sheet.addEventListener('wheel', hold, { passive: true });
+  sheet.addEventListener('touchmove', hold, { passive: true });
+  const btn = document.getElementById('songFollowToggle');
+  songFollowUI(); songTopGap();
+  btn.addEventListener('click', () => {
+    songFollow = !songFollow;
+    try{ localStorage.setItem(SONG_FOLLOW_KEY, songFollow ? '1' : '0'); }catch(e){}
+    songFollowUI();
+    if(songFollow){ songFollowHold = 0; songFollowTo(songHeardSection(), false); }
+  });
+})();
 function songShowBar(idx, lc){
   songNowIdx = idx;
   const song = songCur(), bar = songBars[idx], sec = song.sections[bar.si];
@@ -3320,7 +3420,7 @@ function renderSongs(){
     song.youtube ? 'YouTube · ' + song.bpm + ' bpm · ' + bars + ' bars transcribed · ' + fmtDur(bars * 240 / song.bpm) : (STYLES[song.style] ? STYLES[song.style].label : song.style) + ' band · ' + (songRateFor(song) < 1 ? '🐢 ' + songTargetBpm(song) + ' of ' : '') + song.bpm + ' bpm · ' + bars + ' bars · ' + fmtDur(bars * 240 / songTargetBpm(song));
   songSpeedUI();
   const sheet = document.getElementById('songSheet');
-  sheet.innerHTML = '';
+  sheet.innerHTML = ''; sheet.scrollTop = 0; songFollowSi = -1;
   song.sections.forEach((sec, si) => {
     const el = document.createElement('div');
     el.className = 'sec';
@@ -4271,6 +4371,7 @@ function timingCalibrate(){
     if(inSongs){
       if(e.key.toLowerCase() === 'l'){ press(document.getElementById('songLoopToggle')); return; }
       if(e.key.toLowerCase() === 'r'){ press(document.getElementById('songRecToggle')); return; }
+      if(e.key.toLowerCase() === 'f'){ press(document.getElementById('songFollowToggle')); return; }
       if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
         e.preventDefault();
         stepSong(e.key === 'ArrowDown' ? 1 : -1);
