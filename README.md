@@ -11,8 +11,7 @@ with no build step and no dependencies — open it in any browser and it runs.
 | App | What it does |
 | --- | --- |
 | [Room Blocks Planner](./room-blocks-planner/) | Quickly plan a room: add furniture and work out all four wall elevations. |
-| [Pixel Pad](./pixel-pad/) | An ultra-simple pixel-art drawing pad. |
-| [Pixel Mosaic](./pixel-mosaic/) | Design a physical mosaic-tile artwork by laying out real catalogue tiles on a pixel grid. |
+| [Pixel Pad](./pixel-pad/) | An ultra-simple pixel-art drawing pad. Mosaic view turns the art into a real tile mosaic (Piccolo "Silk" tiles, grout, real size, tile count). Pixel Mosaic is now part of it; the old link sends you here. |
 | [Cajon Groove Practice](./cajon/) | Learn cajon grooves with a beat-by-beat sequencer and an original backing band to play along with. Works offline. |
 
 ## Optional sign-in

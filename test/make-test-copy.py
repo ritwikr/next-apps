@@ -32,7 +32,7 @@ s = re.sub(r'<link rel="icon" href="[^"]*">', lambda m: '<link rel="icon" href="
 
 # 2. separate test storage + the shared code one folder further up
 sub('<script src="../shared/next-account.js?v=',
-    '<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:"test:", seedFromLive:["pixelpad-v2","pixelpad-v1"]};</script>\n'
+    '<script>window.NEXT_ACCOUNT_CONFIG={storagePrefix:"test:", seedFromLive:["pixelpad-v2","pixelpad-v1","pixelmosaic-v1"]};</script>\n'
     '<script src="../../shared/next-account.js?v=')
 
 out = os.path.join(root, "test", "pixel-pad")
