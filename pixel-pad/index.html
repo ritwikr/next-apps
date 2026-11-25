@@ -140,8 +140,26 @@
   }
   .selmenu button:hover{background:var(--paper)}
   .selmenu button.danger{color:inherit}
+  .selmenu .mrow{display:flex;gap:1px}
+  .selmenu .mrow button{flex:1 1 0;justify-content:center;padding:7px 6px;gap:5px}
   .selmenu .mi{font-size:.95rem;line-height:1;width:18px;text-align:center;flex:0 0 auto}
   .selmenu .fillsw{display:inline-block;width:16px;height:16px;border-radius:5px;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.28)}
+  /* Resize: corner handles (big enough for a finger or Pencil) + a small size bar */
+  .rz-h{position:absolute;z-index:6;width:44px;height:44px;margin:-22px 0 0 -22px;display:none;touch-action:none;background:transparent;border:none;padding:0}
+  .rz-h::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;border:2.5px solid #18161E;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+  .rz-h.show{display:block}
+  .rz-h[data-c="nw"],.rz-h[data-c="se"]{cursor:nwse-resize}
+  .rz-h[data-c="ne"],.rz-h[data-c="sw"]{cursor:nesw-resize}
+  .rzbar{
+    position:absolute;z-index:6;display:none;left:0;top:0;align-items:center;gap:2px;
+    background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:4px;
+    box-shadow:0 10px 26px -8px var(--shadow), 0 0 0 1px rgba(0,0,0,.04);white-space:nowrap;
+  }
+  .rzbar.show{display:inline-flex}
+  .rzbar .rzsize{font-weight:800;font-size:.82rem;padding:0 8px;min-width:62px;text-align:center;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .rzbar button{font-family:inherit;font-weight:800;font-size:.8rem;cursor:pointer;border:none;background:transparent;color:var(--ink);border-radius:8px;padding:7px 10px;min-height:36px;min-width:36px}
+  .rzbar button:hover{background:var(--paper)}
+  .rzbar button.done{background:var(--accent);color:var(--accent-ink);padding:7px 14px}
   .paste-hint{
     position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
     display:none;background:var(--teal);color:var(--teal-ink);
@@ -283,7 +301,16 @@
       <button data-act="mirror" title="Mirror left–right (H)"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="2 3"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/></svg></span>Mirror</button>
       <button data-act="flip" title="Flip top–bottom (V)"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18" stroke-dasharray="2 3"/><path d="M7 8l5-5 5 5Z"/><path d="m7 16 5 5 5-5Z"/></svg></span>Flip</button>
       <button data-act="rotate" title="Turn a quarter clockwise (R) · Shift+R turns back"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></span>Rotate</button>
+      <button data-act="resize" title="Resize — drag the corners"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 21H3v-7M21 3l-7 7M3 21l7-7"/></svg></span>Resize</button>
       <button data-act="delete" class="danger" title="Delete (Del)"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></svg></span>Delete</button>
+    </div>
+    <div class="rz-h" data-c="nw"></div><div class="rz-h" data-c="ne"></div><div class="rz-h" data-c="sw"></div><div class="rz-h" data-c="se"></div>
+    <div class="rzbar" id="rzBar" role="toolbar" aria-label="Resize">
+      <span class="rzsize" id="rzSize"></span>
+      <button data-rz="shrink" title="Half the size ([)">½</button>
+      <button data-rz="grow" title="Twice as big (])">2×</button>
+      <button data-rz="cancel" title="Cancel (Esc)" aria-label="Cancel">✕</button>
+      <button data-rz="done" class="done" title="Done (Enter)">Done</button>
     </div>
     <div class="paste-hint" id="pasteHint">Aim over the canvas, then tap to stamp</div>
   </div>
@@ -420,7 +447,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   var KEY2="pixelpad-v2";
   function activeProj(){ for(var i=0;i<projects.length;i++) if(projects[i].id===activeId) return projects[i]; return null; }
   function makeProject(name,w,h,m){ seq++; return {id:"p"+seq+"_"+Date.now().toString(36), name:name||("Art "+seq), cols:w, rows:h, model:m||new Array(w*h).fill(null), undo:[], redo:[]}; }
-  function commitActive(){ if(mv) dropMove(); var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
+  function commitActive(fromSave){ if(mv) dropMove(); if(rz && !fromSave && !rz.drag && gesture!=="rzmove") rzCommit(); var p=activeProj(); if(p){ p.cols=cols; p.rows=rows; p.model=model; } }
   // ---- Bin: deleted work waits here for 15 days before it's gone for good ----
   function binDays(){ return 15; }
   function inBin(p){ return !!(p && p.binnedAt); }
@@ -428,7 +455,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function binDaysLeft(p){ return Math.max(1, Math.ceil((p.binnedAt + binDays()*864e5 - Date.now())/864e5)); }
   function emptyOldBin(){ var n=projects.length, now=Date.now(); projects=projects.filter(function(p){ return !(inBin(p) && now-p.binnedAt >= binDays()*864e5); }); return projects.length!==n; }
   function save(){
-    commitActive();
+    commitActive(true);
     try{ NextAccount.setItem(KEY2, JSON.stringify({
       seq:seq, activeId:activeId, color:currentColor, grid:gridOn,
       projects: projects.map(function(p){ return {id:p.id,name:p.name,open:p.open!==false,cols:p.cols,rows:p.rows,model:p.model,binnedAt:p.binnedAt}; })
@@ -505,7 +532,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     ctx.fillStyle=getVar("--canvas-paper");
     ctx.fillRect(0,0,canvas.width,canvas.height);
     for(var i=0;i<model.length;i++){
-      if(model[i]){ ctx.fillStyle=model[i]; ctx.fillRect((i%cols)*u, Math.floor(i/cols)*u, u, u); }
+      if(model[i] && !(rz && rzInOrig(i%cols, Math.floor(i/cols)))){ ctx.fillStyle=model[i]; ctx.fillRect((i%cols)*u, Math.floor(i/cols)*u, u, u); }
     }
     if(gridOn){
       ctx.strokeStyle=getVar("--canvas-grid"); ctx.lineWidth=1;
@@ -529,6 +556,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
       dashRect(pastePreview.col*u, pastePreview.row*u, clip.w*u, clip.h*u, accent, u);
     }
     drawMoveFloat(u);
+    drawResize(u);
     updateSelUI();
   }
   var SEL_INK="#18161E";   // neutral selection/paste outline (greyscale UI)
@@ -551,8 +579,8 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     cols=s.cols; rows=s.rows; model=s.model.slice();
     sizeCanvas(); fitCanvas(); syncDims(); selection=null;
   }
-  function undo(){ if(mv){ cancelMove(); return; } if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); save(); refreshEdit(); }
-  function redo(){ if(mv){ cancelMove(); return; } if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); save(); refreshEdit(); }
+  function undo(){ if(rz){ rzCancel(); return; } if(mv){ cancelMove(); return; } if(!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); render(); save(); refreshEdit(); }
+  function redo(){ if(rz){ rzCancel(); return; } if(mv){ cancelMove(); return; } if(!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); render(); save(); refreshEdit(); }
 
   // ---- cells ----
   function cellAt(e){
@@ -600,6 +628,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function enterPaste(){
     if(!clip) return;
     if(mv) dropMove();
+    if(rz) rzCommit();
     pasteMode=true; previewing=false; selection=null;
     toolBtns.forEach(function(x){ x.setAttribute("aria-pressed","false"); });
     pasteBtn.setAttribute("aria-pressed","true");
@@ -690,6 +719,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function two(){ var a=[]; pointers.forEach(function(v){a.push(v);}); return a; }
   function cancelActive(){
     if(gesture==="move"){ gesture=null; cancelMove(); }
+    if(gesture==="rzmove"&&rz) rz.mv=null;
     if(gesture==="draw"){ drawing=false; save(); refreshEdit(); }
     if(gesture==="select"){ selecting=false; refreshEdit(); }
     lastCell=-1; gesture=null;
@@ -721,6 +751,10 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     if(pointers.size===2){ cancelActive(); startPinch(); return; }
     if(pointers.size>2) return;
     if(spaceHeld || e.button===1){ startPan(e); return; }
+    if(rz){ var rp=cellAt(e), rb=rz.box;
+      if(rp.c>=rb.c0&&rp.c<=rb.c1&&rp.r>=rb.r0&&rp.r<=rb.r1){ gesture="rzmove"; rz.mv={c:rp.c,r:rp.r,c0:rb.c0,r0:rb.r0}; canvas.style.cursor="grabbing"; }
+      else { gesture="rzdone"; }            // tap outside = Done (on lift, so a two-finger zoom doesn't end it)
+      return; }
     if(mv){ var mp=cellAt(e); if(!(mp.c>=mv.col&&mp.c<mv.col+mv.w&&mp.r>=mv.row&&mp.r<mv.row+mv.h)){ mv.dc=Math.floor((mv.w-1)/2); mv.dr=Math.floor((mv.h-1)/2); } else { mv.dc=mp.c-mv.col; mv.dr=mp.r-mv.row; }
       gesture="move"; moveTo(e); render(); updateCursor(); return; }
     if(pasteMode){ gesture="paste"; previewing=true; updatePreview(e); render(); return; }
@@ -742,6 +776,8 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     if(gesture==="pinch"){ e.preventDefault(); updatePinch(); return; }
     if(gesture==="pan"){ e.preventDefault(); updatePan(e); return; }
     if(gesture==="move"){ e.preventDefault(); moveTo(e); render(); return; }
+    if(gesture==="rzmove"){ e.preventDefault(); rzMoveTo(e); return; }
+    if(!gesture && rz){ var hb=rz.box, hp=cellAt(e); canvas.style.cursor=(hp.c>=hb.c0&&hp.c<=hb.c1&&hp.r>=hb.r0&&hp.r<=hb.r1)?"move":"default"; return; }
     if(mv && e.pointerType==="mouse"){ moveTo(e); render(); return; }   // Move button: float follows the mouse
     if(!gesture && tool==="select"){ var hs=inSel(cellAt(e)); if(hs!==hoverSel){ hoverSel=hs; updateCursor(); } }
     if(gesture==="paste"){ e.preventDefault(); updatePreview(e); render(); return; }
@@ -755,6 +791,8 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     if(gesture==="pinch"){ if(pointers.size<2){ gesture=null; pinch=null; } return; }
     if(gesture==="pan"){ gesture=null; panLast=null; document.body.classList.remove("panning"); return; }
     if(gesture==="move"){ gesture=null; dropMove(); return; }
+    if(gesture==="rzdone"){ gesture=null; rzCommit(); return; }
+    if(gesture==="rzmove"){ gesture=null; if(rz) rz.mv=null; updateCursor(); return; }
     if(gesture==="paste"){ if(previewing){ stamp(); previewing=false; } gesture=null; return; }
     if(gesture==="select"){ selecting=false; gesture=null; positionSelMenu(); refreshEdit(); return; }
     if(gesture==="draw"){ drawing=false; lastCell=-1; gesture=null; save(); refreshEdit(); return; }
@@ -785,11 +823,13 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     else if(tool==="fill") c=fillCursor();
     else if(tool==="select") c=SELECT_CURSOR;
     if(mv) c=(gesture==="move")?"grabbing":"move";
+    else if(rz) c="default";
     else if(tool==="select" && hoverSel && !pasteMode) c="move";
     canvas.style.cursor = c;
   }
   function selectTool(t){
     if(mv) dropMove();
+    if(rz) rzCommit();
     tool=t; exitPaste();
     if(t!=="select") selection=null;
     toolBtns.forEach(function(x){ x.setAttribute("aria-pressed", x.dataset.tool===t?"true":"false"); });
@@ -819,6 +859,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   // ---- contextual menu over an active selection (Copy / Mirror / Flip / Delete) ----
   var selMenu=document.getElementById("selMenu");
   function positionSelMenu(){
+    positionRz();
     if(!selMenu) return;
     var show = !!selection && (selection.c1>selection.c0 || selection.r1>selection.r0) && tool==="select" && !pasteMode && !selecting;
     selMenu.classList.toggle("show", show);
@@ -895,7 +936,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function rotateHint(msg){
     pasteHint.textContent=msg; pasteHint.classList.add("show");
     clearTimeout(rotHintT);
-    rotHintT=setTimeout(function(){ if(!pasteMode && !mv){ pasteHint.classList.remove("show"); pasteHint.textContent="Aim over the canvas, then tap to stamp"; } }, 2200);
+    rotHintT=setTimeout(function(){ if(mv) return; pasteHint.textContent="Aim over the canvas, then tap to stamp"; if(!pasteMode) pasteHint.classList.remove("show"); }, 2200);
   }
   function rotate(cw){
     if(mv) return;
@@ -922,6 +963,193 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     }
     if(clip){ clip.data=rotateData(clip.data,clip.w,clip.h,cw); var t2=clip.w; clip.w=clip.h; clip.h=t2; }
   }
+  // ---- make it bigger (2×) or smaller (½) — the selection in place, or the paste stamp ----
+  // Pixel-art resampling (whole cells only). Growing repeats cells; shrinking takes each covered
+  // block's most common colour, so thin lines survive (a cell is empty only if its whole block is).
+  function rzRange(i,n,nn){
+    if(nn>=n){ var k=Math.min(n-1, Math.floor((i+0.5)*n/nn)); return [k,k+1]; }
+    var a=Math.round(i*n/nn), b=Math.max(a+1, Math.round((i+1)*n/nn)); return [a, Math.min(n,b)];
+  }
+  function resample(data,w,h,nw,nh){
+    if(nw===w && nh===h) return data.slice();
+    var out=new Array(nw*nh), cr=[], r, c;
+    for(c=0;c<nw;c++) cr.push(rzRange(c,w,nw));
+    for(r=0;r<nh;r++){
+      var rr=rzRange(r,h,nh);
+      for(c=0;c<nw;c++){
+        var cnt={}, best=null, bn=0;
+        for(var sr=rr[0];sr<rr[1];sr++) for(var sc=cr[c][0];sc<cr[c][1];sc++){
+          var v=data[sr*w+sc]; if(!v) continue;
+          cnt[v]=(cnt[v]||0)+1; if(cnt[v]>bn){ bn=cnt[v]; best=v; }
+        }
+        out[r*nw+c]=best;
+      }
+    }
+    return out;
+  }
+  function scaleData(data,w,h,up){               // returns {data,w,h}
+    var nw=up?w*2:Math.ceil(w/2), nh=up?h*2:Math.ceil(h/2);
+    return {data:resample(data,w,h,nw,nh), w:nw, h:nh};
+  }
+  var TOO_BIG_GROW="Too big to grow here — make the canvas bigger first";
+  function scaleSel(up){
+    if(mv) return;
+    var o;
+    if(pasteMode && clip){
+      if(!up && clip.w<2 && clip.h<2) return;
+      if(up && (clip.w*2>cols || clip.h*2>rows)){ rotateHint(TOO_BIG_GROW); return; }
+      o=scaleData(clip.data,clip.w,clip.h,up); clip.data=o.data; clip.w=o.w; clip.h=o.h;
+      if(pastePreview){ pastePreview.col=clamp(pastePreview.col,0,Math.max(0,cols-clip.w)); pastePreview.row=clamp(pastePreview.row,0,Math.max(0,rows-clip.h)); }
+      render(); return;
+    }
+    if(!selection) return;
+    var s=selection, w=s.c1-s.c0+1, h=s.r1-s.r0+1, d=[], r, c;
+    if(!up && w<2 && h<2) return;
+    if(up && (w*2>cols || h*2>rows)){ rotateHint(TOO_BIG_GROW); return; }
+    for(r=0;r<h;r++) for(c=0;c<w;c++) d.push(model[(s.r0+r)*cols+(s.c0+c)]);
+    o=scaleData(d,w,h,up);
+    var nw=o.w, nh=o.h, nd=o.data;
+    // grow/shrink about the selection's centre (remembered, so ½ then 2× lands back in place), nudged to stay on the canvas
+    var cx=(s.cx!=null)?s.cx:(s.c0+s.c1)/2, cy=(s.cy!=null)?s.cy:(s.r0+s.r1)/2;
+    var nc0=clamp(Math.round(cx-(nw-1)/2), 0, cols-nw);
+    var nr0=clamp(Math.round(cy-(nh-1)/2), 0, rows-nh);
+    pushState();
+    for(r=0;r<h;r++) for(c=0;c<w;c++) model[(s.r0+r)*cols+(s.c0+c)]=null;
+    // empty cells of the scaled piece don't wipe art next to it
+    for(r=0;r<nh;r++) for(c=0;c<nw;c++){ var v=nd[r*nw+c]; if(v) model[(nr0+r)*cols+(nc0+c)]=v; }
+    selection={c0:nc0,r0:nr0,c1:nc0+nw-1,r1:nr0+nh-1,cx:cx,cy:cy};
+    render(); save(); refreshEdit(); positionSelMenu();
+  }
+  // ---- Resize: drag the corner handles, live preview, Done = one undo step ----
+  // The art isn't changed until Done, so saving mid-resize keeps the original safe.
+  // The preview is always worked out from the original piece, so dragging back and forth never blurs it.
+  var rz=null;
+  var rzHandles=[].slice.call(document.querySelectorAll(".rz-h"));
+  var rzBar=document.getElementById("rzBar"), rzSize=document.getElementById("rzSize");
+  function rzInOrig(c,r){ var o=rz.o; return c>=o.c0 && c<=o.c1 && r>=o.r0 && r<=o.r1; }
+  function startResize(){
+    if(!selection || mv || pasteMode) return;
+    var s=selection, w=s.c1-s.c0+1, h=s.r1-s.r0+1, d=[], r, c;
+    for(r=0;r<h;r++) for(c=0;c<w;c++) d.push(model[(s.r0+r)*cols+(s.c0+c)]);
+    rz={w:w, h:h, data:d, o:{c0:s.c0,r0:s.r0,c1:s.c1,r1:s.r1}, box:{c0:s.c0,r0:s.r0,c1:s.c1,r1:s.r1}, prev:null, drag:null, mv:null};
+    selection=null; hoverSel=false;
+    rzPreview(); render(); updateCursor();
+  }
+  function rzPreview(){
+    var b=rz.box, nw=b.c1-b.c0+1, nh=b.r1-b.r0+1;
+    if(!rz.prev || rz.prev.w!==nw || rz.prev.h!==nh) rz.prev={w:nw, h:nh, data:resample(rz.data,rz.w,rz.h,nw,nh)};
+  }
+  function drawResize(u){
+    if(!rz) return;
+    var p=rz.prev, b=rz.box;
+    for(var j=0;j<p.h;j++) for(var k=0;k<p.w;k++){
+      var v=p.data[j*p.w+k];
+      if(v){ ctx.fillStyle=v; ctx.fillRect((b.c0+k)*u,(b.r0+j)*u,u,u); }
+    }
+    dashRect(b.c0*u, b.r0*u, p.w*u, p.h*u, SEL_INK, u);
+  }
+  function rzCommit(){
+    if(!rz) return;
+    var z=rz; rz=null; if(gesture==="rzmove") gesture=null;
+    var o=z.o, b=z.box, p=z.prev, r, c;
+    var same=(b.c0===o.c0 && b.r0===o.r0 && b.c1===o.c1 && b.r1===o.r1);
+    if(!same){
+      pushState();
+      for(r=o.r0;r<=o.r1;r++) for(c=o.c0;c<=o.c1;c++) model[r*cols+c]=null;
+      // empty cells of the resized piece don't wipe art next to it
+      for(r=0;r<p.h;r++) for(c=0;c<p.w;c++){ var v=p.data[r*p.w+c]; if(v) model[(b.r0+r)*cols+(b.c0+c)]=v; }
+    }
+    selection={c0:b.c0,r0:b.r0,c1:b.c1,r1:b.r1};
+    render(); if(!same) save(); refreshEdit(); updateCursor();
+  }
+  function rzCancel(){
+    if(!rz) return;
+    var o=rz.o; rz=null; if(gesture==="rzmove") gesture=null;
+    selection={c0:o.c0,r0:o.r0,c1:o.c1,r1:o.r1};
+    render(); updateCursor();
+  }
+  // ½ / 2× of the current size, about its centre
+  function rzStep(up){
+    if(!rz) return;
+    var b=rz.box, w=b.c1-b.c0+1, h=b.r1-b.r0+1;
+    var nw=up?w*2:Math.ceil(w/2), nh=up?h*2:Math.ceil(h/2);
+    if(nw===w && nh===h) return;
+    if(nw>cols || nh>rows){ rotateHint(TOO_BIG_GROW); return; }
+    var cx=(b.c0+b.c1)/2, cy=(b.r0+b.r1)/2;
+    var c0=clamp(Math.round(cx-(nw-1)/2), 0, cols-nw), r0=clamp(Math.round(cy-(nh-1)/2), 0, rows-nh);
+    rz.box={c0:c0, r0:r0, c1:c0+nw-1, r1:r0+nh-1};
+    rzPreview(); render();
+  }
+  function rzMoveTo(e){
+    if(!rz || !rz.mv) return;
+    var p=cellAt(e), m=rz.mv, b=rz.box, w=b.c1-b.c0+1, h=b.r1-b.r0+1;
+    var c0=clamp(m.c0+p.c-m.c, 0, cols-w), r0=clamp(m.r0+p.r-m.r, 0, rows-h);
+    if(c0===b.c0 && r0===b.r0) return;
+    rz.box={c0:c0, r0:r0, c1:c0+w-1, r1:r0+h-1};
+    render();
+  }
+  // dragging a corner: the opposite corner stays put; sizes snap to whole cells
+  function rzDragTo(e){
+    var d=rz.drag, rect=canvas.getBoundingClientRect();
+    var fx=(e.clientX-rect.left)/rect.width*cols, fy=(e.clientY-rect.top)/rect.height*rows;
+    var maxW=d.left?d.ax:cols-d.ax, maxH=d.up?d.ay:rows-d.ay;
+    var fw=d.left?(d.ax-fx):(fx-d.ax), fh=d.up?(d.ay-fy):(fy-d.ay);
+    var w=clamp(Math.round(fw),1,maxW), h=clamp(Math.round(fh),1,maxH);
+    // a gentle pull towards the original shape, so keeping proportions is easy (never forced)
+    var a=rz.w/rz.h, ph=Math.round(w/a), pw=Math.round(h*a);
+    if(Math.abs(fh-w/a)<0.75 && ph>=1 && ph<=maxH) h=ph;
+    else if(Math.abs(fw-h*a)<0.75 && pw>=1 && pw<=maxW) w=pw;
+    var nb={};
+    if(d.left){ nb.c0=d.ax-w; nb.c1=d.ax-1; } else { nb.c0=d.ax; nb.c1=d.ax+w-1; }
+    if(d.up){ nb.r0=d.ay-h; nb.r1=d.ay-1; } else { nb.r0=d.ay; nb.r1=d.ay+h-1; }
+    var b=rz.box;
+    if(nb.c0===b.c0 && nb.c1===b.c1 && nb.r0===b.r0 && nb.r1===b.r1) return;
+    rz.box=nb; rzPreview(); render();
+  }
+  rzHandles.forEach(function(hd){
+    hd.addEventListener("pointerdown", function(e){
+      if(!rz) return;
+      e.preventDefault(); e.stopPropagation();
+      try{ hd.setPointerCapture(e.pointerId); }catch(_){}
+      var c=hd.dataset.c, b=rz.box, left=c.indexOf("w")>=0, up=c.indexOf("n")>=0;
+      rz.drag={id:e.pointerId, left:left, up:up, ax:left?b.c1+1:b.c0, ay:up?b.r1+1:b.r0};
+    });
+    hd.addEventListener("pointermove", function(e){
+      if(!rz || !rz.drag || rz.drag.id!==e.pointerId) return;
+      e.preventDefault(); rzDragTo(e);
+    });
+    function end(e){ if(rz && rz.drag && rz.drag.id===e.pointerId){ rz.drag=null; positionRz(); } }
+    hd.addEventListener("pointerup", end);
+    hd.addEventListener("pointercancel", end);
+  });
+  rzBar.addEventListener("pointerdown", function(e){ e.stopPropagation(); });
+  rzBar.addEventListener("click", function(e){
+    var b=e.target.closest && e.target.closest("button"); if(!b) return;
+    var a=b.dataset.rz;
+    if(a==="shrink") rzStep(false);
+    else if(a==="grow") rzStep(true);
+    else if(a==="cancel") rzCancel();
+    else if(a==="done") rzCommit();
+  });
+  function positionRz(){
+    var on=!!rz;
+    rzHandles.forEach(function(hd){ hd.classList.toggle("show", on); });
+    rzBar.classList.toggle("show", on);
+    if(!on) return;
+    var rect=canvas.getBoundingClientRect(), srect=stage.getBoundingClientRect(), ud=rect.width/cols, b=rz.box;
+    var L=rect.left-srect.left+b.c0*ud, R=rect.left-srect.left+(b.c1+1)*ud;
+    var T=rect.top-srect.top+b.r0*ud, B=rect.top-srect.top+(b.r1+1)*ud;
+    var at={nw:[L,T], ne:[R,T], sw:[L,B], se:[R,B]};
+    rzHandles.forEach(function(hd){ var p=at[hd.dataset.c]; hd.style.left=p[0]+"px"; hd.style.top=p[1]+"px"; });
+    rzSize.textContent=(b.c1-b.c0+1)+" × "+(b.r1-b.r0+1);
+    // size bar above the box (below if there's no room), clear of the handles
+    var bw=rzBar.offsetWidth||230, bh=rzBar.offsetHeight||46, gap=26, pad=6;
+    var x=clamp((L+R)/2-bw/2, pad, Math.max(pad, srect.width-bw-pad));
+    var y=T-gap-bh;
+    if(y<pad) y=B+gap;
+    if(y+bh>srect.height-pad) y=clamp(T+gap, pad, Math.max(pad, srect.height-bh-pad));
+    rzBar.style.left=x+"px"; rzBar.style.top=y+"px";
+  }
   selMenu.addEventListener("pointerdown", function(e){ e.stopPropagation(); });
   selMenu.addEventListener("click", function(e){
     var b=e.target.closest && e.target.closest("button"); if(!b) return;
@@ -932,10 +1160,13 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     else if(act==="mirror") flip(true);
     else if(act==="flip") flip(false);
     else if(act==="rotate") rotate(true);
+    else if(act==="resize") startResize();
+    else if(act==="grow") scaleSel(true);
+    else if(act==="shrink") scaleSel(false);
     else if(act==="delete") deleteSelection();
   });
   function toggleGrid(){ gridOn=!gridOn; gridBtn.setAttribute("aria-pressed", gridOn?"true":"false"); render(); save(); }
-  function clearAll(){ if(model.some(function(v){return v;})){ pushState(); model=new Array(cols*rows).fill(null); selection=null; render(); save(); refreshEdit(); } }
+  function clearAll(){ if(rz) rzCancel(); if(model.some(function(v){return v;})){ pushState(); model=new Array(cols*rows).fill(null); selection=null; render(); save(); refreshEdit(); } }
   undoBtn.addEventListener("click", undo);
   redoBtn.addEventListener("click", redo);
   pasteBtn.addEventListener("click", enterPaste);
@@ -957,6 +1188,7 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
   function resizeTo(nw,nh,reformat){
     if(reformat){ dimW.value=nw; dimH.value=nh; }
     if(nw===cols && nh===rows) return;
+    if(rz) rzCommit();
     pushState();
     var nm=new Array(nw*nh).fill(null), mc=Math.min(cols,nw), mr=Math.min(rows,nh);
     for(var r=0;r<mr;r++) for(var c=0;c<mc;c++) nm[r*nw+c]=model[r*cols+c];
@@ -1092,7 +1324,14 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
       return;
     }
     if(e.key===" "){ spaceHeld=true; e.preventDefault(); document.body.classList.add("space-pan"); return; }
-    if(k==="delete"||k==="backspace"){ if(mv){ e.preventDefault(); return; } if(selection){ e.preventDefault(); deleteSelection(); } return; }
+    if(k==="delete"||k==="backspace"){ if(mv||rz){ e.preventDefault(); return; } if(selection){ e.preventDefault(); deleteSelection(); } return; }
+    if(rz){
+      if(k==="enter"){ e.preventDefault(); rzCommit(); return; }
+      if(k==="escape"){ rzCancel(); return; }
+      if(k==="]"){ rzStep(true); return; }
+      if(k==="["){ rzStep(false); return; }
+      if(k==="delete"||k==="backspace"||k==="m"||k==="h"||k==="v"||k==="r"||k==="c"){ return; }
+    }
     if(k==="m"){ if(mv) dropMove(); else if(selection && tool==="select") startMoveFromMenu(); return; }
     if(mv && k==="escape"){ cancelMove(); return; }
     if(k==="d") selectTool("pencil");
@@ -1106,6 +1345,8 @@ window.NextAccount=window.NextAccount||{register:function(){},getItem:function(k
     else if(k==="h") flip(true);
     else if(k==="v") flip(false);
     else if(k==="r") rotate(!e.shiftKey);
+    else if(k==="]") scaleSel(true);
+    else if(k==="[") scaleSel(false);
     else if(k==="escape"){ if(!scaleOpts.hidden) closeScale(); else if(pasteMode) selectTool(tool); }
     else if(k==="+"||k==="=") zoomCenter(1.15);
     else if(k==="-"||k==="_") zoomCenter(1/1.15);
