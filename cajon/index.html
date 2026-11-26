@@ -3114,7 +3114,9 @@ function songBarList(song){
   song.sections.forEach((sec, si) => {
     for(let b = 0; b < sec.bars; b++){
       const isFill = !!sec.fill && b === sec.bars - 1;
-      out.push({ si, b, fill:isFill, sub: isFill ? fillSub(sec) : sec.sub, hits: isFill ? FILLS[fillSub(sec)] : secHits(sec) });
+      // a section with its own notes (a written fill) plays those; the standard fill is only for the rest
+      const std = isFill && !sec.hits;
+      out.push({ si, b, fill:isFill, sub: std ? fillSub(sec) : sec.sub, hits: std ? FILLS[fillSub(sec)] : secHits(sec) });
     }
   });
   return out;
